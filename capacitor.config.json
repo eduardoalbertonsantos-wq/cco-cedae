@@ -6,7 +6,7 @@
   "server": {
     "androidScheme": "https",
     "cleartext": true,
-    "url": "https://charge-trip-losing-scale.trycloudflare.com/app",
+    "url": "https://cco-cedae.onrender.com/app",
     "allowNavigation": [
       "*"
     ]
