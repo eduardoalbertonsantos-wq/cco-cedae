@@ -1,0 +1,65 @@
+{
+  "name": "CCO — SUPERVISÃO OPERACIONAL",
+  "short_name": "CCO Supervisão",
+  "description": "Sistema de Supervisão Operacional e Centro de Controle da Segurança Patrimonial.",
+  "start_url": "/dashboard.html",
+  "scope": "/",
+  "id": "br.gov.rj.cedae.cco.supervisao",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#0a1628",
+  "theme_color": "#0a1628",
+  "orientation": "any",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard Geral",
+      "short_name": "Dashboard",
+      "description": "Acessar o Painel Executivo do CCO",
+      "url": "/dashboard.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Distribuir Postos",
+      "short_name": "Postos",
+      "description": "Distribuição dos 59 postos por setor",
+      "url": "/distribuicao-postos.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Formulário de Supervisão",
+      "short_name": "Supervisão",
+      "description": "Preencher e enviar expediente operacional",
+      "url": "/formulario.html",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

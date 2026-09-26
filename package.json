@@ -1,0 +1,26 @@
+{
+  "name": "cco-supervisao-operacional",
+  "version": "1.0.0",
+  "description": "CCO — SUPERVISÃO OPERACIONAL CEDAE Multiplataforma (PWA, Android APK/AAB, Desktop)",
+  "private": true,
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node --watch backend/server.js",
+    "backup": "node backend/scripts/backup.js",
+    "restore": "node backend/scripts/restore.js",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android",
+    "build:apk": "cd android && .\\gradlew.bat assembleDebug",
+    "build:aab": "cd android && .\\gradlew.bat bundleRelease"
+  },
+  "keywords": [
+    "cco",
+    "supervisao",
+    "cedae",
+    "pwa",
+    "android",
+    "multiplataforma"
+  ],
+  "author": "Engenharia de Software CCO",
+  "license": "ISC"
+}

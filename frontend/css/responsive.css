@@ -1,0 +1,295 @@
+/* ==========================================================================
+   CCO — SUPERVISÃO OPERACIONAL
+   Folha de Estilos Responsiva Multiplataforma (Mobile, Tablet, Desktop)
+   Breakpoints auditados: 320px, 360px, 375px, 390px, 414px, 768px, 1024px, 
+   1280px, 1366px, 1440px, 1920px.
+   ========================================================================== */
+
+/* Suporte a Safe Area para iPhones / Android modernos */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+body {
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabelas Responsivas com Rolagem Suave */
+.table-responsive,
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+/* Touch targets para dedos no celular (mínimo 44px) */
+button, 
+.btn, 
+.form-select, 
+.form-input, 
+input[type="checkbox"], 
+.nav-item {
+  touch-action: manipulation;
+}
+
+/* --------------------------------------------------------------------------
+   1. DESKTOP FULL HD & ULTRAWIDE (1920px e acima)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1920px) {
+  .app-container, .container {
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  .charts-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+  }
+  .setor-grid-cedae {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. DESKTOP PADRÃO & LAPTOPS (1280px a 1440px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1280px) and (max-width: 1919px) {
+  .sidebar {
+    width: 260px;
+  }
+  .main-content {
+    margin-left: 260px;
+  }
+  .setor-grid-cedae {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. TABLETS HORIZONTAIS & TELAS MÉDIAS (1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .stats-grid { 
+    grid-template-columns: repeat(2, 1fr) !important; 
+    gap: 1rem;
+  }
+  .status-setores { 
+    grid-template-columns: repeat(2, 1fr) !important; 
+  }
+  .setor-grid-cedae {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .toolbar-distribuicao, .actions-toolbar {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. TABLETS VERTICAIS & CELULARES GRANDES (768px a 900px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+  }
+  
+  .sidebar.open, .sidebar.active { 
+    transform: translateX(0); 
+  }
+  
+  .main-content { 
+    margin-left: 0 !important; 
+    width: 100% !important;
+    padding: 0.75rem !important;
+  }
+  
+  .sidebar-toggle, #sidebarToggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #ffffff;
+  }
+  
+  .charts-grid { 
+    grid-template-columns: 1fr !important; 
+  }
+  
+  .header { 
+    padding: 0 0.75rem; 
+    height: 60px;
+  }
+  .content-area { 
+    padding: 0.75rem; 
+  }
+  
+  .filters-bar { 
+    flex-direction: column; 
+    align-items: stretch; 
+    gap: 0.5rem;
+  }
+  .search-box { 
+    max-width: 100%; 
+    width: 100%;
+  }
+  
+  .form-container { 
+    padding: 1rem; 
+  }
+  .posto-status-options { 
+    grid-template-columns: 1fr; 
+  }
+  .km-group { 
+    grid-template-columns: 1fr; 
+  }
+  
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(10, 22, 40, 0.75);
+    backdrop-filter: blur(3px);
+    z-index: 999;
+  }
+  
+  .sidebar-overlay.active, .sidebar-overlay.open { 
+    display: block; 
+  }
+
+  /* Ajustes Mobile Avançados para Formulários */
+  .posto-card {
+    padding: 0.85rem !important;
+    margin-bottom: 1rem !important;
+    border-radius: 8px !important;
+  }
+  
+  .form-input, .form-select, .btn {
+    min-height: 46px !important;
+    font-size: 16px !important; /* Previne auto-zoom indesejado no mobile */
+  }
+
+  .form-label {
+    font-size: 0.9rem !important;
+  }
+
+  .tabs-filter {
+    overflow-x: auto;
+    white-space: nowrap;
+    display: flex;
+    gap: 0.4rem;
+    padding-bottom: 0.5rem;
+  }
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 8px 14px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. CELULARES PADRÃO (375px, 390px, 414px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .stats-grid { 
+    grid-template-columns: 1fr !important; 
+  }
+  .status-setores { 
+    grid-template-columns: 1fr !important; 
+  }
+  .setor-grid-cedae {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .stat-card { 
+    padding: 1rem; 
+  }
+  
+  .header-title, .brand-title { 
+    font-size: 1.1rem !important; 
+  }
+  .clock, #headerClock, #sys-clock { 
+    display: none !important; 
+  }
+  
+  .quick-actions { 
+    flex-direction: column; 
+    gap: 0.5rem;
+  }
+  
+  .modal-content { 
+    width: 95% !important;
+    margin: 10px auto !important;
+    max-height: 92vh !important;
+    border-radius: 12px !important; 
+  }
+  
+  .posto-card h3 {
+    font-size: 1rem !important;
+  }
+
+  /* Barra de contadores compacta */
+  .counters-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+  }
+  .counter-badge {
+    text-align: center;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   6. CELULARES PEQUENOS (320px a 360px - ex: iPhone SE, Galaxy A antigos)
+   -------------------------------------------------------------------------- */
+@media (max-width: 360px) {
+  body {
+    font-size: 14px;
+  }
+  .main-content {
+    padding: 0.5rem !important;
+  }
+  .btn {
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+  }
+  .cedae-banner {
+    padding: 1rem !important;
+  }
+  .cedae-banner h1 {
+    font-size: 1.2rem !important;
+  }
+  .cedae-banner p {
+    font-size: 0.8rem !important;
+  }
+  .counter-badge {
+    font-size: 0.78rem !important;
+  }
+}
+
+/* Visibilidade do botão de toggle desktop */
+@media (min-width: 769px) {
+  .sidebar-toggle, #sidebarToggle { 
+    display: none !important; 
+  }
+}

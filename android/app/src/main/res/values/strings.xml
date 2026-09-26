@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CCO Supervisão</string>
+    <string name="title_activity_main">CCO — SUPERVISÃO OPERACIONAL</string>
+    <string name="package_name">br.gov.rj.cedae.cco.supervisao</string>
+    <string name="custom_url_scheme">br.gov.rj.cedae.cco.supervisao</string>
+</resources>

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CCO — Relatórios Executivos & Operacionais</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .top-navbar {
+      background: #003366;
+      color: #ffffff;
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .page-container {
+      max-width: 1440px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .tab-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #64748b;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+    .tab-btn:hover {
+      color: #003366;
+    }
+    .tab-btn.active {
+      color: #003366;
+      border-bottom-color: #003366;
+    }
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 1.25rem;
+      background: #f8fafc;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid #e2e8f0;
+    }
+    .filter-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .filter-item label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .filter-control {
+      padding: 0.45rem 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: #fff;
+      font-weight: 600;
+      outline: none;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .data-table th {
+      background: #f8fafc;
+      color: #475569;
+      text-align: left;
+      padding: 0.75rem 0.65rem;
+      border-bottom: 2px solid #cbd5e1;
+      font-weight: 800;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+    .data-table td {
+      padding: 0.65rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    .badge-situacao-ok {
+      background: #dcfce7;
+      color: #15803d;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 0.75rem;
+    }
+    .badge-situacao-warn {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 0.75rem;
+    }
+    .badge-situacao-ocorrencia {
+      background: #ffedd5;
+      color: #c2410c;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 0.75rem;
+    }
+    @media print {
+      .top-navbar, .tab-nav, .filter-bar, .no-print {
+        display: none !important;
+      }
+      body { background: #fff !important; }
+      .card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra Superior -->
+  <div class="top-navbar">
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <a href="dashboard.html" style="font-size:1.1rem; font-weight:800; color:#fff; text-decoration:none;">
+        <span style="color:#00d2ff; font-weight:900;">CEDAE</span> &bull; CCO
+      </a>
+      <span style="color:#93c5fd; font-weight:700;">| RELATÓRIOS EXECUTIVOS</span>
+    </div>
+    <div style="display:flex; gap:0.75rem;">
+      <a href="dashboard.html" class="no-print" style="background:rgba(255,255,255,0.15); color:#fff; text-decoration:none; padding:0.4rem 0.8rem; border-radius:4px; font-size:0.85rem;">
+        Voltar ao Painel
+      </a>
+    </div>
+  </div>
+
+  <div class="page-container">
+
+    <!-- Card Principal com Abas -->
+    <div class="card">
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="trocarAba('supervisao')">📋 1. Supervisão Operacional</button>
+        <button class="tab-btn" onclick="trocarAba('ocorrencias')">⚠️ 2. Ocorrências</button>
+        <button class="tab-btn" onclick="trocarAba('por-posto')">📍 3. Por Posto (Base 59)</button>
+        <button class="tab-btn" onclick="trocarAba('por-setor')">🏢 4. Por Setor</button>
+        <button class="tab-btn" onclick="trocarAba('por-supervisor')">👮 5. Por Supervisor</button>
+      </div>
+
+      <!-- Barra de Filtros Universal -->
+      <div class="filter-bar">
+        <div class="filter-item">
+          <label>Data Início</label>
+          <input type="date" id="filtroDataInicio" class="filter-control">
+        </div>
+        <div class="filter-item">
+          <label>Data Fim</label>
+          <input type="date" id="filtroDataFim" class="filter-control">
+        </div>
+        <div class="filter-item" id="divFiltroSetor">
+          <label>Setor</label>
+          <select id="filtroSetor" class="filter-control">
+            <option value="">Todos os Setores</option>
+          </select>
+        </div>
+        <div class="filter-item" id="divFiltroSituacao">
+          <label>Situação</label>
+          <select id="filtroSituacao" class="filter-control">
+            <option value="">Todas</option>
+            <option value="supervisionado">Supervisionados</option>
+            <option value="nao_supervisionado">Não Supervisionados</option>
+            <option value="ocorrencia">Com Ocorrência</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.5rem; margin-left:auto;">
+          <button onclick="carregarRelatorioAtual()" class="filter-control" style="background:#003366; color:#fff; cursor:pointer; font-weight:800;">
+            🔍 Filtrar
+          </button>
+          <button onclick="exportarCSVAtual()" class="filter-control" style="background:#059669; color:#fff; cursor:pointer; font-weight:800;">
+            📥 Exportar CSV
+          </button>
+          <button onclick="window.print()" class="filter-control" style="background:#475569; color:#fff; cursor:pointer; font-weight:800;">
+            🖨️ Imprimir
+          </button>
+        </div>
+      </div>
+
+      <!-- Informações do Relatório -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; font-size:0.85rem; color:#64748b; font-weight:700;">
+        <span id="labelTituloRelatorio">Relatório Selecionado</span>
+        <span id="labelTotalRegistros">Carregando...</span>
+      </div>
+
+      <!-- Tabela Dinâmica -->
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="tabelaRelatorio">
+          <thead id="tabelaHead"></thead>
+          <tbody id="tabelaBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let abaAtual = 'supervisao';
+    let dadosCache = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarSetoresFiltro();
+      definirDatasPadrao();
+      carregarRelatorioAtual();
+    });
+
+    function definirDatasPadrao() {
+      const now = new Date();
+      const ano = now.getFullYear();
+      const mes = String(now.getMonth() + 1).padStart(2, '0');
+      const dia = String(now.getDate()).padStart(2, '0');
+      // Padrão: início do mês atual até hoje
+      document.getElementById('filtroDataInicio').value = `${ano}-${mes}-01`;
+      document.getElementById('filtroDataFim').value = `${ano}-${mes}-${dia}`;
+    }
+
+    async function carregarSetoresFiltro() {
+      try {
+        const res = await fetch('/api/v1/setores');
+        const setores = await res.json();
+        const lista = Array.isArray(setores) ? setores : (setores.data || []);
+        const sel = document.getElementById('filtroSetor');
+        sel.innerHTML = '<option value="">Todos os Setores</option>' +
+          lista.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+      } catch (err) {
+        console.error('Erro ao carregar setores:', err);
+      }
+    }
+
+    function trocarAba(aba) {
+      abaAtual = aba;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(aba));
+      });
+
+      // Mostrar/ocultar filtros contextuais
+      document.getElementById('divFiltroSituacao').style.display = (aba === 'supervisao') ? 'flex' : 'none';
+
+      carregarRelatorioAtual();
+    }
+
+    async function carregarRelatorioAtual() {
+      const dtIni = document.getElementById('filtroDataInicio').value;
+      const dtFim = document.getElementById('filtroDataFim').value;
+      const setorId = document.getElementById('filtroSetor').value;
+      const situacao = document.getElementById('filtroSituacao').value;
+
+      let url = '';
+      if (abaAtual === 'supervisao') {
+        url = `/api/v1/relatorios/supervisao?data_inicio=${dtIni}&data_fim=${dtFim}`;
+        if (setorId) url += `&setor_id=${setorId}`;
+        if (situacao) url += `&situacao=${situacao}`;
+      } else if (abaAtual === 'ocorrencias') {
+        url = `/api/v1/relatorios/ocorrencias?data_inicio=${dtIni}&data_fim=${dtFim}`;
+      } else if (abaAtual === 'por-posto') {
+        url = `/api/v1/relatorios/por-posto`;
+      } else if (abaAtual === 'por-setor') {
+        url = `/api/v1/relatorios/por-setor`;
+      } else if (abaAtual === 'por-supervisor') {
+        url = `/api/v1/relatorios/por-supervisor`;
+      }
+
+      try {
+        const token = localStorage.getItem('cco_token') || localStorage.getItem('token');
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const res = await fetch(url, { headers });
+        const json = await res.json();
+        dadosCache = json.dados || [];
+
+        renderizarAba(dadosCache);
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err);
+        document.getElementById('tabelaBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem; color:#ef4444;">Erro ao carregar dados da API.</td></tr>';
+      }
+    }
+
+    function renderizarAba(dados) {
+      const thead = document.getElementById('tabelaHead');
+      const tbody = document.getElementById('tabelaBody');
+      const lblTitulo = document.getElementById('labelTituloRelatorio');
+      const lblTotal = document.getElementById('labelTotalRegistros');
+
+      lblTotal.textContent = `Total: ${dados.length} registro(s)`;
+
+      if (abaAtual === 'supervisao') {
+        lblTitulo.textContent = '1. Supervisão Operacional Detalhada';
+        thead.innerHTML = `
+          <tr>
+            <th>DATA/TURNO</th>
+            <th>HORA</th>
+            <th>POSTO</th>
+            <th>SETOR POSTO</th>
+            <th>SUPERVISOR</th>
+            <th>SETOR SUP.</th>
+            <th>VEÍCULO</th>
+            <th>SITUAÇÃO</th>
+            <th>DETALHES / JUSTIFICATIVA</th>
+          </tr>
+        `;
+        if (dados.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem;">Nenhum dado encontrado para o período.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = dados.map(r => {
+          let badge = '<span class="badge-situacao-ok">SUPERVISIONADO</span>';
+          if (r.situacao === 'Não supervisionado') badge = '<span class="badge-situacao-warn">NÃO SUPERVISIONADO</span>';
+          if (r.situacao === 'Com ocorrência') badge = '<span class="badge-situacao-ocorrencia">COM OCORRÊNCIA</span>';
+
+          return `
+            <tr>
+              <td><strong>${formatarDataBr(r.data_servico)}</strong><br><span style="font-size:0.75rem; color:#64748b;">${r.turno || 'DIURNO'}</span></td>
+              <td>${r.horario_supervisao || '--:--'}</td>
+              <td><strong>${r.posto_nome}</strong></td>
+              <td><span style="font-size:0.75rem; background:#dbeafe; color:#1e40af; padding:0.2rem 0.4rem; border-radius:3px; font-weight:700;">${r.setor_posto}</span></td>
+              <td>${r.supervisor_nome}</td>
+              <td><span style="font-size:0.75rem; background:#f1f5f9; color:#475569; padding:0.2rem 0.4rem; border-radius:3px;">${r.setor_supervisor || '-'}</span></td>
+              <td>${r.veiculo}</td>
+              <td>${badge}</td>
+              <td style="font-size:0.8rem; color:#475569;">${r.motivo_nao_supervisao || r.descricao_ocorrencia || '-'}</td>
+            </tr>
+          `;
+        }).join('');
+
+      } else if (abaAtual === 'ocorrencias') {
+        lblTitulo.textContent = '2. Registro de Ocorrências';
+        thead.innerHTML = `
+          <tr>
+            <th>DATA</th>
+            <th>POSTO</th>
+            <th>SETOR</th>
+            <th>TIPO</th>
+            <th>DESCRIÇÃO</th>
+            <th>PROVIDÊNCIAS</th>
+            <th>STATUS</th>
+            <th>SUPERVISOR</th>
+          </tr>
+        `;
+        if (dados.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem;">Nenhuma ocorrência registrada no período.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = dados.map(r => `
+          <tr>
+            <td>${formatarDataBr(r.data_servico || r.created_at)}</td>
+            <td><strong>${r.posto_nome || '-'}</strong></td>
+            <td>${r.setor_nome || '-'}</td>
+            <td><span style="font-weight:700; color:#ea580c;">${r.tipo_ocorrencia}</span></td>
+            <td>${r.descricao}</td>
+            <td>${r.providencias_adotadas || '-'}</td>
+            <td><span class="${r.status === 'resolvido' ? 'badge-situacao-ok' : 'badge-situacao-warn'}">${r.status || 'pendente'}</span></td>
+            <td>${r.supervisor_nome || '-'}</td>
+          </tr>
+        `).join('');
+
+      } else if (abaAtual === 'por-posto') {
+        lblTitulo.textContent = '3. Desempenho e Histórico por Posto (Base Oficial 59)';
+        thead.innerHTML = `
+          <tr>
+            <th>POSTO</th>
+            <th>SETOR ATUAL</th>
+            <th>MUNICÍPIO / LOCALIDADE</th>
+            <th>TOTAL FISCALIZAÇÕES</th>
+            <th>SUPERVISIONADOS</th>
+            <th>NÃO SUPERVISIONADOS</th>
+            <th>OCORRÊNCIAS</th>
+            <th>ÚLTIMA SUPERVISÃO</th>
+          </tr>
+        `;
+        tbody.innerHTML = dados.map(r => `
+          <tr>
+            <td><strong>${r.nome}</strong></td>
+            <td><span style="font-size:0.75rem; background:#dbeafe; color:#1e40af; padding:0.2rem 0.4rem; border-radius:3px; font-weight:700;">${r.setor_nome || 'PLANTÃO'}</span></td>
+            <td>${[r.municipio, r.localidade].filter(Boolean).join(' - ') || '-'}</td>
+            <td style="font-weight:800; text-align:center;">${r.total_fiscalizacoes}</td>
+            <td style="color:#15803d; font-weight:700; text-align:center;">${r.total_supervisionados}</td>
+            <td style="color:#b91c1c; font-weight:700; text-align:center;">${r.total_nao_supervisionados}</td>
+            <td style="color:#ea580c; font-weight:700; text-align:center;">${r.total_ocorrencias}</td>
+            <td>${formatarDataBr(r.ultima_supervisao) || '-'}</td>
+          </tr>
+        `).join('');
+
+      } else if (abaAtual === 'por-setor') {
+        lblTitulo.textContent = '4. Relatório Consolidado por Setor';
+        thead.innerHTML = `
+          <tr>
+            <th>SETOR</th>
+            <th>RESPONSÁVEL</th>
+            <th>POSTOS CADASTRADOS</th>
+            <th>TOTAL RONDAS</th>
+            <th>SUPERVISIONADOS</th>
+            <th>NÃO SUPERVISIONADOS</th>
+            <th>OCORRÊNCIAS</th>
+            <th>TAXA CUMPRIMENTO</th>
+          </tr>
+        `;
+        tbody.innerHTML = dados.map(r => `
+          <tr>
+            <td><strong style="color:#003366; font-size:1rem;">${r.setor_nome}</strong></td>
+            <td>${r.responsavel || '-'}</td>
+            <td style="font-weight:800; text-align:center;">${r.postos_cadastrados}</td>
+            <td style="text-align:center;">${r.total_rondas}</td>
+            <td style="color:#15803d; font-weight:700; text-align:center;">${r.total_supervisionados}</td>
+            <td style="color:#b91c1c; font-weight:700; text-align:center;">${r.total_nao_supervisionados}</td>
+            <td style="color:#ea580c; font-weight:700; text-align:center;">${r.total_ocorrencias}</td>
+            <td style="font-weight:900; color:#0284c7; text-align:center; font-size:1rem;">${r.taxa_cumprimento_pct}%</td>
+          </tr>
+        `).join('');
+
+      } else if (abaAtual === 'por-supervisor') {
+        lblTitulo.textContent = '5. Produtividade por Supervisor';
+        thead.innerHTML = `
+          <tr>
+            <th>SUPERVISOR</th>
+            <th>MATRÍCULA</th>
+            <th>SETOR VINCULADO</th>
+            <th>PLANTÕES</th>
+            <th>POSTOS AVALIADOS</th>
+            <th>SUPERVISIONADOS</th>
+            <th>NÃO SUPERVISIONADOS</th>
+            <th>KM TOTAL RODADO</th>
+            <th>ÚLTIMO SERVIÇO</th>
+          </tr>
+        `;
+        tbody.innerHTML = dados.map(r => `
+          <tr>
+            <td><strong>${r.nome}</strong></td>
+            <td>${r.matricula || '-'}</td>
+            <td>${r.setor_nome || '-'}</td>
+            <td style="text-align:center; font-weight:700;">${r.total_plantões}</td>
+            <td style="text-align:center; font-weight:700;">${r.postos_avaliados}</td>
+            <td style="color:#15803d; font-weight:700; text-align:center;">${r.postos_supervisionados}</td>
+            <td style="color:#b91c1c; font-weight:700; text-align:center;">${r.postos_nao_supervisionados}</td>
+            <td style="font-weight:700; text-align:center;">${r.km_total_rodado || 0} km</td>
+            <td>${formatarDataBr(r.ultimo_servico) || '-'}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function formatarDataBr(isoDate) {
+      if (!isoDate) return '';
+      const part = isoDate.split('T')[0];
+      const [ano, mes, dia] = part.split('-');
+      return `${dia}/${mes}/${ano}`;
+    }
+
+    function exportarCSVAtual() {
+      if (!dadosCache || dadosCache.length === 0) {
+        alert('Não há dados para exportar com os filtros atuais.');
+        return;
+      }
+      const keys = Object.keys(dadosCache[0]);
+      const csvRows = [keys.join(';')];
+      dadosCache.forEach(item => {
+        const values = keys.map(k => {
+          const val = item[k] === null || item[k] === undefined ? '' : String(item[k]);
+          return `"${val.replace(/"/g, '""')}"`;
+        });
+        csvRows.push(values.join(';'));
+      });
+      const csvContent = '\uFEFF' + csvRows.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Relatorio_CCO_${abaAtual}_${new Date().toISOString().substring(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>

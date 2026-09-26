@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relatórios de Expediente - CCO CEDAE</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.65); z-index: 99999; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.active { display: flex !important; }
+    .modal-box { background: #ffffff; width: 100%; max-width: 850px; max-height: 90vh; overflow-y: auto; border-radius: 0.75rem; box-shadow: 0 20px 35px rgba(0,0,0,0.3); border-top: 5px solid #2563eb; }
+    .modal-box-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: #fafafa; }
+    .modal-box-body { padding: 1.5rem; }
+    .modal-box-footer { padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    .report-table th, .report-table td { padding: 0.6rem 0.8rem; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+    @media print {
+      body * { visibility: hidden; }
+      #printableArea, #printableArea * { visibility: visible; }
+      #printableArea { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar-overlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span style="color: #00d2ff; font-weight: 900;">CEDAE</span> &bull; CCO</div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">Dashboard Operacional</a>
+        <a href="formulario.html" class="nav-item">Formulário de Plantão</a>
+        <a href="plantoes.html" class="nav-item active">Relatórios & Expedientes</a>
+        <a href="relatorio-plantao.html" class="nav-item">Relatório do Plantão</a>
+        <a href="mapa-operacional.html" class="nav-item">Mapa Hierárquico</a>
+        <div class="nav-separator"></div>
+        <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
+        <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
+        <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
+        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
+        <a href="postos.html" class="nav-item">📍 Postos de Serviço</a>
+        <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <button class="sidebar-toggle" id="sidebarToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+        <div class="header-title" style="font-weight: 800;">RELATÓRIOS CONSOLIDADOS DE EXPEDIENTE &bull; CCO CEDAE</div>
+        <div class="header-actions">
+          <div class="clock" id="headerClock">00:00:00</div>
+          <span class="badge badge-primary">Supervisão</span>
+        </div>
+      </header>
+
+      <div class="content-area" style="padding: 1.5rem;">
+        <div class="filters-bar" style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; align-items: center; background: #fff; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">
+          <div class="filter-group">
+            <select id="filterSetor" class="form-select" style="min-height:38px;">
+              <option value="">Todos os Setores (Tinguá, Guandu, Laranjal, Plantão)</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <input type="date" id="dateFilter" class="form-input" style="min-height:38px;">
+          </div>
+          <button id="btnBuscar" class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-weight:700;">Filtrar Relatórios</button>
+          <button id="btnLimpar" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Limpar</button>
+        </div>
+
+        <div class="table-wrapper" style="background:#fff; border-radius:0.5rem; padding:1.25rem; border:1px solid #e2e8f0;">
+          <table class="table" style="width: 100%;">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Data</th>
+                <th>Turno</th>
+                <th>Setor</th>
+                <th>Supervisor</th>
+                <th>Viatura</th>
+                <th>Postos</th>
+                <th>KM</th>
+                <th>Ocorrências</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="plantoesTableBody">
+              <tr><td colspan="10" style="text-align: center; color: #64748b; padding: 2rem;">Carregando relatórios de expediente...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Detalhes do Relatório com z-index alto e overlay confiável -->
+  <div id="modalDetalhes" class="modal-overlay">
+    <div class="modal-box" id="printableArea">
+      <div class="modal-box-header" style="border-bottom: 2px solid #e2e8f0; padding: 1.25rem 1.5rem; background: #ffffff;">
+        <div>
+          <span style="font-size:0.75rem; font-weight:800; color:#2563eb; letter-spacing:0.06em; text-transform:uppercase; display:block; margin-bottom:2px;">CEDAE • CENTRO DE CONTROLE OPERACIONAL</span>
+          <h2 id="detalheTitulo" style="margin:0; font-size:1.35rem; color:var(--cco-navy); font-weight:800;">RELATÓRIO DO EXPEDIENTE</h2>
+        </div>
+        <button type="button" id="btnFecharModalTopo" class="no-print" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#64748b; line-height:1;">&times;</button>
+      </div>
+
+      <div class="modal-box-body" style="padding: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.85rem; background:#f8fafc; padding:1.15rem; border-radius:0.5rem; margin-bottom:1.5rem; font-size:0.88rem; border: 1px solid #e2e8f0;">
+          <div><strong style="color:#64748b;">Setor:</strong> <span id="detalheSetor" style="font-weight:700; color:#0f172a;">-</span></div>
+          <div><strong style="color:#64748b;">Data:</strong> <span id="detalheData" style="font-weight:700; color:#0f172a;">-</span> &bull; <strong style="color:#64748b;">Turno:</strong> <span id="detalheTurno" style="font-weight:700; color:#2563eb;">-</span></div>
+          <div><strong style="color:#64748b;">Supervisor:</strong> <span id="detalheSupervisor" style="font-weight:700; color:#0f172a;">-</span></div>
+          <div><strong style="color:#64748b;">Viatura:</strong> <span id="detalheViatura" style="font-weight:700; color:#0f172a;">-</span> (<span id="detalhePlaca" style="font-weight:700;">-</span>)</div>
+          <div><strong style="color:#64748b;">Odômetro:</strong> Inicial <span id="detalheKmIni" style="font-weight:700;">-</span> &bull; Final <span id="detalheKmFim" style="font-weight:700;">-</span></div>
+          <div><strong style="color:#64748b;">Total Rodado:</strong> <span id="detalheKmRodado" style="font-weight:800; color:#2563eb; font-size:1rem;">-</span></div>
+        </div>
+
+        <h3 style="color:var(--cco-navy); font-size:1.05rem; margin:0 0 0.5rem 0; border-left:4px solid var(--cco-blue); padding-left:0.5rem;">Postos Supervisionados</h3>
+        <table class="report-table" style="width: 100%; margin-bottom: 1.25rem; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+          <thead>
+            <tr style="background:#f8fafc; border-bottom: 2px solid #cbd5e1; text-align:left;">
+              <th style="padding:0.75rem 0.85rem; color:#1e293b; font-weight:800; font-size:0.85rem;">Posto de Serviço</th>
+              <th style="padding:0.75rem 0.85rem; color:#1e293b; font-weight:800; font-size:0.85rem; width:110px;">Horário</th>
+              <th style="padding:0.75rem 0.85rem; color:#1e293b; font-weight:800; font-size:0.85rem; width:130px;">KM no Posto</th>
+              <th style="padding:0.75rem 0.85rem; color:#1e293b; font-weight:800; font-size:0.85rem; text-align:center; width:140px;">Situação</th>
+              <th style="padding:0.75rem 0.85rem; color:#1e293b; font-weight:800; font-size:0.85rem; text-align:center; width:130px;">Efetivo</th>
+              <th style="padding:0.75rem 0.85rem; color:#1e293b; font-weight:800; font-size:0.85rem;">Ocorrência</th>
+            </tr>
+          </thead>
+          <tbody id="detalhePostosBody"></tbody>
+        </table>
+
+        <div id="secaoOcorrenciasDetalhe" style="margin-bottom: 1.25rem;">
+          <h3 style="color:#ef4444; font-size:1.05rem; margin:0 0 0.5rem 0; border-left:4px solid #ef4444; padding-left:0.5rem;">Ocorrências e Providências Registradas</h3>
+          <div id="detalheOcorrenciasBody" style="background:#fef2f2; border:1px solid #fecaca; padding:0.75rem; border-radius:0.375rem; font-size:0.85rem;"></div>
+        </div>
+
+        <div style="background:#f8fafc; padding:0.75rem; border-radius:0.375rem; margin-bottom:1rem; font-size:0.85rem; border:1px solid #e2e8f0;">
+          <strong>Observações Gerais:</strong>
+          <p id="detalheObservacoes" style="margin:0.25rem 0 0 0; color:#334155;">-</p>
+        </div>
+      </div>
+
+      <div class="modal-box-footer no-print">
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button type="button" id="btnCopiarWhatsModal" class="btn btn-outline" style="font-weight:700;">📋 Copiar WhatsApp</button>
+          <button type="button" id="btnAbrirWhatsModal" class="btn btn-success" style="background:#22c55e; border:none; font-weight:700;">💬 Abrir no WhatsApp</button>
+          <button type="button" id="btnImprimirModal" class="btn btn-secondary" style="font-weight:700;">🖨️ Imprimir / PDF</button>
+        </div>
+        <button type="button" id="btnFecharModalRodape" class="btn btn-primary">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let textoWhatsAtual = '';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await carregarFiltroSetores();
+      await carregarRelatorios();
+
+      document.getElementById('btnBuscar').addEventListener('click', carregarRelatorios);
+      document.getElementById('btnLimpar').addEventListener('click', () => {
+        document.getElementById('filterSetor').value = '';
+        document.getElementById('dateFilter').value = '';
+        carregarRelatorios();
+      });
+
+      // WhatsApp Buttons
+      document.getElementById('btnCopiarWhatsModal').addEventListener('click', () => {
+        if (!textoWhatsAtual) return;
+        navigator.clipboard.writeText(textoWhatsAtual).then(() => alert('✓ Relatório copiado para o WhatsApp!'));
+      });
+
+      document.getElementById('btnAbrirWhatsModal').addEventListener('click', () => {
+        if (!textoWhatsAtual) return;
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textoWhatsAtual)}`, '_blank');
+      });
+
+      // Imprimir
+      document.getElementById('btnImprimirModal').addEventListener('click', () => {
+        window.print();
+      });
+
+      // Fechar modal
+      const fechar = () => document.getElementById('modalDetalhes').classList.remove('active');
+      document.getElementById('btnFecharModalTopo').addEventListener('click', fechar);
+      document.getElementById('btnFecharModalRodape').addEventListener('click', fechar);
+      document.getElementById('modalDetalhes').addEventListener('click', (e) => {
+        if (e.target.id === 'modalDetalhes') fechar();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') fechar();
+      });
+    });
+
+    async function carregarFiltroSetores() {
+      try {
+        const setores = await apiGet('/setores?apenas_ativos=true');
+        const sel = document.getElementById('filterSetor');
+        setores.forEach(s => {
+          sel.innerHTML += `<option value="${s.id}">${s.nome}</option>`;
+        });
+      } catch (e) {}
+    }
+
+    async function carregarRelatorios() {
+      const setorId = document.getElementById('filterSetor').value;
+      const data = document.getElementById('dateFilter').value;
+      const params = new URLSearchParams();
+      if (setorId) params.append('setor_id', setorId);
+      if (data) params.append('data_inicio', data);
+
+      const tbody = document.getElementById('plantoesTableBody');
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem;">Carregando...</td></tr>';
+
+      try {
+        const relatorios = await apiGet(`/plantoes?${params.toString()}`);
+        tbody.innerHTML = '';
+
+        if (!relatorios || relatorios.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#64748b; padding:2rem;">Nenhum relatório encontrado para os filtros.</td></tr>';
+          return;
+        }
+
+        relatorios.forEach(r => {
+          const sup = r.supervisor_nome || r.responsavel_nome || '-';
+          const vtr = r.viatura_modelo || r.viatura_outros_texto || 'OUTROS';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>#${r.id}</td>
+            <td><strong>${formatDate(r.data_servico)}</strong></td>
+            <td><span class="badge badge-primary">${r.turno}</span></td>
+            <td><strong>${r.setor_nome}</strong></td>
+            <td>${sup}</td>
+            <td>${vtr} (${r.viatura_placa || 'N/A'})</td>
+            <td>${r.total_postos || 0} postos</td>
+            <td><strong>${r.km_rodado || 0} km</strong></td>
+            <td>${r.total_ocorrencias > 0 ? `<span class="badge badge-red">${r.total_ocorrencias}</span>` : '<span class="badge badge-green">0</span>'}</td>
+            <td><button class="btn btn-sm btn-primary btn-ver-relatorio" data-id="${r.id}">👁️ VER RELATÓRIO</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Adicionar event listeners com dataset
+        document.querySelectorAll('.btn-ver-relatorio').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = parseInt(btn.dataset.id);
+            if (id) verDetalhes(id);
+          });
+        });
+
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Erro: ${e.message}</td></tr>`;
+      }
+    }
+
+    async function verDetalhes(id) {
+      try {
+        const r = await apiGet(`/plantoes/${id}`);
+        textoWhatsAtual = r.texto_whatsapp || '';
+
+        document.getElementById('detalheTitulo').textContent = `RELATÓRIO DO EXPEDIENTE #${r.id}`;
+        document.getElementById('detalheSetor').textContent = r.setor_nome;
+        document.getElementById('detalheData').textContent = formatDate(r.data_servico);
+        document.getElementById('detalheTurno').textContent = r.turno;
+        document.getElementById('detalheSupervisor').textContent = r.supervisor_nome || r.responsavel_nome || 'N/A';
+        document.getElementById('detalheViatura').textContent = r.viatura_modelo || r.viatura_outros_texto || 'OUTROS';
+        document.getElementById('detalhePlaca').textContent = r.viatura_placa || 'N/A';
+        document.getElementById('detalheKmIni').textContent = (r.km_inicial !== null && r.km_inicial !== undefined) ? `${r.km_inicial} km` : '0 km';
+        document.getElementById('detalheKmFim').textContent = (r.km_final !== null && r.km_final !== undefined) ? `${r.km_final} km` : '0 km';
+        document.getElementById('detalheKmRodado').textContent = (r.km_rodado ?? 0) + ' km';
+        document.getElementById('detalheObservacoes').textContent = r.observacoes_gerais || 'Nenhuma observação geral.';
+
+        const postosBody = document.getElementById('detalhePostosBody');
+        postosBody.innerHTML = '';
+        (r.postos || []).forEach(p => {
+          let badge = '<span class="badge badge-green" style="background:#dcfce7; color:#15803d; font-weight:700; padding:0.25rem 0.6rem; border-radius:9999px;">NORMAL</span>';
+          if (p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') {
+            badge = `<span class="badge badge-red" style="background:#fee2e2; color:#b91c1c; font-weight:700; padding:0.25rem 0.6rem; border-radius:9999px;">NÃO SUPERVISIONADO</span><br><small style="color:#b91c1c; font-weight:700;">Motivo: ${p.motivo_nao_supervisao || 'Não informado'}</small>`;
+          } else if (p.status_supervisao === 'COM_OCORRENCIA') {
+            badge = '<span class="badge badge-red" style="background:#fee2e2; color:#b91c1c; font-weight:700; padding:0.25rem 0.6rem; border-radius:9999px;">COM OCORRÊNCIA</span>';
+          } else if (p.status_supervisao === 'PENDENCIA') {
+            badge = '<span class="badge badge-yellow" style="background:#fef9c3; color:#854d0e; font-weight:700; padding:0.25rem 0.6rem; border-radius:9999px;">PENDÊNCIA</span>';
+          } else if (p.status_supervisao === 'SEM_ALTERACAO') {
+            badge = '<span class="badge" style="background:#64748b; color:#fff; font-weight:700; padding:0.25rem 0.6rem; border-radius:9999px;">SEM ALTERAÇÃO</span>';
+          }
+
+          const hora = p.horario_supervisao ? `⏱️ <strong>${p.horario_supervisao}</strong>` : '<span style="color:#94a3b8;">-</span>';
+          const km = (p.km_posto !== null && p.km_posto !== undefined && p.km_posto !== '') ? `🛣️ <strong>${p.km_posto} km</strong>` : '<span style="color:#94a3b8;">-</span>';
+          
+          const efetivo = (p.efetivo_completo === 0) 
+            ? `<span style="background:#fee2e2; color:#b91c1c; font-weight:700; padding:0.25rem 0.6rem; border-radius:4px; font-size:0.8rem; display:inline-block;">⚠️ FALTA (${p.falta_efetivo_qtd || '1'})</span>`
+            : `<span style="background:#dcfce7; color:#15803d; font-weight:700; padding:0.25rem 0.6rem; border-radius:4px; font-size:0.8rem; display:inline-block;">✓ COMPLETO</span>`;
+
+          const ocorrencia = (p.tem_ocorrencia === 1 || (p.descricao_ocorrencia && p.descricao_ocorrencia.trim()))
+            ? `<span style="background:#fee2e2; border:1px solid #fecaca; color:#b91c1c; font-weight:800; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.8rem;">🚨 SIM</span><div style="font-size:0.8rem; color:#991b1b; margin-top:4px; font-weight:600; line-height:1.25;">${p.descricao_ocorrencia || 'Alteração informada'}</div>`
+            : `<span style="color:#64748b; font-weight:700; font-size:0.85rem;">NÃO</span>`;
+
+          postosBody.innerHTML += `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+              <td style="padding:0.75rem 0.85rem;"><strong>${p.posto_nome}</strong></td>
+              <td style="padding:0.75rem 0.85rem; white-space:nowrap;">${hora}</td>
+              <td style="padding:0.75rem 0.85rem; white-space:nowrap;">${km}</td>
+              <td style="padding:0.75rem 0.85rem; text-align:center;">${badge}</td>
+              <td style="padding:0.75rem 0.85rem; text-align:center;">${efetivo}</td>
+              <td style="padding:0.75rem 0.85rem;">${ocorrencia}</td>
+            </tr>
+          `;
+        });
+
+        const ocBody = document.getElementById('detalheOcorrenciasBody');
+        if (r.ocorrencias && r.ocorrencias.length > 0) {
+          document.getElementById('secaoOcorrenciasDetalhe').style.display = 'block';
+          ocBody.innerHTML = '';
+          r.ocorrencias.forEach(oc => {
+            ocBody.innerHTML += `<div style="margin-bottom:4px;"><strong>[${oc.posto_nome || 'Geral'}]</strong> ${oc.descricao} &bull; <span style="color:#0369a1;"><em>Providência: ${oc.providencias_adotadas || 'Registrada'}</em></span></div>`;
+          });
+        } else {
+          document.getElementById('secaoOcorrenciasDetalhe').style.display = 'none';
+        }
+
+        document.getElementById('modalDetalhes').classList.add('active');
+      } catch (e) {
+        alert('Erro ao carregar detalhes do relatório: ' + e.message);
+      }
+    }
+  </script>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

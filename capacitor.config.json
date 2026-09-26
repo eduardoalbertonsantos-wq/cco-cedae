@@ -1,0 +1,26 @@
+{
+  "appId": "br.gov.rj.cedae.cco.supervisao",
+  "appName": "CCO — SUPERVISÃO OPERACIONAL",
+  "webDir": "frontend",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true,
+    "url": "https://charge-trip-losing-scale.trycloudflare.com/app",
+    "allowNavigation": [
+      "*"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0a1628",
+      "showSpinner": false
+    }
+  }
+}

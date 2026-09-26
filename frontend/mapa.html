@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa - CCO Sistema</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    #mapa { width: 100%; height: 600px; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .legend-overlay { position: absolute; top: 20px; right: 20px; background: white; padding: 1rem; border-radius: 0.5rem; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+  </style>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar-overlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand">CCO <span>Painel</span></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">Dashboard</a>
+        <a href="plantoes.html" class="nav-item">Plantões</a>
+        <a href="postos.html" class="nav-item">Postos</a>
+        <a href="supervisores.html" class="nav-item">Supervisores</a>
+        <a href="viaturas.html" class="nav-item">Viaturas</a>
+        <a href="relatorios.html" class="nav-item">Relatórios</a>
+        <a href="auditoria.html" class="nav-item">Auditoria</a>
+        <a href="mapa.html" class="nav-item active">Mapa</a>
+        <div class="nav-separator"></div>
+        <a href="index.html" class="nav-item">Sair</a>
+      </nav>
+    </aside>
+    <main class="main-content">
+      <header class="header">
+        <div class="header-title">CCO &mdash; CENTRO DE CONTROLE OPERACIONAL</div>
+      </header>
+      <div class="content-area">
+        <div class="page-header">
+          <h1>MAPA OPERACIONAL</h1>
+        </div>
+        <div style="position: relative;">
+          <div id="mapa"></div>
+          <div class="legend-overlay">
+            <h4>Legenda</h4>
+            <div><span class="status-dot green"></span> Normal</div>
+            <div><span class="status-dot yellow"></span> Atenção</div>
+            <div><span class="status-dot red"></span> Crítico</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    var map = L.map('mapa').setView([-23.5505, -46.6333], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+  </script>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

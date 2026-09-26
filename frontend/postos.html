@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Postos de Serviço - CCO CEDAE</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    .modal-overlay { 
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(10,22,40,0.65); 
+      z-index: 9999; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 1rem; 
+      backdrop-filter: blur(2px);
+    }
+    .modal-overlay.active { display: flex !important; }
+    .modal-box { 
+      background: #ffffff; 
+      width: 100%; 
+      max-width: 620px; 
+      border-radius: 0.75rem; 
+      box-shadow: 0 25px 35px -5px rgba(0,0,0,0.3); 
+      border-top: 5px solid #003366; 
+      overflow: hidden; 
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-box-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 1.15rem 1.5rem; 
+      border-bottom: 1px solid #e2e8f0; 
+      background: #f8fafc;
+    }
+    .modal-box-body { 
+      padding: 1.5rem; 
+      overflow-y: auto; 
+    }
+    .modal-box-footer { 
+      padding: 1rem 1.5rem; 
+      border-top: 1px solid #e2e8f0; 
+      background: #f8fafc; 
+      display: flex; 
+      justify-content: flex-end; 
+      gap: 0.75rem; 
+      align-items: center;
+    }
+    .status-toast {
+      padding: 0.45rem 0.9rem;
+      border-radius: 0.4rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+    .status-toast.loading {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+    .status-toast.success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .status-toast.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    .badge-sector {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.35rem;
+      display: inline-block;
+      margin: 0.1rem;
+    }
+    .badge-tingua { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+    .badge-guandu { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+    .badge-laranjal { background: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; }
+    .badge-plantao { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+  </style>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar-overlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span style="color: #00d2ff; font-weight: 900;">CEDAE</span> &bull; CCO</div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">Dashboard Operacional</a>
+        <a href="formulario.html" class="nav-item">Formulário de Plantão</a>
+        <a href="plantoes.html" class="nav-item">Relatórios & Expedientes</a>
+        <a href="mapa-operacional.html" class="nav-item">Mapa Hierárquico</a>
+        <div class="nav-separator"></div>
+        <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
+        <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
+        <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
+        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
+        <a href="postos.html" class="nav-item active">📍 Gerenciar Postos</a>
+        <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+        <div class="header-title" style="font-weight: 800;">GERENCIAR POSTOS &bull; CCO CEDAE</div>
+        <div class="header-actions">
+          <div class="clock" id="headerClock">00:00:00</div>
+          <span class="badge badge-primary">Admin</span>
+        </div>
+      </header>
+
+      <div class="content-area" style="padding: 1.5rem;">
+        <div class="table-wrapper" style="background:#fff; border-radius:0.75rem; padding:1.5rem; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          
+          <!-- Top bar with actions and refresh -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+              <h2 style="margin: 0; color: #003366; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📍 GERENCIAR POSTOS</span>
+                <span id="badgeContagemPostos" class="badge badge-primary" style="font-size: 0.8rem;">59 Postos</span>
+              </h2>
+              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Base única de postos operacionais do CCO. Plantão supervisiona todos os postos.</p>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <span id="refreshStatusPostos" class="status-toast" style="display: none;"></span>
+              <button id="btnAtualizarPostos" class="btn btn-secondary" style="font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <span>🔄</span> ATUALIZAR
+              </button>
+              <button id="btnNovoPosto" class="btn" style="font-weight: 800; background: #16a34a; color: #ffffff; padding: 0.6rem 1.25rem; border-radius: 0.5rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 12px rgba(22,163,74,0.3); font-size: 0.95rem;">
+                <span>➕</span> NOVO POSTO
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters bar -->
+          <div style="margin-bottom: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+            <div style="min-width: 200px;">
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Filtrar por Setor:</label>
+              <select id="filterSetorPosto" class="form-select" style="padding:0.45rem 0.75rem; font-size:0.85rem;">
+                <option value="">Todos os Setores</option>
+                <option value="1">🟢 CCO TINGUÁ</option>
+                <option value="2">🔵 CCO GUANDU</option>
+                <option value="3">🟣 CCO LARANJAL</option>
+                <option value="4">🟡 CCO PLANTÃO</option>
+              </select>
+            </div>
+
+            <div style="min-width: 170px;">
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Status Cadastral:</label>
+              <select id="filterStatusPosto" class="form-select" style="padding:0.45rem 0.75rem; font-size:0.85rem;">
+                <option value="">Todos os Status</option>
+                <option value="ativo">Ativos</option>
+                <option value="inativo">Inativos</option>
+              </select>
+            </div>
+
+            <div style="min-width: 220px;">
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Situação Fiscalização:</label>
+              <select id="filterAuditoriaSemanal" class="form-select" style="padding:0.45rem 0.75rem; font-size:0.85rem;">
+                <option value="">Todas as Situações</option>
+                <option value="sem_vistoria">⚠️ Sem Vistoria (+7 dias)</option>
+                <option value="critico">🔴 Críticos (+14 dias / Nunca)</option>
+                <option value="atencao">🟠 Atenção (7 a 14 dias)</option>
+                <option value="em_dia">🟢 Em Dia (&lt; 7 dias)</option>
+              </select>
+            </div>
+
+            <div style="flex: 1; min-width: 220px;">
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Buscar posto:</label>
+              <input type="text" id="searchPosto" class="form-input" style="padding:0.45rem 0.75rem; font-size:0.85rem;" placeholder="🔍 Buscar por nome, empresa, endereço...">
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                  <th style="width: 55px; text-align: center;">ID</th>
+                  <th>Nome do Posto</th>
+                  <th>Setor(es)</th>
+                  <th>Supervisor Resp.</th>
+                  <th>Viatura / Placa</th>
+                  <th>Status</th>
+                  <th>Observação</th>
+                  <th style="text-align: center; width: 180px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="postosTableBody">
+                <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">Carregando postos de serviço...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Cadastrar / Editar Posto -->
+  <div id="modalPosto" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-box-header">
+        <h3 id="modalPostoTitle" style="margin: 0; color: #003366; font-size: 1.15rem; font-weight: 800;">Cadastrar Posto</h3>
+        <button type="button" id="btnFecharModalPosto" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#64748b; line-height: 1;">&times;</button>
+      </div>
+
+      <form id="formPosto">
+        <div class="modal-box-body">
+          <input type="hidden" id="postoId">
+          
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #475569;">Identificador no Banco:</span>
+            <span id="modalPostoIdLabel" class="badge badge-primary" style="font-size: 0.85rem; font-family: monospace;">Novo (Será gerado ID)</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="postoNome" style="font-weight: 700;">Nome do Posto *</label>
+            <input type="text" class="form-input" id="postoNome" required placeholder="Ex: CAPTAÇÃO TINGUÁ">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="postoSetorPrincipal" style="font-weight: 700; margin-bottom: 0.4rem;">Setor Oficial do Posto *</label>
+            <select id="postoSetorPrincipal" class="form-select" required style="font-size: 0.95rem; font-weight: 700; padding: 0.6rem;">
+              <option value="">-- Selecione o Setor Oficial --</option>
+              <option value="1">🟢 TINGUÁ</option>
+              <option value="2">🔵 GUANDU</option>
+              <option value="3">🟣 LARANJAL</option>
+              <option value="4">🟡 PLANTÃO</option>
+              <option value="SEM_SETOR">⚠️ SETOR NÃO DEFINIDO</option>
+            </select>
+            <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 0.4rem; padding: 0.5rem 0.75rem; margin-top: 0.4rem; font-size: 0.78rem; color: #92400e; line-height: 1.4;">
+              <strong>🔵 REGRA ESPECIAL DO PLANTÃO:</strong> O Plantão supervisiona todos os postos da base central, mas o posto pertence ao seu setor oficial selecionado acima (<strong>SETOR DO POSTO &ne; SETOR DO SUPERVISOR</strong>).
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="postoSupervisor" style="font-weight: 700;">Supervisor Responsável</label>
+              <select class="form-select" id="postoSupervisor">
+                <option value="">Selecione (Opcional)...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="postoViatura" style="font-weight: 700;">Viatura / Placa</label>
+              <select class="form-select" id="postoViatura">
+                <option value="">Selecione (Opcional)...</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="postoStatus" style="font-weight: 700;">Status Cadastral</label>
+              <select class="form-select" id="postoStatus">
+                <option value="ativo">ATIVO</option>
+                <option value="inativo">INATIVO</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="postoEmpresa" style="font-weight: 700;">Empresa de Vigilância</label>
+              <input type="text" class="form-input" id="postoEmpresa" value="Segurança Patrimonial">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="postoEndereco" style="font-weight: 700;">Endereço / Localização</label>
+            <input type="text" class="form-input" id="postoEndereco" placeholder="Endereço, estrada ou ponto de referência">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="postoObs" style="font-weight: 700;">Observações</label>
+            <textarea class="form-textarea" id="postoObs" rows="2" placeholder="Informações de acesso, rádio, chave ou particularidades..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-box-footer">
+          <button type="button" id="btnCancPosto" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" id="btnSalvarPostoSubmit" class="btn btn-primary" style="font-weight: 700; background: #16a34a; border-color: #16a34a;">
+            💾 SALVAR POSTO
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let postosMemoria = [];
+    let supervisoresMemoria = [];
+    let viaturasMemoria = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await carregarAuxiliares();
+      await carregarPostos();
+      setupModalPosto();
+      setupAtualizarBotao();
+
+      document.getElementById('filterSetorPosto').addEventListener('change', aplicarFiltrosLocais);
+      document.getElementById('filterStatusPosto').addEventListener('change', aplicarFiltrosLocais);
+      document.getElementById('filterAuditoriaSemanal').addEventListener('change', aplicarFiltrosLocais);
+      document.getElementById('searchPosto').addEventListener('input', debounce(aplicarFiltrosLocais, 250));
+    });
+
+    async function carregarAuxiliares() {
+      try {
+        const [sups, vtrs] = await Promise.all([
+          apiGet('/supervisores?apenas_ativos=true').catch(() => []),
+          apiGet('/viaturas?apenas_ativos=true').catch(() => [])
+        ]);
+
+        supervisoresMemoria = Array.isArray(sups) ? sups : [];
+        viaturasMemoria = Array.isArray(vtrs) ? vtrs : [];
+
+        const selSup = document.getElementById('postoSupervisor');
+        if (selSup) {
+          selSup.innerHTML = '<option value="">Selecione (Opcional)...</option>';
+          supervisoresMemoria.forEach(s => {
+            selSup.innerHTML += `<option value="${s.id}" data-nome="${s.nome}">${s.nome} (${s.setor_nome || 'Setor'})</option>`;
+          });
+        }
+
+        const selVtr = document.getElementById('postoViatura');
+        if (selVtr) {
+          selVtr.innerHTML = '<option value="">Selecione (Opcional)...</option>';
+          viaturasMemoria.forEach(v => {
+            selVtr.innerHTML += `<option value="${v.id}" data-placa="${v.placa}">${v.placa} - ${v.tipo_modelo || ''} (${v.setor_nome || ''})</option>`;
+          });
+        }
+      } catch (e) {
+        console.warn('Erro ao carregar dados auxiliares:', e);
+      }
+    }
+
+    function setupAtualizarBotao() {
+      const btn = document.getElementById('btnAtualizarPostos');
+      const toast = document.getElementById('refreshStatusPostos');
+
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        toast.className = 'status-toast loading';
+        toast.textContent = 'Atualizando dados...';
+        toast.style.display = 'inline-flex';
+
+        try {
+          await carregarAuxiliares();
+          await carregarPostos();
+          toast.className = 'status-toast success';
+          toast.textContent = '✓ Dados atualizados com sucesso.';
+          setTimeout(() => {
+            toast.style.display = 'none';
+            btn.disabled = false;
+          }, 2500);
+        } catch (e) {
+          toast.className = 'status-toast error';
+          toast.textContent = 'Erro ao atualizar dados: ' + e.message;
+          btn.disabled = false;
+        }
+      });
+    }
+
+    async function carregarPostos() {
+      const tbody = document.getElementById('postosTableBody');
+      try {
+        const dados = await apiGet('/postos');
+        postosMemoria = Array.isArray(dados) ? dados : [];
+        
+        const countBadge = document.getElementById('badgeContagemPostos');
+        if (countBadge) countBadge.textContent = `${postosMemoria.length} Postos`;
+
+        aplicarFiltrosLocais();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #dc2626; padding: 2rem;">Erro ao carregar postos: ${e.message}</td></tr>`;
+      }
+    }
+
+    function aplicarFiltrosLocais() {
+      const setorId = document.getElementById('filterSetorPosto').value;
+      const statusFiltro = document.getElementById('filterStatusPosto').value;
+      const filtroAuditoria = document.getElementById('filterAuditoriaSemanal').value;
+      const busca = (document.getElementById('searchPosto').value || '').trim().toLowerCase();
+      const tbody = document.getElementById('postosTableBody');
+
+      let lista = postosMemoria || [];
+
+      // Filtro por setor
+      if (setorId) {
+        const s = parseInt(setorId);
+        if (s === 1) lista = lista.filter(p => p.tingua);
+        else if (s === 2) lista = lista.filter(p => p.guandu);
+        else if (s === 3) lista = lista.filter(p => p.laranjal);
+        else if (s === 4) lista = lista.filter(p => p.plantao);
+      }
+
+      // Filtro por status
+      if (statusFiltro) {
+        lista = lista.filter(p => (p.status || '').toLowerCase() === statusFiltro);
+      }
+
+      // Filtro por situação de fiscalização
+      if (filtroAuditoria === 'sem_vistoria') {
+        lista = lista.filter(p => p.status_vistoria_semanal === 'CRITICO' || p.status_vistoria_semanal === 'ATENCAO');
+      } else if (filtroAuditoria === 'critico') {
+        lista = lista.filter(p => p.status_vistoria_semanal === 'CRITICO');
+      } else if (filtroAuditoria === 'atencao') {
+        lista = lista.filter(p => p.status_vistoria_semanal === 'ATENCAO');
+      } else if (filtroAuditoria === 'em_dia') {
+        lista = lista.filter(p => p.status_vistoria_semanal === 'EM_DIA');
+      }
+
+      // Filtro de busca de texto
+      if (busca) {
+        lista = lista.filter(p => 
+          (p.nome || '').toLowerCase().includes(busca) || 
+          (p.empresa || '').toLowerCase().includes(busca) || 
+          (p.endereco || '').toLowerCase().includes(busca) ||
+          (p.observacoes || '').toLowerCase().includes(busca) ||
+          (p.supervisor_nome || '').toLowerCase().includes(busca) ||
+          (p.viatura_placa || '').toLowerCase().includes(busca)
+        );
+      }
+
+      tbody.innerHTML = '';
+
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">Nenhum posto encontrado para os filtros selecionados.</td></tr>';
+        return;
+      }
+
+      lista.forEach(p => {
+        const isAtivo = (p.status || 'ativo').toLowerCase() === 'ativo';
+        const badgeClass = isAtivo ? 'badge-green' : 'badge-red';
+        const btnStatusText = isAtivo ? 'Desativar' : 'Ativar';
+        const btnStatusClass = isAtivo ? 'btn-outline' : 'btn-success';
+
+        let badgesSetorHtml = '';
+        if (p.setor_id === 1 || (p.tingua && !p.guandu && !p.laranjal)) {
+          badgesSetorHtml = '<span class="badge-sector badge-tingua">🟢 TINGUÁ</span>';
+        } else if (p.setor_id === 2 || (p.guandu && !p.tingua && !p.laranjal)) {
+          badgesSetorHtml = '<span class="badge-sector badge-guandu">🔵 GUANDU</span>';
+        } else if (p.setor_id === 3 || (p.laranjal && !p.tingua && !p.guandu)) {
+          badgesSetorHtml = '<span class="badge-sector badge-laranjal">🟣 LARANJAL</span>';
+        } else if (p.setor_id === 4 || p.plantao) {
+          badgesSetorHtml = '<span class="badge-sector badge-plantao">🟡 PLANTÃO</span>';
+        } else {
+          badgesSetorHtml = '<span class="badge-sector" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">⚠️ SETOR NÃO DEFINIDO</span>';
+        }
+
+        const supervisorDisplay = p.supervisor_nome || '<span style="color:#94a3b8; font-style:italic;">Não atribuído</span>';
+        const viaturaDisplay = p.viatura_placa 
+          ? `<span class="badge" style="background:#0a1628; color:#00d2ff; font-weight:800; font-size:0.75rem;">${p.viatura_placa}</span>`
+          : '<span style="color:#94a3b8; font-style:italic;">-</span>';
+
+        const obsDisplay = p.observacoes ? `<span title="${p.observacoes}" style="cursor:help;">${p.observacoes.length > 30 ? p.observacoes.substring(0, 30) + '...' : p.observacoes}</span>` : '<span style="color:#94a3b8;">-</span>';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align: center; font-weight: 800; color: #64748b;">#${p.id}</td>
+          <td><strong>${p.nome}</strong></td>
+          <td>${badgesSetorHtml}</td>
+          <td>${supervisorDisplay}</td>
+          <td>${viaturaDisplay}</td>
+          <td><span class="badge ${badgeClass}">${p.status.toUpperCase()}</span></td>
+          <td style="font-size: 0.82rem; color: #475569;">${obsDisplay}</td>
+          <td style="text-align: center;">
+            <button class="btn btn-sm btn-outline btn-editar-posto" data-id="${p.id}" title="Editar este posto">✏️ Editar</button>
+            <button class="btn btn-sm ${btnStatusClass} btn-status-posto" style="margin-left:0.2rem;" data-id="${p.id}" title="Alternar status">${btnStatusText}</button>
+            <button class="btn btn-sm btn-danger btn-excluir-posto" style="margin-left:0.2rem; background:#fee2e2; color:#dc2626; border-color:#fca5a5;" data-id="${p.id}" title="Excluir">🗑️</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Bind actions
+      document.querySelectorAll('.btn-editar-posto').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id);
+          const item = postosMemoria.find(p => p.id === id);
+          if (item) abrirEdicaoPosto(item);
+        });
+      });
+
+      document.querySelectorAll('.btn-status-posto').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id);
+          alternarStatusPosto(id);
+        });
+      });
+
+      document.querySelectorAll('.btn-excluir-posto').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const user = getUser();
+          if (user && (user.perfil === 'diretoria' || user.perfil === 'consulta')) {
+            alert('Aviso Diretoria: Perfil de consulta executiva. Exclusão restrita à administração CCO.');
+            return;
+          }
+          const id = parseInt(btn.dataset.id);
+          excluirPosto(id);
+        });
+      });
+    }
+
+    function setupModalPosto() {
+      const modal = document.getElementById('modalPosto');
+      const btnNovo = document.getElementById('btnNovoPosto');
+      const btnFechar = document.getElementById('btnFecharModalPosto');
+      const btnCanc = document.getElementById('btnCancPosto');
+
+      btnNovo.addEventListener('click', () => {
+        document.getElementById('modalPostoTitle').textContent = 'Cadastrar Novo Posto';
+        document.getElementById('modalPostoIdLabel').textContent = 'Novo Posto (Será gerado ID)';
+        document.getElementById('postoId').value = '';
+        document.getElementById('postoNome').value = '';
+        document.getElementById('postoSetorPrincipal').value = '';
+        document.getElementById('postoSupervisor').value = '';
+        document.getElementById('postoViatura').value = '';
+        document.getElementById('postoStatus').value = 'ativo';
+        document.getElementById('postoEmpresa').value = 'Segurança Patrimonial';
+        document.getElementById('postoEndereco').value = '';
+        document.getElementById('postoObs').value = '';
+        modal.classList.add('active');
+      });
+
+      const fechar = () => modal.classList.remove('active');
+      btnFechar.addEventListener('click', fechar);
+      btnCanc.addEventListener('click', fechar);
+
+      // Fechar com ESC ou clique fora
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) fechar();
+      });
+
+      document.getElementById('formPosto').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('postoId').value;
+        const btnSalvar = document.getElementById('btnSalvarPostoSubmit');
+
+        const selSup = document.getElementById('postoSupervisor');
+        const supervisorId = selSup.value ? parseInt(selSup.value) : null;
+        const supervisorNome = selSup.selectedOptions[0] ? selSup.selectedOptions[0].dataset.nome || null : null;
+
+        const selVtr = document.getElementById('postoViatura');
+        const viaturaId = selVtr.value ? parseInt(selVtr.value) : null;
+        const viaturaPlaca = selVtr.selectedOptions[0] ? selVtr.selectedOptions[0].dataset.placa || null : null;
+
+        const setorVal = document.getElementById('postoSetorPrincipal').value;
+        const setorId = (setorVal === 'SEM_SETOR' || !setorVal) ? null : parseInt(setorVal);
+
+        const payload = {
+          nome: document.getElementById('postoNome').value.trim(),
+          setor_id: setorId,
+          tingua: setorId === 1,
+          guandu: setorId === 2,
+          laranjal: setorId === 3,
+          plantao: setorId === 4,
+          supervisor_id: supervisorId,
+          supervisor_nome: supervisorNome,
+          viatura_id: viaturaId,
+          viatura_placa: viaturaPlaca,
+          status: document.getElementById('postoStatus').value,
+          empresa: document.getElementById('postoEmpresa').value.trim(),
+          endereco: document.getElementById('postoEndereco').value.trim(),
+          observacoes: document.getElementById('postoObs').value.trim()
+        };
+
+        btnSalvar.disabled = true;
+        btnSalvar.textContent = 'Salvando no Banco...';
+
+        try {
+          if (id) {
+            await apiPut(`/postos/${id}`, payload);
+            alert('✓ Posto atualizado com sucesso no banco de dados!');
+          } else {
+            await apiPost('/postos', payload);
+            alert('✓ POSTO CADASTRADO COM SUCESSO NO BANCO CENTRAL!');
+          }
+          fechar();
+          await carregarPostos();
+        } catch (err) {
+          alert('Erro ao salvar posto: ' + err.message);
+        } finally {
+          btnSalvar.disabled = false;
+          btnSalvar.textContent = '💾 SALVAR POSTO';
+        }
+      });
+    }
+
+    function abrirEdicaoPosto(p) {
+      document.getElementById('modalPostoTitle').textContent = `Editar Posto #${p.id} - ${p.nome}`;
+      document.getElementById('modalPostoIdLabel').textContent = `ID #${p.id}`;
+      document.getElementById('postoId').value = p.id;
+      document.getElementById('postoNome').value = p.nome || '';
+      
+      const sId = p.setor_id || (p.tingua ? 1 : (p.guandu ? 2 : (p.laranjal ? 3 : 4)));
+      document.getElementById('postoSetorPrincipal').value = sId ? String(sId) : 'SEM_SETOR';
+
+      // Selecionar supervisor e viatura
+      document.getElementById('postoSupervisor').value = p.supervisor_id || '';
+      document.getElementById('postoViatura').value = p.viatura_id || '';
+
+      document.getElementById('postoStatus').value = (p.status || 'ativo').toLowerCase();
+      document.getElementById('postoEmpresa').value = p.empresa || 'Segurança Patrimonial';
+      document.getElementById('postoEndereco').value = p.endereco || '';
+      document.getElementById('postoObs').value = p.observacoes || '';
+      
+      document.getElementById('modalPosto').classList.add('active');
+    }
+
+    async function alternarStatusPosto(id) {
+      const p = postosMemoria.find(item => item.id === id);
+      const acao = p && p.status === 'ativo' ? 'desativar' : 'ativar';
+      if (!confirm(`Deseja realmente ${acao} o posto #${id}? O histórico permanecerá intacto.`)) return;
+      
+      try {
+        await apiPut(`/postos/${id}/status`, {});
+        await carregarPostos();
+      } catch (err) {
+        alert('Erro ao alterar status: ' + err.message);
+      }
+    }
+
+    async function excluirPosto(id) {
+      const p = postosMemoria.find(item => item.id === id);
+      const nome = p ? p.nome : `#${id}`;
+      if (!confirm(`ATENÇÃO: Deseja realmente excluir o posto "${nome}"?\n\nCaso existam relatórios vinculados a ele, o sistema apenas o desativará para manter a integridade dos dados históricos.`)) return;
+
+      try {
+        await apiDelete(`/postos/${id}`);
+        alert('✓ Posto excluído/desativado com sucesso!');
+        await carregarPostos();
+      } catch (err) {
+        alert('Erro ao excluir posto: ' + err.message);
+      }
+    }
+  </script>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

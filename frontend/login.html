@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - CCO CEDAE</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/forms.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    body {
+      background-color: var(--cco-navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 1rem;
+    }
+    .login-card {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 0.75rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      text-align: center;
+      border-top: 5px solid var(--cco-blue);
+    }
+    .logo-area {
+      margin-bottom: 2rem;
+    }
+    .badge-cedae {
+      display: inline-block;
+      background: #0a1628;
+      color: #00d2ff;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      margin-bottom: 0.75rem;
+    }
+    .logo-area h1 {
+      color: var(--cco-navy);
+      font-size: 1.4rem;
+      margin-bottom: 0.25rem;
+      font-weight: 800;
+    }
+    .logo-area p {
+      color: var(--cco-gray-500);
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .login-footer {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: var(--cco-gray-400);
+      letter-spacing: 0.05em;
+    }
+    .btn-submit {
+      width: 100%;
+      padding: 0.85rem;
+      margin-top: 1.25rem;
+      font-size: 1rem;
+      font-weight: 700;
+      background-color: var(--cco-blue);
+      color: #fff;
+      border: none;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn-submit:hover {
+      background-color: #1d4ed8;
+    }
+  </style>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="login-card">
+    <div class="logo-area">
+      <span class="badge-cedae">SEGURANÇA CORPORATIVA • CEDAE</span>
+      <h1>🔐 PAINEL CCO</h1>
+      <p>CONTROLE OPERACIONAL • ADMINISTRAÇÃO & CHEFIA</p>
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
+        <label class="form-label" for="email" style="font-weight: 600; font-size: 0.875rem;">USUÁRIO OU E-MAIL</label>
+        <input type="text" id="email" class="form-input" required placeholder="admin@cedae.gov.br ou Usuário" autocomplete="username">
+      </div>
+      
+      <div class="form-group" style="text-align: left; margin-bottom: 1rem;">
+        <label class="form-label" for="senha" style="font-weight: 600; font-size: 0.875rem;">SENHA</label>
+        <input type="password" id="senha" class="form-input" required placeholder="Digite sua senha" autocomplete="current-password">
+      </div>
+
+      <div id="loginError" style="color: var(--cco-red); font-size: 0.875rem; margin-top: 0.5rem; display: none; background: #fee2e2; padding: 0.6rem; border-radius: 0.375rem; text-align: left;"></div>
+
+      <button type="submit" id="loginBtn" class="btn-submit">[ ENTRAR ]</button>
+    </form>
+
+    <div class="login-footer">
+      ASSESSORIA DE SEGURANÇA OPERACIONAL &bull; CEDAE
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/login.js"></script>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

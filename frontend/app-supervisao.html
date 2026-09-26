@@ -1,0 +1,1980 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>CCO — SUPERVISÃO OPERACIONAL</title>
+  
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/responsive.css">
+
+  <style>
+    :root {
+      --bg-dark: #0a1628;
+      --card-bg: #0f274a;
+      --card-border: #1e3a8a;
+      --accent-cyan: #00d2ff;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-orange: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Barra Superior Fixa */
+    .app-header {
+      background: linear-gradient(135deg, #060d17 0%, #0a1628 100%);
+      border-bottom: 2px solid #1e3a8a;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .app-brand-title {
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #ffffff;
+      margin: 0;
+    }
+    .app-brand-title span {
+      color: var(--accent-cyan);
+    }
+    .btn-sair {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Banners de Conexão */
+    .conn-banner {
+      display: none;
+      padding: 8px 16px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .conn-banner.offline {
+      display: block;
+      background: #7f1d1d;
+      color: #fecaca;
+      border-bottom: 1px solid #dc2626;
+    }
+    .conn-banner.sync-pending {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #78350f;
+      color: #fef3c7;
+      border-bottom: 1px solid #d97706;
+    }
+
+    .app-content {
+      flex: 1;
+      padding: 12px;
+      max-width: 760px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .view-card {
+      background: #0f1f38;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+      margin-bottom: 14px;
+    }
+
+    /* Faixa de Informações do Supervisor */
+    .supervisor-badge-bar {
+      background: linear-gradient(135deg, #091932 0%, #172e54 100%);
+      border: 1.5px solid #00d2ff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 14px rgba(0, 210, 255, 0.12);
+    }
+    .sup-saudacao {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .sup-setor-pill {
+      background: #0284c7;
+      color: #fff;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .sup-counters-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+    .sup-counter-item {
+      background: #091322;
+      border: 1px solid #1e3a8a;
+      border-radius: 8px;
+      padding: 6px 2px;
+      display: flex;
+      flex-direction: column;
+    }
+    .count-num {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #ffffff;
+    }
+    .count-lbl {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .sup-counter-item.sup-ok .count-num { color: #4ade80; }
+    .sup-counter-item.sup-pend .count-num { color: #facc15; }
+    .sup-counter-item.sup-warn .count-num { color: #f87171; }
+
+    /* Campos de Entrada */
+    .form-group-mobile {
+      margin-bottom: 12px;
+    }
+    .form-group-mobile label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+    .input-mobile {
+      width: 100%;
+      min-height: 44px;
+      background: #091322;
+      border: 1px solid #1e3a8a;
+      border-radius: 8px;
+      padding: 0 12px;
+      color: #ffffff;
+      font-size: 14px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .input-mobile:focus {
+      border-color: #00d2ff;
+      box-shadow: 0 0 0 2px rgba(0,210,255,0.25);
+    }
+    .select-mobile {
+      width: 100%;
+      min-height: 44px;
+      background: #091322;
+      border: 1px solid #1e3a8a;
+      border-radius: 8px;
+      padding: 0 10px;
+      color: #ffffff;
+      font-size: 14px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .textarea-mobile {
+      width: 100%;
+      background: #091322;
+      border: 1px solid #1e3a8a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #ffffff;
+      font-size: 14px;
+      box-sizing: border-box;
+      outline: none;
+      resize: vertical;
+    }
+
+    /* Cards de Postos */
+    .posto-card-mob {
+      background: #0c1a2f;
+      border: 1px solid #1e3a8a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .posto-card-mob.status-normal {
+      border-left: 6px solid #22c55e;
+      background: #081d2f;
+    }
+    .posto-card-mob.status-ocorrencia {
+      border-left: 6px solid #ef4444;
+      background: #20111a;
+    }
+    .posto-card-mob.status-pendencia {
+      border-left: 6px solid #eab308;
+      background: #1c1a11;
+    }
+    .posto-card-mob.status-nao-sup {
+      border-left: 6px solid #94a3b8;
+      background: #181920;
+    }
+
+    .badge-situacao {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .badge-sit-normal { background: #14532d; color: #86efac; }
+    .badge-sit-sem-alt { background: #1e293b; color: #cbd5e1; }
+    .badge-sit-ocorrencia { background: #7f1d1d; color: #fecaca; }
+    .badge-sit-pendencia { background: #713f12; color: #fef08a; }
+    .badge-sit-nao-sup { background: #334155; color: #e2e8f0; }
+
+    /* Modais */
+    .modal-backdrop-mob {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 13, 23, 0.85);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .modal-backdrop-mob.active {
+      display: flex !important;
+    }
+    .modal-content-mob {
+      background: #0f1f38;
+      border: 1px solid #1e3a8a;
+      border-radius: 12px;
+      max-width: 650px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 16px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.6);
+      box-sizing: border-box;
+    }
+
+    /* Botões Principais */
+    .btn-mob-primary {
+      width: 100%;
+      min-height: 48px;
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .btn-mob-success {
+      width: 100%;
+      min-height: 48px;
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(22,163,74,0.3);
+    }
+    .btn-mob-secondary {
+      width: 100%;
+      min-height: 44px;
+      background: transparent;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      font-weight: 700;
+      font-size: 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* Quick Actions */
+    .quick-actions-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .quick-btn {
+      flex: 1;
+      min-width: 130px;
+      background: #091322;
+      border: 1px solid #1e3a8a;
+      color: #94a3b8;
+      border-radius: 6px;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .quick-btn:hover, .quick-btn:active {
+      border-color: #00d2ff;
+      color: #fff;
+    }
+
+    .btn-card-ctrl {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid #1e3a8a;
+      background: #091322;
+      color: #cbd5e1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-card-ctrl:hover {
+      border-color: #00d2ff;
+      color: #fff;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printableRelatorio, #printableRelatorio * { visibility: visible; }
+      #printableRelatorio { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topo do Aplicativo -->
+  <header class="app-header">
+    <div class="app-brand">
+      <span style="font-size:1.3rem;">🛡️</span>
+      <h1 class="app-brand-title">CCO CEDAE <span>&bull; SUPERVISÃO</span></h1>
+    </div>
+    <div id="auth-actions" style="display:none; align-items:center; gap:8px;">
+      <span id="header-user-nome" style="font-size:0.8rem; font-weight:700; color:#00d2ff;"></span>
+      <button type="button" id="btn-logout" class="btn-sair">Sair 🚪</button>
+    </div>
+  </header>
+
+  <!-- Banners de Conexão -->
+  <div id="conn-banner-offline" class="conn-banner offline">
+    ⚠️ DISPOSITIVO OFFLINE &mdash; Os registros serão salvos localmente e transmitidos ao CCO ao reconectar.
+  </div>
+  <div id="conn-banner-sync" class="conn-banner sync-pending" style="display:none;">
+    <span>📡 Existem dados pendentes de sincronização offline</span>
+    <button type="button" onclick="sincronizarFilaOffline()" style="background:#f59e0b; border:none; color:#000; font-weight:800; padding:4px 10px; border-radius:4px; cursor:pointer;">
+      ENVIAR AGORA
+    </button>
+  </div>
+
+  <main class="app-content">
+
+    <!-- ==================== TELA 1: LOGIN DO SUPERVISOR ==================== -->
+    <section id="view-login" class="view-card" style="margin-top:20px; text-align:center;">
+      <div style="font-size:2.4rem; margin-bottom:10px;">🛡️</div>
+      <h2 style="margin:0 0 4px 0; font-size:1.35rem; color:#ffffff; font-weight:900;">CCO &mdash; SUPERVISÃO OPERACIONAL</h2>
+      <p style="color:#94a3b8; font-size:0.88rem; margin:0 0 20px 0;">Acesso exclusivo para Supervisores Operacionais CEDAE</p>
+
+      <form id="form-login" style="text-align:left;">
+        <div class="form-group-mobile">
+          <label for="login-usuario">Usuário / E-mail Institucional *</label>
+          <input type="text" id="login-usuario" class="input-mobile" required placeholder="Ex: tingua@cedae.gov.br" autocomplete="username">
+        </div>
+
+        <div class="form-group-mobile">
+          <label for="login-senha">Senha de Acesso *</label>
+          <input type="password" id="login-senha" class="input-mobile" required placeholder="Digite sua senha..." autocomplete="current-password">
+        </div>
+
+        <div id="login-erro" style="display:none; background:#7f1d1d; color:#fecaca; border:1px solid #dc2626; border-radius:6px; padding:8px 12px; margin-bottom:14px; font-size:0.85rem;"></div>
+
+        <button type="submit" id="btn-entrar" class="btn-mob-primary" style="margin-top:10px;">
+          [ ENTRAR NO APLICATIVO ]
+        </button>
+      </form>
+
+      <div style="margin-top:20px; padding-top:14px; border-top:1px solid #1e3a8a; font-size:0.75rem; color:#94a3b8; text-align:center;">
+        🔒 Acesso restrito e monitorado &bull; Supervisão Operacional CEDAE
+      </div>
+    </section>
+
+    <!-- ==================== TELA 2: SUPERVISÃO OPERACIONAL (IDÊNTICA AO COMPUTADOR) ==================== -->
+    <section id="view-supervisao" style="display:none;">
+
+      <!-- Faixa de Identificação do Supervisor e Setor -->
+      <div class="supervisor-badge-bar">
+        <div class="sup-saudacao">
+          <span>Supervisor: <strong id="sup-nome-bold" style="color:#fff;">---</strong></span>
+          <span class="sup-setor-pill" id="sup-setor-badge">SETOR</span>
+        </div>
+        <div class="sup-counters-grid">
+          <div class="sup-counter-item">
+            <span class="count-num" id="cnt-total-postos">0</span>
+            <span class="count-lbl">Total Postos</span>
+          </div>
+          <div class="sup-counter-item sup-ok">
+            <span class="count-num" id="cnt-sup-postos">0</span>
+            <span class="count-lbl">Supervisionados</span>
+          </div>
+          <div class="sup-counter-item sup-pend">
+            <span class="count-num" id="cnt-pend-postos">0</span>
+            <span class="count-lbl">Pendências</span>
+          </div>
+          <div class="sup-counter-item sup-warn">
+            <span class="count-num" id="cnt-nao-postos">0</span>
+            <span class="count-lbl">Não Superv.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORMULÁRIO DO EXPEDIENTE -->
+      <form id="formSupervisaoApp">
+
+        <!-- BLOCO 1: DADOS DO EXPEDIENTE & QUILOMETRAGEM -->
+        <div class="view-card">
+          <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:#00d2ff; text-transform:uppercase; border-left:3px solid #00d2ff; padding-left:8px;">
+            1. DADOS DO EXPEDIENTE E QUILOMETRAGEM
+          </h3>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="form-group-mobile">
+              <label for="inputDataServico">Data do Serviço *</label>
+              <input type="date" id="inputDataServico" class="input-mobile" required>
+            </div>
+            <div class="form-group-mobile">
+              <label for="selectTurno">Turno *</label>
+              <select id="selectTurno" class="select-mobile" required>
+                <option value="DIURNO">DIURNO</option>
+                <option value="NOTURNO">NOTURNO</option>
+                <option value="PLANTÃO">PLANTÃO (24H)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group-mobile">
+            <label for="selectSupervisorAtivo">Selecionar Supervisor do Expediente *</label>
+            <select id="selectSupervisorAtivo" class="select-mobile" required>
+              <option value="">Carregando supervisores do setor...</option>
+            </select>
+          </div>
+
+          <div class="form-group-mobile">
+            <label for="selectViatura">Viatura Utilizada *</label>
+            <select id="selectViatura" class="select-mobile" required>
+              <option value="">Carregando viaturas do setor...</option>
+            </select>
+          </div>
+
+          <div class="form-group-mobile" id="grupoViaturaOutros" style="display:none;">
+            <label for="inputViaturaOutros" style="color:#f59e0b;">Identificação da Viatura Sobressalente *</label>
+            <input type="text" id="inputViaturaOutros" class="input-mobile" placeholder="Ex: RENAULT DUSTER - Placa: ABC-1234">
+          </div>
+
+          <div class="form-group-mobile">
+            <label for="inputResponsavel">Responsável pelo Preenchimento *</label>
+            <input type="text" id="inputResponsavel" class="input-mobile" required placeholder="Nome e Matrícula">
+          </div>
+
+          <!-- Controle de KM -->
+          <div style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px; margin-top:8px;">
+            <div style="font-size:0.75rem; font-weight:700; color:#94a3b8; text-transform:uppercase; margin-bottom:8px;">
+              Quilometragem da Viatura
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
+              <div>
+                <label style="font-size:0.75rem; color:#cbd5e1; display:block; margin-bottom:2px;">KM Inicial *</label>
+                <input type="number" step="0.1" id="kmInicial" class="input-mobile" style="min-height:38px;" required placeholder="0.0">
+              </div>
+              <div>
+                <label style="font-size:0.75rem; color:#cbd5e1; display:block; margin-bottom:2px;">KM Final *</label>
+                <input type="number" step="0.1" id="kmFinal" class="input-mobile" style="min-height:38px;" required placeholder="0.0">
+              </div>
+              <div>
+                <label style="font-size:0.75rem; color:#00d2ff; display:block; margin-bottom:2px;">KM Rodado</label>
+                <input type="text" id="kmRodado" readonly class="input-mobile" style="min-height:38px; background:#040911; color:#00d2ff; font-weight:900;" value="0.0 km">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCO 2: POSTOS FISCALIZADOS -->
+        <div class="view-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
+            <h3 style="margin:0; font-size:0.95rem; color:#00d2ff; text-transform:uppercase; border-left:3px solid #00d2ff; padding-left:8px;">
+              2. POSTOS SUPERVISIONADOS (<span id="lblQtdPostosSetor">0</span>)
+            </h3>
+            <span id="badgeTipoSetor" style="font-size:0.75rem; background:#1e3a8a; color:#fff; padding:2px 8px; border-radius:4px; font-weight:700;"></span>
+          </div>
+
+          <div class="quick-actions-bar">
+            <button type="button" class="quick-btn" id="btnMarcarTodosNormal">🟢 Marcar Todos NORMAL</button>
+            <button type="button" class="quick-btn" id="btnMarcarTodosSemAlt">⚪ Marcar Todos SEM ALTERAÇÃO</button>
+            <button type="button" class="quick-btn" id="btnAtualizarListaPostos" style="background:#172554; color:#93c5fd;">🔄 Atualizar Lista</button>
+          </div>
+
+          <!-- Container dos Postos -->
+          <div id="postosContainerMob">
+            <!-- Renderizado dinamicamente -->
+          </div>
+        </div>
+
+        <!-- BLOCO 3: OCORRÊNCIAS, PROVIDÊNCIAS E PENDÊNCIAS -->
+        <div class="view-card">
+          <h3 style="margin:0 0 12px 0; font-size:0.95rem; color:#00d2ff; text-transform:uppercase; border-left:3px solid #00d2ff; padding-left:8px;">
+            3. OCORRÊNCIAS E PROVIDÊNCIAS DO TURNO
+          </h3>
+
+          <div class="form-group-mobile">
+            <label for="ocorrenciasGerais">Descrição de Ocorrências Relevantes</label>
+            <textarea id="ocorrenciasGerais" class="textarea-mobile" rows="2" placeholder="Faltas de vigilantes, irregularidades ou ocorrências registradas..."></textarea>
+          </div>
+
+          <div class="form-group-mobile">
+            <label for="providenciasGerais">Providências Adotadas</label>
+            <textarea id="providenciasGerais" class="textarea-mobile" rows="2" placeholder="Providências imediatas tomadas pela supervisão..."></textarea>
+          </div>
+
+          <div class="form-group-mobile">
+            <label for="pendenciasGerais">Pendências a Transmitir para o Próximo Plantão</label>
+            <textarea id="pendenciasGerais" class="textarea-mobile" rows="2" placeholder="Assuntos pendentes a repassar ao próximo supervisor..."></textarea>
+          </div>
+        </div>
+
+        <!-- BLOCO 4: CONFERÊNCIA E FINALIZAÇÃO -->
+        <div class="view-card" style="border:1.5px solid #22c55e;">
+          <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; margin-bottom:14px;">
+            <input type="checkbox" id="checkConfirmacao" required style="width:20px; height:20px; margin-top:2px; accent-color:#22c55e;">
+            <span style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">
+              Declaro que as informações deste relatório correspondem fielmente às supervisões realizadas durante o expediente.
+            </span>
+          </label>
+
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <button type="button" id="btnAbrirConferencia" class="btn-mob-primary" style="background:linear-gradient(135deg, #0284c7 0%, #1e40af 100%);">
+              📋 CONFERIR RELATÓRIO DO EXPEDIENTE
+            </button>
+            <button type="submit" id="btnFinalizarExpediente" class="btn-mob-success">
+              ✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </section>
+
+    <!-- ==================== TELA 3: SUCESSO E FECHAMENTO ==================== -->
+    <section id="view-sucesso" class="view-card" style="display:none; text-align:center; padding:24px 16px;">
+      <div style="font-size:3rem; color:#4ade80; margin-bottom:8px;">✓</div>
+      <h2 style="color:#4ade80; margin:0 0 6px 0; font-size:1.3rem; font-weight:900;">
+        RELATÓRIO REGISTRADO NO CCO COM SUCESSO!
+      </h2>
+      <p style="color:#cbd5e1; font-size:0.9rem; margin:0 0 16px 0;" id="sucesso-info-texto">
+        Os dados foram consolidados no banco central e estão imediatamente disponíveis para a equipe CCO.
+      </p>
+
+      <div style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:12px; margin-bottom:16px; text-align:left;">
+        <h4 style="color:#22c55e; margin:0 0 6px 0; font-size:0.9rem; display:flex; align-items:center; gap:6px;">
+          💬 Relatório Formatado para o WhatsApp:
+        </h4>
+        <div id="sucessoWhatsPreview" style="white-space:pre-wrap; font-family:monospace; font-size:0.8rem; background:#040911; border:1px solid #1e3a8a; padding:10px; border-radius:6px; max-height:200px; overflow-y:auto; color:#86efac; margin-bottom:10px;"></div>
+        
+        <div style="display:flex; gap:8px;">
+          <button type="button" id="btnCopiarWhatsSucesso" class="btn-mob-secondary" style="flex:1;">
+            📋 Copiar Texto
+          </button>
+          <button type="button" id="btnAbrirWhatsSucesso" class="btn-mob-success" style="flex:1; min-height:44px;">
+            💬 Abrir WhatsApp
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button type="button" id="btnVerRelatorioConsolidado" class="btn-mob-primary">
+          👁️ VISUALIZAR RELATÓRIO CONSOLIDADO COMPLETO
+        </button>
+        <button type="button" id="btnNovoExpediente" class="btn-mob-secondary">
+          + Iniciar Novo Expediente
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== MODAL DE CONFERÊNCIA (CONFERIR RELATÓRIO) ==================== -->
+  <div id="modalConferencia" class="modal-backdrop-mob">
+    <div class="modal-content-mob">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e3a8a; padding-bottom:8px; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:1.1rem; color:#00d2ff; font-weight:800;">
+          📋 CONFERÊNCIA DO RELATÓRIO DE EXPEDIENTE
+        </h3>
+        <button type="button" onclick="fecharModalConferencia()" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px; font-size:0.85rem; line-height:1.6; margin-bottom:12px;">
+        <div><strong>Setor:</strong> <span id="confSetor" style="color:#00d2ff;">-</span> | <strong>Data:</strong> <span id="confData">-</span> | <strong>Turno:</strong> <span id="confTurno">-</span></div>
+        <div><strong>Supervisor:</strong> <span id="confSupervisor">-</span></div>
+        <div><strong>Viatura:</strong> <span id="confViatura">-</span></div>
+        <div><strong>KM:</strong> <span id="confKmIni">-</span> até <span id="confKmFim">-</span> &bull; <strong>Total Rodado:</strong> <span id="confKmRodado" style="color:#4ade80; font-weight:800;">-</span></div>
+      </div>
+
+      <!-- Quadro de Contadores -->
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:12px; text-align:center;">
+        <div style="background:#091322; border:1px solid #1e3a8a; border-radius:6px; padding:6px 2px;">
+          <div style="font-size:1.1rem; font-weight:900; color:#fff;" id="confQtdTotal">0</div>
+          <div style="font-size:0.65rem; color:#94a3b8;">Total</div>
+        </div>
+        <div style="background:#091322; border:1px solid #1e3a8a; border-radius:6px; padding:6px 2px;">
+          <div style="font-size:1.1rem; font-weight:900; color:#4ade80;" id="confQtdSup">0</div>
+          <div style="font-size:0.65rem; color:#86efac;">Superv.</div>
+        </div>
+        <div style="background:#091322; border:1px solid #1e3a8a; border-radius:6px; padding:6px 2px;">
+          <div style="font-size:1.1rem; font-weight:900; color:#facc15;" id="confQtdPend">0</div>
+          <div style="font-size:0.65rem; color:#fef08a;">Pendentes</div>
+        </div>
+        <div style="background:#091322; border:1px solid #1e3a8a; border-radius:6px; padding:6px 2px;">
+          <div style="font-size:1.1rem; font-weight:900; color:#f87171;" id="confQtdNao">0</div>
+          <div style="font-size:0.65rem; color:#fecaca;">Não Superv.</div>
+        </div>
+      </div>
+
+      <!-- Alerta de Pendência se houver -->
+      <div id="confAlertaPendencias" style="display:none; background:#78350f; border:1px solid #d97706; border-radius:6px; padding:8px 10px; margin-bottom:12px; font-size:0.82rem; color:#fef3c7;">
+        ⚠️ <strong>Atenção:</strong> Existem postos com pendências ou não avaliados. Verifique antes de enviar!
+      </div>
+
+      <!-- Lista detalhada dos postos conferidos -->
+      <h4 style="margin:0 0 6px 0; font-size:0.85rem; color:#cbd5e1; text-transform:uppercase;">Discriminação dos Postos:</h4>
+      <div id="confListaPostos" style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:8px; max-height:220px; overflow-y:auto; font-size:0.82rem; margin-bottom:14px;">
+        <!-- Lista preenchida via JS -->
+      </div>
+
+      <div style="display:flex; gap:8px;">
+        <button type="button" onclick="fecharModalConferencia()" class="btn-mob-secondary" style="flex:1;">
+          ⬅ Voltar e Ajustar
+        </button>
+        <button type="button" id="btnConfirmarEnvioPelaConferencia" class="btn-mob-success" style="flex:2;">
+          ✓ Confirmar e Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DE VISUALIZAÇÃO CONSOLIDADA (PDF / IMPRESSÃO) ==================== -->
+  <div id="modalVisualizacaoRelatorio" class="modal-backdrop-mob">
+    <div class="modal-content-mob" id="printableRelatorio">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e3a8a; padding-bottom:8px; margin-bottom:12px;">
+        <div>
+          <span style="font-size:0.7rem; font-weight:800; color:#00d2ff;">CEDAE &bull; CCO CONTROLE OPERACIONAL</span>
+          <h3 id="visuRelTitulo" style="margin:2px 0 0 0; font-size:1.1rem; color:#fff;">RELATÓRIO CONSOLIDADO DO EXPEDIENTE</h3>
+        </div>
+        <button type="button" onclick="fecharModalVisualizacao()" class="no-print" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <div id="visuRelCorpo" style="font-size:0.85rem; line-height:1.6;">
+        <!-- Dados inseridos via JS -->
+      </div>
+
+      <div class="no-print" style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+        <button type="button" onclick="window.print()" class="btn-mob-secondary" style="flex:1;">🖨️ Imprimir / Salvar PDF</button>
+        <button type="button" onclick="fecharModalVisualizacao()" class="btn-mob-primary" style="flex:1;">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // Resolução inteligente da API: no app web oficial usa '/api/v1', em Android Capacitor ou file local usa o backend de produção
+      const PROD_CLOUD_URL = 'https://charge-trip-losing-scale.trycloudflare.com';
+      let API_BASE = '/api/v1';
+      if (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '3000') || (window.location.hostname === '127.0.0.1' && window.location.port !== '3000')) {
+        API_BASE = PROD_CLOUD_URL + '/api/v1';
+      }
+
+      function getHojeBrasiliaISO() {
+        try {
+          const parts = new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).formatToParts(new Date());
+          const map = {};
+          parts.forEach(p => map[p.type] = p.value);
+          return `${map.year}-${map.month}-${map.day}`;
+        } catch (e) {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+      }
+
+      function getAgoraBrasiliaHora() {
+        try {
+          const parts = new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          }).formatToParts(new Date());
+          const map = {};
+          parts.forEach(p => map[p.type] = p.value);
+          let h = map.hour === '24' ? '00' : map.hour;
+          return `${h}:${map.minute}`;
+        } catch (e) {
+          const d = new Date();
+          return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+      }
+      let currentUser = null;
+      let postosDoSetor = [];
+      let viaturasDoSetor = [];
+      let supervisoresDoSetor = [];
+      let ultimoRelatorioEnviado = null;
+      let textoWhatsAppGerado = '';
+      let isPlantao = false;
+
+      window.addEventListener('DOMContentLoaded', () => {
+        verificarConexao();
+        configurarPwa();
+        restaurarSessao();
+        setupKmCalculo();
+        setupAtalhosSituacao();
+        setupBotoesAcaoGerais();
+      });
+
+      let tentativasConexao = 0;
+      const MAX_TENTATIVAS = 3;
+      let timerRetryConexao = null;
+      let statusConexaoAtual = 'iniciando'; // 'conectado', 'conectando', 'servidor_indisponivel', 'offline'
+
+      window.tentarReconectarManualmente = function () {
+        tentativasConexao = 0;
+        if (timerRetryConexao) clearTimeout(timerRetryConexao);
+        testarConectividade();
+      };
+
+      window.addEventListener('online', () => {
+        tentativasConexao = 0;
+        testarConectividade();
+      });
+      window.addEventListener('offline', testarConectividade);
+      
+      // Checagem periódica não intrusiva a cada 30 segundos se conectado
+      setInterval(() => {
+        if (statusConexaoAtual === 'conectado') {
+          testarConectividade();
+        }
+      }, 30000);
+
+      async function testarConectividade() {
+        const offBanner = document.getElementById('conn-banner-offline');
+        if (!offBanner) return;
+
+        if (!navigator.onLine) {
+          statusConexaoAtual = 'offline';
+          offBanner.style.display = 'block';
+          offBanner.style.background = '#7f1d1d';
+          offBanner.style.color = '#fecaca';
+          offBanner.style.borderBottom = '1px solid #dc2626';
+          offBanner.innerHTML = '🔴 <strong>SEM CONEXÃO COM A INTERNET:</strong> Verifique seu Wi-Fi ou dados móveis.';
+          checarFilaOffline();
+          return;
+        }
+
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4500);
+          const res = await fetch(API_BASE + '/health', {
+            method: 'GET',
+            cache: 'no-store',
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const eraProblema = statusConexaoAtual !== 'conectado' && statusConexaoAtual !== 'iniciando';
+            statusConexaoAtual = 'conectado';
+            tentativasConexao = 0;
+            if (timerRetryConexao) clearTimeout(timerRetryConexao);
+
+            if (eraProblema) {
+              offBanner.style.display = 'block';
+              offBanner.style.background = '#065f46';
+              offBanner.style.color = '#d1fae5';
+              offBanner.style.borderBottom = '1px solid #059669';
+              offBanner.innerHTML = '🟢 <strong>SERVIDOR CONECTADO:</strong> Comunicação com o CCO restabelecida.';
+              setTimeout(() => {
+                if (statusConexaoAtual === 'conectado') {
+                  offBanner.style.display = 'none';
+                }
+              }, 3000);
+            } else {
+              offBanner.style.display = 'none';
+            }
+            checarFilaOffline();
+            return;
+          } else {
+            throw new Error(`Servidor retornou HTTP ${res.status}`);
+          }
+        } catch (err) {
+          tentativasConexao++;
+          if (tentativasConexao < MAX_TENTATIVAS) {
+            statusConexaoAtual = 'conectando';
+            const backoffMs = Math.min(2000 * Math.pow(2, tentativasConexao - 1), 8000);
+            offBanner.style.display = 'block';
+            offBanner.style.background = '#78350f';
+            offBanner.style.color = '#fef3c7';
+            offBanner.style.borderBottom = '1px solid #d97706';
+            offBanner.innerHTML = `🟠 <strong>CONECTANDO AO CCO (Tentativa ${tentativasConexao} de ${MAX_TENTATIVAS}):</strong> Aguardando resposta do servidor em ${Math.round(backoffMs / 1000)}s...`;
+            
+            if (timerRetryConexao) clearTimeout(timerRetryConexao);
+            timerRetryConexao = setTimeout(testarConectividade, backoffMs);
+          } else {
+            statusConexaoAtual = 'servidor_indisponivel';
+            offBanner.style.display = 'block';
+            offBanner.style.background = '#7f1d1d';
+            offBanner.style.color = '#fecaca';
+            offBanner.style.borderBottom = '1px solid #dc2626';
+            offBanner.innerHTML = `
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span>🔴 <strong>SERVIDOR INDISPONÍVEL:</strong> O servidor do CCO não respondeu após ${MAX_TENTATIVAS} tentativas.</span>
+                <button type="button" onclick="tentarReconectarManualmente()" style="background:#dc2626; color:#ffffff; border:1px solid #f87171; border-radius:4px; padding:4px 12px; font-weight:800; cursor:pointer; font-size:12px;">
+                  🔄 Tentar Novamente
+                </button>
+              </div>
+            `;
+          }
+        }
+        checarFilaOffline();
+      }
+
+      function verificarConexao() {
+        testarConectividade();
+      }
+
+      function checarFilaOffline() {
+        const pendente = localStorage.getItem('cco_offline_relatorio');
+        const syncBanner = document.getElementById('conn-banner-sync');
+        if (pendente && navigator.onLine) {
+          syncBanner.style.display = 'flex';
+        } else {
+          syncBanner.style.display = 'none';
+        }
+      }
+
+      function configurarPwa() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('/sw.js').then(reg => { reg.update().catch(() => {}); }).catch(() => {});
+        }
+      }
+
+      function restaurarSessao() {
+        const token = localStorage.getItem('cco_token');
+        const userJson = localStorage.getItem('cco_user');
+        if (token && userJson) {
+          try {
+            currentUser = JSON.parse(userJson);
+            iniciarPainelSupervisao();
+          } catch (e) {
+            encerrarSessao();
+          }
+        }
+      }
+
+      function encerrarSessao() {
+        localStorage.removeItem('cco_token');
+        localStorage.removeItem('cco_user');
+        currentUser = null;
+        document.getElementById('view-login').style.display = 'block';
+        document.getElementById('view-supervisao').style.display = 'none';
+        document.getElementById('view-sucesso').style.display = 'none';
+        document.getElementById('auth-actions').style.display = 'none';
+      }
+
+      document.getElementById('btn-logout').addEventListener('click', () => {
+        if (confirm('Deseja realmente sair do aplicativo CCO Supervisão?')) {
+          encerrarSessao();
+        }
+      });
+
+      // 1. LOGIN
+      document.getElementById('form-login').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const usuario = document.getElementById('login-usuario').value.trim();
+        const senha = document.getElementById('login-senha').value;
+        const errDiv = document.getElementById('login-erro');
+        const btn = document.getElementById('btn-entrar');
+
+        errDiv.style.display = 'none';
+        btn.disabled = true;
+        btn.textContent = 'Autenticando...';
+
+        try {
+          const res = await fetch(API_BASE + '/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ usuario, senha })
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || 'Credenciais inválidas.');
+          }
+
+          localStorage.setItem('cco_token', data.token);
+          localStorage.setItem('cco_user', JSON.stringify(data.usuario));
+          currentUser = data.usuario;
+          iniciarPainelSupervisao();
+        } catch (err) {
+          errDiv.textContent = err.message;
+          errDiv.style.display = 'block';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '[ ENTRAR NO APLICATIVO ]';
+        }
+      });
+
+      // 2. INICIAR PAINEL
+      async function iniciarPainelSupervisao() {
+        document.getElementById('view-login').style.display = 'none';
+        document.getElementById('view-sucesso').style.display = 'none';
+        document.getElementById('view-supervisao').style.display = 'block';
+        document.getElementById('auth-actions').style.display = 'flex';
+
+        document.getElementById('header-user-nome').textContent = currentUser.nome || 'SUPERVISOR';
+        document.getElementById('sup-nome-bold').textContent = currentUser.nome || 'SUPERVISOR';
+        document.getElementById('sup-setor-badge').textContent = currentUser.setor_nome || 'SETOR';
+        document.getElementById('inputResponsavel').value = currentUser.nome || '';
+        document.getElementById('inputDataServico').value = getHojeBrasiliaISO();
+
+        await carregarEstruturaSetor();
+      }
+
+      // 3. CARREGAR ESTRUTURA DO SETOR (SUPERVISORES, VIATURAS E POSTOS)
+      async function carregarEstruturaSetor() {
+        const sId = currentUser.setor_id || 4;
+        try {
+          const res = await fetch(API_BASE + '/formulario/setor/' + sId);
+          const data = await res.json();
+
+          if (!res.ok || !data.setor) {
+            throw new Error('Falha ao carregar dados do setor.');
+          }
+
+          isPlantao = data.isPlantao || (data.setor.nome && data.setor.nome.toUpperCase().includes('PLANT'));
+          supervisoresDoSetor = data.supervisores || [];
+          viaturasDoSetor = data.viaturas || [];
+          postosDoSetor = data.postos || [];
+
+          popularSupervisores(supervisoresDoSetor);
+          popularViaturas(viaturasDoSetor);
+          renderizarPostos(postosDoSetor);
+        } catch (err) {
+          console.warn('Erro ao carregar dados do setor:', err);
+          alert('Erro ao carregar dados do setor: ' + err.message);
+        }
+      }
+
+      function popularSupervisores(sups) {
+        const select = document.getElementById('selectSupervisorAtivo');
+        select.innerHTML = '<option value="">Selecione o supervisor da escala...</option>';
+        if (sups && sups.length > 0) {
+          sups.forEach(s => {
+            const mat = s.matricula ? ' (Mat. ' + s.matricula + ')' : '';
+            const selected = (currentUser && (currentUser.supervisor_id === s.id || currentUser.nome === s.nome)) ? 'selected' : '';
+            select.innerHTML += '<option value="' + s.id + '" data-nome="' + s.nome + '" ' + selected + '>' + s.nome + mat + '</option>';
+          });
+        }
+        select.addEventListener('change', (e) => {
+          const opt = select.selectedOptions[0];
+          if (opt && opt.dataset.nome) {
+            document.getElementById('inputResponsavel').value = opt.dataset.nome;
+          }
+        });
+      }
+
+      function popularViaturas(vtrs) {
+        const select = document.getElementById('selectViatura');
+        select.innerHTML = '<option value="">Selecione a viatura...</option>';
+        if (vtrs && vtrs.length > 0) {
+          vtrs.forEach(v => {
+            const pref = v.prefixo ? ' (' + v.prefixo + ')' : '';
+            select.innerHTML += '<option value="' + v.id + '">' + v.tipo_modelo + ' — Placa: ' + v.placa + pref + '</option>';
+          });
+        }
+        select.innerHTML += '<option value="OUTROS">OUTROS — (Veículo Sobressalente / Não Cadastrado)</option>';
+
+        select.addEventListener('change', (e) => {
+          const gOutros = document.getElementById('grupoViaturaOutros');
+          const inpOutros = document.getElementById('inputViaturaOutros');
+          if (e.target.value === 'OUTROS') {
+            gOutros.style.display = 'block';
+            inpOutros.required = true;
+          } else {
+            gOutros.style.display = 'none';
+            inpOutros.required = false;
+          }
+        });
+      }
+
+      // 4. CÁLCULO DE KM
+      function setupKmCalculo() {
+        const ini = document.getElementById('kmInicial');
+        const fim = document.getElementById('kmFinal');
+        const rod = document.getElementById('kmRodado');
+
+        const calc = () => {
+          const vIni = parseFloat(ini.value) || 0;
+          const vFim = parseFloat(fim.value) || 0;
+          if (vFim >= vIni && vFim > 0) {
+            rod.value = (vFim - vIni).toFixed(1) + ' km';
+          } else {
+            rod.value = '0.0 km';
+          }
+        };
+
+        ini.addEventListener('input', calc);
+        fim.addEventListener('input', calc);
+      }
+
+      // 5. ATALHOS RÁPIDOS DE SITUAÇÃO
+      function setupAtalhosSituacao() {
+        document.getElementById('btnMarcarTodosNormal').addEventListener('click', () => {
+          document.querySelectorAll('.select-situacao-posto').forEach(s => {
+            s.value = 'NORMAL';
+            s.dispatchEvent(new Event('change'));
+          });
+        });
+        document.getElementById('btnMarcarTodosSemAlt').addEventListener('click', () => {
+          document.querySelectorAll('.select-situacao-posto').forEach(s => {
+            s.value = 'SEM_ALTERACAO';
+            s.dispatchEvent(new Event('change'));
+          });
+        });
+      }
+
+      function setupBotoesAcaoGerais() {
+        document.getElementById('btnAtualizarListaPostos')?.addEventListener('click', async () => {
+          await carregarEstruturaSetor();
+          alert('✓ Lista de postos e viaturas atualizada em tempo real com o servidor CCO.');
+        });
+      }
+
+      // 6. RENDERIZAR POSTOS
+      function renderizarPostos(postos) {
+        const container = document.getElementById('postosContainerMob');
+        container.innerHTML = '';
+
+        if (isPlantao) {
+          document.getElementById('lblQtdPostosSetor').textContent = '59 postos disponíveis (até 12 por turno)';
+          document.getElementById('badgeTipoSetor').textContent = 'PLANTÃO (59 POSTOS)';
+
+          let optsPlantao = '<option value="">-- [Vazio / Selecione o Posto Supervisionado] --</option>';
+          optsPlantao += '<option value="MANUAL">➕ OUTRO POSTO (Digitar manualmente)</option>';
+          postos.forEach(p => {
+            const rotuloOrigem = p.setor_origem ? ' [' + p.setor_origem + ']' : '';
+            optsPlantao += '<option value="' + p.id + '" data-nome="' + encodeURIComponent(p.nome) + '" data-end="' + encodeURIComponent(p.endereco||'') + '" data-loc="' + encodeURIComponent(p.localidade||'') + '" data-emp="' + encodeURIComponent(p.empresa||'') + '">' + p.nome + ' — ' + (p.localidade||'RJ') + rotuloOrigem + '</option>';
+          });
+
+          for (let i = 1; i <= 12; i++) {
+            container.innerHTML += criarCardPostoPlantaoHtml(i, optsPlantao);
+          }
+          setupListenersPlantao();
+        } else {
+          document.getElementById('lblQtdPostosSetor').textContent = postos.length + ' postos';
+          document.getElementById('badgeTipoSetor').textContent = 'SETOR REGIONAL';
+
+          let optsReg = '<option value="">-- [Vazio / Posto Não Fiscalizado] --</option>';
+          postos.forEach(p => {
+            optsReg += '<option value="' + p.id + '">' + p.nome + ' (' + (p.empresa || 'CEDAE') + ')</option>';
+          });
+
+          for (let i = 1; i <= postos.length; i++) {
+            container.innerHTML += criarCardPostoRegularHtml(i, optsReg);
+          }
+          setupListenersRegular();
+        }
+
+        atualizarContadores();
+      }
+
+      function criarCardPostoPlantaoHtml(slot, opts) {
+        const num = slot.toString().padStart(2, '0');
+        return '<div class="posto-card-mob plantao-card" data-slot="' + slot + '" id="card_slot_' + slot + '">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e3a8a; padding-bottom:6px; margin-bottom:8px;">' +
+            '<strong style="color:#00d2ff; font-size:0.95rem;">🏢 POSTO ' + num + '</strong>' +
+            '<span class="badge-situacao badge-sit-sem-alt" id="badge_slot_' + slot + '">Vazio / Não Utilizado</span>' +
+          '</div>' +
+          '<div class="form-group-mobile" style="margin-bottom:8px;">' +
+            '<select class="select-mobile plantao-select-posto" data-slot="' + slot + '" id="sel_posto_' + slot + '">' +
+              opts +
+            '</select>' +
+          '</div>' +
+          '<div id="wrap_manual_' + slot + '" style="display:none; margin-bottom:8px;">' +
+            '<input type="text" class="input-mobile" id="manual_posto_' + slot + '" placeholder="Nome do posto digitado...">' +
+          '</div>' +
+          '<div class="bloco-campos-posto" id="campos_slot_' + slot + '" style="display:none; background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px;">' +
+            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">' +
+              '<div>' +
+                '<label style="font-size:0.75rem; color:#94a3b8; font-weight:700;">Hora da Ronda *</label>' +
+                '<input type="time" class="input-mobile campo-hora" data-slot="' + slot + '" id="hora_slot_' + slot + '" style="min-height:38px;">' +
+              '</div>' +
+              '<div>' +
+                '<label style="font-size:0.75rem; color:#94a3b8; font-weight:700;">KM no Posto *</label>' +
+                '<input type="number" step="0.1" class="input-mobile campo-km" data-slot="' + slot + '" id="km_slot_' + slot + '" placeholder="0.0" style="min-height:38px;">' +
+              '</div>' +
+            '</div>' +
+            '<div class="form-group-mobile" style="margin-bottom:8px;">' +
+              '<label style="font-size:0.75rem; color:#94a3b8; font-weight:700;">Situação Encontrada *</label>' +
+              '<select class="select-mobile select-situacao-posto" data-slot="' + slot + '" id="situacao_slot_' + slot + '" style="min-height:38px;">' +
+                '<option value="NORMAL">🟢 NORMAL</option>' +
+                '<option value="SEM_ALTERACAO">⚪ SEM ALTERAÇÃO</option>' +
+                '<option value="COM_OCORRENCIA">🔴 COM OCORRÊNCIA</option>' +
+                '<option value="PENDENCIA">🟡 PENDÊNCIA</option>' +
+                '<option value="NAO_SUPERVISIONADO">⚫ NÃO SUPERVISIONADO</option>' +
+              '</select>' +
+            '</div>' +
+            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; background:#040911; padding:8px; border-radius:6px; margin-bottom:8px;">' +
+              '<div>' +
+                '<span style="font-size:0.75rem; color:#cbd5e1; font-weight:700; display:block; margin-bottom:4px;">Efetivo Completo?</span>' +
+                '<div style="display:flex; gap:12px;">' +
+                  '<label style="color:#4ade80; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="efetivo_' + slot + '" value="SIM" checked class="rad-efetivo" data-slot="' + slot + '"> SIM</label>' +
+                  '<label style="color:#f87171; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="efetivo_' + slot + '" value="NAO" class="rad-efetivo" data-slot="' + slot + '"> NÃO</label>' +
+                '</div>' +
+                '<div id="wrap_falta_' + slot + '" style="display:none; margin-top:4px;">' +
+                  '<input type="text" class="input-mobile" id="falta_' + slot + '" placeholder="Falta de efetivo..." style="min-height:32px; font-size:12px;">' +
+                '</div>' +
+              '</div>' +
+              '<div>' +
+                '<span style="font-size:0.75rem; color:#cbd5e1; font-weight:700; display:block; margin-bottom:4px;">Ocorrência?</span>' +
+                '<div style="display:flex; gap:12px;">' +
+                  '<label style="color:#cbd5e1; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="ocorr_' + slot + '" value="NAO" checked class="rad-ocorr" data-slot="' + slot + '"> NÃO</label>' +
+                  '<label style="color:#f87171; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="ocorr_' + slot + '" value="SIM" class="rad-ocorr" data-slot="' + slot + '"> SIM</label>' +
+                '</div>' +
+                '<div id="wrap_ocorr_desc_' + slot + '" style="display:none; margin-top:4px;">' +
+                  '<input type="text" class="input-mobile" id="ocorr_desc_' + slot + '" placeholder="Detalhar ocorrência..." style="min-height:32px; font-size:12px;">' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div id="wrap_motivo_ns_' + slot + '" style="display:none; background:#20111a; border:1px solid #7f1d1d; border-radius:6px; padding:8px; margin-bottom:8px;">' +
+              '<label style="font-size:0.75rem; color:#fca5a5; font-weight:700;">Motivo da Não Supervisão *</label>' +
+              '<select class="select-mobile" id="motivo_sel_' + slot + '" style="min-height:36px; margin-bottom:4px;">' +
+                '<option value="">Selecione o motivo...</option>' +
+                '<option value="Posto fechado">Posto fechado</option>' +
+                '<option value="Sem acesso ao local">Sem acesso ao local</option>' +
+                '<option value="Impedimento operacional">Impedimento operacional</option>' +
+                '<option value="Viatura indisponível">Viatura indisponível</option>' +
+                '<option value="Falta de efetivo">Falta de efetivo</option>' +
+                '<option value="Emergência operacional">Emergência operacional</option>' +
+                '<option value="Condições climáticas">Condições climáticas</option>' +
+                '<option value="Outro">Outro (especificar)</option>' +
+              '</select>' +
+              '<input type="text" class="input-mobile" id="motivo_outro_' + slot + '" placeholder="Descreva o motivo..." style="min-height:34px; font-size:12px;">' +
+            '</div>' +
+            '<div style="display:flex; justify-content:space-between; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid #1e293b;">' +
+              '<button type="button" class="btn-card-ctrl" onclick="salvarPostoIndividual(' + slot + ', \'plantao\')">💾 Salvar</button>' +
+              '<button type="button" class="btn-card-ctrl" style="background:#0284c7; color:#fff;" onclick="avancarParaProximoPosto(' + slot + ', \'plantao\')">Avançar ➡</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      function criarCardPostoRegularHtml(slot, opts) {
+        const num = slot.toString().padStart(2, '0');
+        return '<div class="posto-card-mob regular-card" data-slot="' + slot + '" id="reg_card_' + slot + '">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e3a8a; padding-bottom:6px; margin-bottom:8px;">' +
+            '<strong style="color:#00d2ff; font-size:0.95rem;">🏢 POSTO ' + num + '</strong>' +
+            '<span class="badge-situacao badge-sit-sem-alt" id="reg_badge_' + slot + '">Vazio / Não Utilizado</span>' +
+          '</div>' +
+          '<div class="form-group-mobile" style="margin-bottom:8px;">' +
+            '<select class="select-mobile reg-select-posto" data-slot="' + slot + '" id="reg_sel_posto_' + slot + '">' +
+              opts +
+            '</select>' +
+          '</div>' +
+          '<div class="bloco-campos-posto" id="reg_campos_' + slot + '" style="display:none; background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px;">' +
+            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">' +
+              '<div>' +
+                '<label style="font-size:0.75rem; color:#94a3b8; font-weight:700;">Hora da Ronda *</label>' +
+                '<input type="time" class="input-mobile campo-hora" data-slot="' + slot + '" id="reg_hora_' + slot + '" style="min-height:38px;">' +
+              '</div>' +
+              '<div>' +
+                '<label style="font-size:0.75rem; color:#94a3b8; font-weight:700;">KM no Posto *</label>' +
+                '<input type="number" step="0.1" class="input-mobile campo-km" data-slot="' + slot + '" id="reg_km_' + slot + '" placeholder="0.0" style="min-height:38px;">' +
+              '</div>' +
+            '</div>' +
+            '<div class="form-group-mobile" style="margin-bottom:8px;">' +
+              '<label style="font-size:0.75rem; color:#94a3b8; font-weight:700;">Situação Encontrada *</label>' +
+              '<select class="select-mobile select-situacao-posto" data-slot="' + slot + '" id="reg_situacao_' + slot + '" style="min-height:38px;">' +
+                '<option value="NORMAL">🟢 NORMAL</option>' +
+                '<option value="SEM_ALTERACAO">⚪ SEM ALTERAÇÃO</option>' +
+                '<option value="COM_OCORRENCIA">🔴 COM OCORRÊNCIA</option>' +
+                '<option value="PENDENCIA">🟡 PENDÊNCIA</option>' +
+                '<option value="NAO_SUPERVISIONADO">⚫ NÃO SUPERVISIONADO</option>' +
+              '</select>' +
+            '</div>' +
+            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; background:#040911; padding:8px; border-radius:6px; margin-bottom:8px;">' +
+              '<div>' +
+                '<span style="font-size:0.75rem; color:#cbd5e1; font-weight:700; display:block; margin-bottom:4px;">Efetivo Completo?</span>' +
+                '<div style="display:flex; gap:12px;">' +
+                  '<label style="color:#4ade80; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="reg_efetivo_' + slot + '" value="SIM" checked class="rad-efetivo" data-slot="' + slot + '"> SIM</label>' +
+                  '<label style="color:#f87171; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="reg_efetivo_' + slot + '" value="NAO" class="rad-efetivo" data-slot="' + slot + '"> NÃO</label>' +
+                '</div>' +
+                '<div id="reg_wrap_falta_' + slot + '" style="display:none; margin-top:4px;">' +
+                  '<input type="text" class="input-mobile" id="reg_falta_' + slot + '" placeholder="Falta de efetivo..." style="min-height:32px; font-size:12px;">' +
+                '</div>' +
+              '</div>' +
+              '<div>' +
+                '<span style="font-size:0.75rem; color:#cbd5e1; font-weight:700; display:block; margin-bottom:4px;">Ocorrência?</span>' +
+                '<div style="display:flex; gap:12px;">' +
+                  '<label style="color:#cbd5e1; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="reg_ocorr_' + slot + '" value="NAO" checked class="rad-ocorr" data-slot="' + slot + '"> NÃO</label>' +
+                  '<label style="color:#f87171; font-size:0.8rem; font-weight:700; cursor:pointer;"><input type="radio" name="reg_ocorr_' + slot + '" value="SIM" class="rad-ocorr" data-slot="' + slot + '"> SIM</label>' +
+                '</div>' +
+                '<div id="reg_wrap_ocorr_desc_' + slot + '" style="display:none; margin-top:4px;">' +
+                  '<input type="text" class="input-mobile" id="reg_ocorr_desc_' + slot + '" placeholder="Detalhar ocorrência..." style="min-height:32px; font-size:12px;">' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div id="reg_wrap_motivo_ns_' + slot + '" style="display:none; background:#20111a; border:1px solid #7f1d1d; border-radius:6px; padding:8px; margin-bottom:8px;">' +
+              '<label style="font-size:0.75rem; color:#fca5a5; font-weight:700;">Motivo da Não Supervisão *</label>' +
+              '<select class="select-mobile" id="reg_motivo_sel_' + slot + '" style="min-height:36px; margin-bottom:4px;">' +
+                '<option value="">Selecione o motivo...</option>' +
+                '<option value="Posto fechado">Posto fechado</option>' +
+                '<option value="Sem acesso ao local">Sem acesso ao local</option>' +
+                '<option value="Impedimento operacional">Impedimento operacional</option>' +
+                '<option value="Viatura indisponível">Viatura indisponível</option>' +
+                '<option value="Falta de efetivo">Falta de efetivo</option>' +
+                '<option value="Emergência operacional">Emergência operacional</option>' +
+                '<option value="Condições climáticas">Condições climáticas</option>' +
+                '<option value="Outro">Outro (especificar)</option>' +
+              '</select>' +
+              '<input type="text" class="input-mobile" id="reg_motivo_outro_' + slot + '" placeholder="Descreva o motivo..." style="min-height:34px; font-size:12px;">' +
+            '</div>' +
+            '<div style="display:flex; justify-content:space-between; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid #1e293b;">' +
+              '<button type="button" class="btn-card-ctrl" onclick="salvarPostoIndividual(' + slot + ', \'regular\')">💾 Salvar</button>' +
+              '<button type="button" class="btn-card-ctrl" style="background:#0284c7; color:#fff;" onclick="avancarParaProximoPosto(' + slot + ', \'regular\')">Avançar ➡</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      function setupListenersPlantao() {
+        document.querySelectorAll('.plantao-select-posto').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const slot = e.target.dataset.slot;
+            const val = e.target.value;
+            const campos = document.getElementById('campos_slot_' + slot);
+            const manualWrap = document.getElementById('wrap_manual_' + slot);
+            const badge = document.getElementById('badge_slot_' + slot);
+            const hora = document.getElementById('hora_slot_' + slot);
+
+            if (val) {
+              campos.style.display = 'block';
+              if (val === 'MANUAL') {
+                manualWrap.style.display = 'block';
+              } else {
+                manualWrap.style.display = 'none';
+              }
+              if (!hora.value) {
+                hora.value = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+              }
+              badge.textContent = 'Preenchendo...';
+              badge.className = 'badge-situacao badge-sit-pendencia';
+            } else {
+              campos.style.display = 'none';
+              manualWrap.style.display = 'none';
+              badge.textContent = 'Vazio / Não Utilizado';
+              badge.className = 'badge-situacao badge-sit-sem-alt';
+            }
+            atualizarContadores();
+          });
+        });
+
+        setupComunsSlots('plantao');
+      }
+
+      function setupListenersRegular() {
+        document.querySelectorAll('.reg-select-posto').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const slot = e.target.dataset.slot;
+            const val = e.target.value;
+            const campos = document.getElementById('reg_campos_' + slot);
+            const badge = document.getElementById('reg_badge_' + slot);
+            const hora = document.getElementById('reg_hora_' + slot);
+
+            if (val) {
+              campos.style.display = 'block';
+              if (!hora.value) {
+                hora.value = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+              }
+              badge.textContent = 'Preenchendo...';
+              badge.className = 'badge-situacao badge-sit-pendencia';
+            } else {
+              campos.style.display = 'none';
+              badge.textContent = 'Vazio / Não Utilizado';
+              badge.className = 'badge-situacao badge-sit-sem-alt';
+            }
+            atualizarContadores();
+          });
+        });
+
+        setupComunsSlots('regular');
+      }
+
+      function setupComunsSlots(prefixo) {
+        const isReg = prefixo === 'regular';
+
+        // Situação
+        const sitSelector = isReg ? '.reg-situacao, #view-supervisao .select-situacao-posto' : '.select-situacao-posto';
+        document.querySelectorAll(sitSelector).forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const slot = e.target.dataset.slot;
+            const val = e.target.value;
+            const card = document.getElementById(isReg ? ('reg_card_' + slot) : ('card_slot_' + slot));
+            const badge = document.getElementById(isReg ? ('reg_badge_' + slot) : ('badge_slot_' + slot));
+            const wrapMotivo = document.getElementById(isReg ? ('reg_wrap_motivo_ns_' + slot) : ('wrap_motivo_ns_' + slot));
+
+            if (card) {
+              card.classList.remove('status-normal', 'status-ocorrencia', 'status-pendencia', 'status-nao-sup');
+              if (val === 'NORMAL' || val === 'SEM_ALTERACAO') card.classList.add('status-normal');
+              else if (val === 'COM_OCORRENCIA') card.classList.add('status-ocorrencia');
+              else if (val === 'PENDENCIA') card.classList.add('status-pendencia');
+              else if (val === 'NAO_SUPERVISIONADO') card.classList.add('status-nao-sup');
+            }
+
+            if (badge) {
+              badge.className = 'badge-situacao';
+              if (val === 'NORMAL') { badge.textContent = '🟢 NORMAL'; badge.classList.add('badge-sit-normal'); }
+              else if (val === 'SEM_ALTERACAO') { badge.textContent = '⚪ SEM ALTERAÇÃO'; badge.classList.add('badge-sit-sem-alt'); }
+              else if (val === 'COM_OCORRENCIA') { badge.textContent = '🔴 COM OCORRÊNCIA'; badge.classList.add('badge-sit-ocorrencia'); }
+              else if (val === 'PENDENCIA') { badge.textContent = '🟡 PENDÊNCIA'; badge.classList.add('badge-sit-pendencia'); }
+              else if (val === 'NAO_SUPERVISIONADO') { badge.textContent = '⚫ NÃO SUPERVISIONADO'; badge.classList.add('badge-sit-nao-sup'); }
+            }
+
+            if (wrapMotivo) {
+              wrapMotivo.style.display = (val === 'NAO_SUPERVISIONADO') ? 'block' : 'none';
+            }
+
+            atualizarContadores();
+          });
+        });
+
+        // Efetivo Radio
+        document.querySelectorAll('.rad-efetivo').forEach(r => {
+          r.addEventListener('change', (e) => {
+            const slot = e.target.dataset.slot;
+            const wrapFalta = document.getElementById(isReg ? ('reg_wrap_falta_' + slot) : ('wrap_falta_' + slot));
+            if (wrapFalta) wrapFalta.style.display = (e.target.value === 'NAO') ? 'block' : 'none';
+          });
+        });
+
+        // Ocorrência Radio
+        document.querySelectorAll('.rad-ocorr').forEach(r => {
+          r.addEventListener('change', (e) => {
+            const slot = e.target.dataset.slot;
+            const wrapOcorr = document.getElementById(isReg ? ('reg_wrap_ocorr_desc_' + slot) : ('wrap_ocorr_desc_' + slot));
+            if (wrapOcorr) wrapOcorr.style.display = (e.target.value === 'SIM') ? 'block' : 'none';
+          });
+        });
+      }
+
+      window.salvarPostoIndividual = function(slot, tipo) {
+        atualizarContadores();
+        const badge = document.getElementById(tipo === 'regular' ? ('reg_badge_' + slot) : ('badge_slot_' + slot));
+        if (badge) {
+          const original = badge.textContent;
+          badge.textContent = '✓ Registrado';
+          setTimeout(() => { badge.textContent = original; }, 1500);
+        }
+      };
+
+      window.avancarParaProximoPosto = function(slot, tipo) {
+        salvarPostoIndividual(slot, tipo);
+        const proximo = slot + 1;
+        const proxCard = document.getElementById(tipo === 'regular' ? ('reg_card_' + proximo) : ('card_slot_' + proximo));
+        if (proxCard) {
+          proxCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const selProx = proxCard.querySelector('select');
+          if (selProx && !selProx.value && selProx.options.length > 1) {
+            selProx.selectedIndex = 1;
+            selProx.dispatchEvent(new Event('change'));
+          }
+        } else {
+          alert('Você concluiu o preenchimento de todos os postos. Clique em "CONFERIR RELATÓRIO DO EXPEDIENTE" para revisar.');
+          document.getElementById('btnAbrirConferencia')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      };
+
+      function atualizarContadores() {
+        const postosColetados = coletarDadosPostosPreenchidos();
+        let total = postosColetados.length;
+        let sup = 0, pend = 0, nao = 0;
+
+        postosColetados.forEach(p => {
+          if (p.supervisionado === 1) sup++;
+          else nao++;
+          if (p.status_supervisao === 'PENDENCIA') pend++;
+        });
+
+        document.getElementById('cnt-total-postos').textContent = total;
+        document.getElementById('cnt-sup-postos').textContent = sup;
+        document.getElementById('cnt-pend-postos').textContent = pend;
+        document.getElementById('cnt-nao-postos').textContent = nao;
+      }
+
+      // 7. COLETAR DADOS DOS POSTOS PREENCHIDOS
+      function coletarDadosPostosPreenchidos() {
+        const resultado = [];
+
+        if (isPlantao) {
+          for (let i = 1; i <= 12; i++) {
+            const sel = document.getElementById('sel_posto_' + i);
+            if (!sel || !sel.value) continue;
+
+            let pId = null;
+            let nomePosto = '';
+            let endPosto = '';
+            let locPosto = '';
+            let empPosto = '';
+
+            if (sel.value === 'MANUAL') {
+              nomePosto = document.getElementById('manual_posto_' + i)?.value.trim() || 'Posto Manual';
+              endPosto = 'Cadastrado manualmente via Supervisão do Plantão';
+              locPosto = 'Rio de Janeiro';
+              empPosto = 'CEDAE';
+            } else {
+              pId = parseInt(sel.value);
+              const opt = sel.selectedOptions[0];
+              nomePosto = decodeURIComponent(opt.dataset.nome || '');
+              endPosto = decodeURIComponent(opt.dataset.end || '');
+              locPosto = decodeURIComponent(opt.dataset.loc || '');
+              empPosto = decodeURIComponent(opt.dataset.emp || '');
+            }
+
+            const hora = document.getElementById('hora_slot_' + i)?.value || '';
+            const km = document.getElementById('km_slot_' + i)?.value;
+            const situacao = document.getElementById('situacao_slot_' + i)?.value || 'NORMAL';
+            const efetivoVal = document.querySelector('input[name="efetivo_' + i + '"]:checked')?.value || 'SIM';
+            const faltaTxt = document.getElementById('falta_' + i)?.value.trim() || '';
+            const ocorrVal = document.querySelector('input[name="ocorr_' + i + '"]:checked')?.value || 'NAO';
+            const ocorrTxt = document.getElementById('ocorr_desc_' + i)?.value.trim() || '';
+
+            const isSup = (situacao !== 'NAO_SUPERVISIONADO');
+            let motivoNao = null;
+            if (!isSup) {
+              const mSel = document.getElementById('motivo_sel_' + i)?.value || '';
+              const mOutro = document.getElementById('motivo_outro_' + i)?.value.trim() || '';
+              motivoNao = mSel === 'Outro' ? mOutro : (mSel || mOutro);
+            }
+
+            resultado.push({
+              slot: i,
+              posto_id: pId,
+              posto_nome: nomePosto,
+              endereco: endPosto,
+              localidade: locPosto,
+              empresa: empPosto,
+              supervisionado: isSup ? 1 : 0,
+              status_supervisao: (ocorrVal === 'SIM' && situacao !== 'NAO_SUPERVISIONADO') ? 'COM_OCORRENCIA' : situacao,
+              motivo_nao_supervisao: motivoNao,
+              horario_supervisao: isSup ? hora : '',
+              km_posto: (isSup && km !== '' && km !== null) ? parseFloat(km) : null,
+              efetivo_completo: efetivoVal === 'SIM' ? 1 : 0,
+              falta_efetivo_qtd: efetivoVal === 'NAO' ? faltaTxt : null,
+              tem_ocorrencia: ocorrVal === 'SIM' ? 1 : 0,
+              descricao_ocorrencia: ocorrVal === 'SIM' ? ocorrTxt : null,
+              observacao: ocorrVal === 'SIM' ? ocorrTxt : (efetivoVal === 'NAO' ? ('Falta: ' + faltaTxt) : '')
+            });
+          }
+        } else {
+          // Regular
+          const totalCards = postosDoSetor.length;
+          for (let i = 1; i <= totalCards; i++) {
+            const sel = document.getElementById('reg_sel_posto_' + i);
+            if (!sel || !sel.value) continue;
+
+            const pId = parseInt(sel.value);
+            const nomePosto = sel.selectedOptions[0]?.textContent || ('Posto #' + pId);
+            const hora = document.getElementById('reg_hora_' + i)?.value || '';
+            const km = document.getElementById('reg_km_' + i)?.value;
+            const situacao = document.getElementById('reg_situacao_' + i)?.value || 'NORMAL';
+            const efetivoVal = document.querySelector('input[name="reg_efetivo_' + i + '"]:checked')?.value || 'SIM';
+            const faltaTxt = document.getElementById('reg_falta_' + i)?.value.trim() || '';
+            const ocorrVal = document.querySelector('input[name="reg_ocorr_' + i + '"]:checked')?.value || 'NAO';
+            const ocorrTxt = document.getElementById('reg_ocorr_desc_' + i)?.value.trim() || '';
+
+            const isSup = (situacao !== 'NAO_SUPERVISIONADO');
+            let motivoNao = null;
+            if (!isSup) {
+              const mSel = document.getElementById('reg_motivo_sel_' + i)?.value || '';
+              const mOutro = document.getElementById('reg_motivo_outro_' + i)?.value.trim() || '';
+              motivoNao = mSel === 'Outro' ? mOutro : (mSel || mOutro);
+            }
+
+            resultado.push({
+              slot: i,
+              posto_id: pId,
+              posto_nome: nomePosto,
+              supervisionado: isSup ? 1 : 0,
+              status_supervisao: (ocorrVal === 'SIM' && situacao !== 'NAO_SUPERVISIONADO') ? 'COM_OCORRENCIA' : situacao,
+              motivo_nao_supervisao: motivoNao,
+              horario_supervisao: isSup ? hora : '',
+              km_posto: (isSup && km !== '' && km !== null) ? parseFloat(km) : null,
+              efetivo_completo: efetivoVal === 'SIM' ? 1 : 0,
+              falta_efetivo_qtd: efetivoVal === 'NAO' ? faltaTxt : null,
+              tem_ocorrencia: ocorrVal === 'SIM' ? 1 : 0,
+              descricao_ocorrencia: ocorrVal === 'SIM' ? ocorrTxt : null,
+              observacao: ocorrVal === 'SIM' ? ocorrTxt : (efetivoVal === 'NAO' ? ('Falta: ' + faltaTxt) : '')
+            });
+          }
+        }
+
+        return resultado;
+      }
+
+      // 8. ETAPA CONFERIR RELATÓRIO
+      document.getElementById('btnAbrirConferencia').addEventListener('click', () => {
+        abrirModalConferencia();
+      });
+
+      function abrirModalConferencia() {
+        const postos = coletarDadosPostosPreenchidos();
+        if (postos.length === 0) {
+          alert('Por favor, selecione e preencha ao menos um posto antes de conferir o relatório.');
+          return;
+        }
+
+        const vtrSel = document.getElementById('selectViatura');
+        const vtrTexto = vtrSel.options[vtrSel.selectedIndex]?.text || 'Não informada';
+        const supSel = document.getElementById('selectSupervisorAtivo');
+        const supTexto = supSel?.options[supSel.selectedIndex]?.text || document.getElementById('inputResponsavel').value || currentUser.nome;
+
+        const kmIni = document.getElementById('kmInicial').value || '0';
+        const kmFim = document.getElementById('kmFinal').value || '0';
+        const kmRod = document.getElementById('kmRodado').value || '0.0 km';
+
+        document.getElementById('confSetor').textContent = currentUser.setor_nome || 'SETOR';
+        document.getElementById('confData').textContent = document.getElementById('inputDataServico').value;
+        document.getElementById('confTurno').textContent = document.getElementById('selectTurno').value;
+        document.getElementById('confSupervisor').textContent = supTexto;
+        document.getElementById('confViatura').textContent = vtrTexto;
+        document.getElementById('confKmIni').textContent = kmIni;
+        document.getElementById('confKmFim').textContent = kmFim;
+        document.getElementById('confKmRodado').textContent = kmRod;
+
+        let sup = 0, pend = 0, nao = 0;
+        const listaDiv = document.getElementById('confListaPostos');
+        listaDiv.innerHTML = '';
+
+        postos.forEach(p => {
+          let icone = '✓';
+          let cor = '#4ade80';
+          let txtSit = 'Supervisionado';
+
+          if (p.supervisionado === 1) {
+            sup++;
+            if (p.status_supervisao === 'COM_OCORRENCIA') {
+              icone = '⚠️';
+              cor = '#f87171';
+              txtSit = 'Com Ocorrência: ' + (p.descricao_ocorrencia || '');
+            } else if (p.status_supervisao === 'PENDENCIA') {
+              icone = '🟡';
+              cor = '#facc15';
+              txtSit = 'Pendência';
+              pend++;
+            } else {
+              txtSit = p.status_supervisao;
+            }
+          } else {
+            nao++;
+            icone = '✕';
+            cor = '#f87171';
+            txtSit = 'Não Supervisionado: ' + (p.motivo_nao_supervisao || 'Sem justificativa');
+          }
+
+          listaDiv.innerHTML += '<div style="padding:6px 0; border-bottom:1px solid #1e3a8a; display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">' +
+            '<div>' +
+              '<strong style="color:' + cor + ';">' + icone + ' ' + p.posto_nome + '</strong>' +
+              '<div style="font-size:0.75rem; color:#94a3b8;">' + txtSit + '</div>' +
+            '</div>' +
+            '<div style="text-align:right; font-size:0.75rem; color:#cbd5e1; white-space:nowrap;">' +
+              (p.horario_supervisao ? ('🕒 ' + p.horario_supervisao) : '') +
+              (p.km_posto !== null ? (' | 🚗 KM ' + p.km_posto) : '') +
+            '</div>' +
+          '</div>';
+        });
+
+        document.getElementById('confQtdTotal').textContent = postos.length;
+        document.getElementById('confQtdSup').textContent = sup;
+        document.getElementById('confQtdPend').textContent = pend;
+        document.getElementById('confQtdNao').textContent = nao;
+
+        const alerta = document.getElementById('confAlertaPendencias');
+        if (pend > 0 || nao > 0) {
+          alerta.style.display = 'block';
+        } else {
+          alerta.style.display = 'none';
+        }
+
+        document.getElementById('modalConferencia').classList.add('active');
+      }
+
+      window.fecharModalConferencia = function () {
+        document.getElementById('modalConferencia').classList.remove('active');
+      };
+
+      document.getElementById('btnConfirmarEnvioPelaConferencia').addEventListener('click', () => {
+        fecharModalConferencia();
+        executarEnvioFinal();
+      });
+
+      // 9. SUBMISSÃO DEFINITIVA
+      document.getElementById('formSupervisaoApp').addEventListener('submit', (e) => {
+        e.preventDefault();
+        executarEnvioFinal();
+      });
+
+      async function executarEnvioFinal() {
+        const postos = coletarDadosPostosPreenchidos();
+        if (postos.length === 0) {
+          alert('Por favor, selecione e preencha ao menos um posto fiscalizado.');
+          return;
+        }
+
+        // Validação estrita de cada posto preenchido
+        for (const p of postos) {
+          if (p.supervisionado === 0) {
+            if (!p.motivo_nao_supervisao || !p.motivo_nao_supervisao.trim()) {
+              alert('O posto "' + p.posto_nome + '" foi marcado como NÃO SUPERVISIONADO. Informe o Motivo da Não Supervisão.');
+              return;
+            }
+          } else {
+            if (!p.horario_supervisao) {
+              alert('Informe a Hora da supervisão para o posto "' + p.posto_nome + '".');
+              return;
+            }
+            if (p.km_posto === null || isNaN(p.km_posto)) {
+              alert('Informe o KM no posto para o posto "' + p.posto_nome + '".');
+              return;
+            }
+            if (p.efetivo_completo === 0 && !p.falta_efetivo_qtd) {
+              alert('Para o posto "' + p.posto_nome + '", o efetivo está incompleto. Descreva a falta.');
+              return;
+            }
+            if (p.tem_ocorrencia === 1 && !p.descricao_ocorrencia) {
+              alert('Para o posto "' + p.posto_nome + '", foi indicada ocorrência. Descreva a ocorrência.');
+              return;
+            }
+          }
+        }
+
+        const kmIni = parseFloat(document.getElementById('kmInicial').value) || 0;
+        const kmFim = parseFloat(document.getElementById('kmFinal').value) || 0;
+        if (kmFim < kmIni && kmFim > 0) {
+          alert('O KM Final não pode ser menor que o KM Inicial.');
+          return;
+        }
+
+        const supIdVal = document.getElementById('selectSupervisorAtivo').value;
+        const vtrVal = document.getElementById('selectViatura').value;
+        const vtrOutros = document.getElementById('inputViaturaOutros').value;
+        const ocorrGerais = document.getElementById('ocorrenciasGerais').value.trim();
+
+        const ocorrenciasExtra = [];
+        if (ocorrGerais) {
+          ocorrenciasExtra.push({
+            posto_id: null,
+            tipo_ocorrencia: 'Geral',
+            descricao: ocorrGerais,
+            providencias_adotadas: document.getElementById('providenciasGerais').value.trim() || 'Registrado pela supervisão',
+            status: 'resolvido'
+          });
+        }
+
+        const payload = {
+          client_uuid: 'sup_mob_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+          setor_id: currentUser.setor_id || 4,
+          supervisor_id: supIdVal ? parseInt(supIdVal) : (currentUser.id || null),
+          viatura_id: (vtrVal && vtrVal !== 'OUTROS') ? parseInt(vtrVal) : null,
+          viatura_outros_texto: vtrVal === 'OUTROS' ? vtrOutros : '',
+          data_servico: document.getElementById('inputDataServico').value,
+          turno: document.getElementById('selectTurno').value,
+          km_inicial: kmIni,
+          km_final: kmFim,
+          responsavel_nome: document.getElementById('inputResponsavel').value,
+          observacoes_gerais: ocorrGerais,
+          providencias_gerais: document.getElementById('providenciasGerais').value.trim(),
+          pendencias_gerais: document.getElementById('pendenciasGerais').value.trim(),
+          postos_supervisionados: postos,
+          ocorrencias: ocorrenciasExtra
+        };
+
+        const btnSubmit = document.getElementById('btnFinalizarExpediente');
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Enviando e auditando expediente...';
+
+        if (!navigator.onLine) {
+          // Fila offline
+          localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = '✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE';
+          exibirSucessoOffline(payload);
+          return;
+        }
+
+        const clientUuid = 'rel_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        payload.client_uuid = clientUuid;
+
+        try {
+          const res = await fetch(API_BASE + '/formulario/enviar', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + (localStorage.getItem('cco_token') || '')
+            },
+            body: JSON.stringify(payload)
+          });
+
+          let data = {};
+          try {
+            data = await res.json();
+          } catch (jsonErr) {
+            data = { error: 'Resposta inválida do servidor.' };
+          }
+
+          if (!res.ok) {
+            if (res.status === 409) {
+              alert('⚠️ RELATÓRIO JÁ REGISTRADO:\n' + (data.error || 'Já existe um relatório registrado para este supervisor, setor, data e turno. Evitando envio duplicado.'));
+              return;
+            }
+            if (res.status === 400) {
+              alert('⚠️ CAMPO OBRIGATÓRIO / ATENÇÃO:\n' + (data.error || 'Verifique o preenchimento de todos os postos.'));
+              return;
+            }
+            if (res.status === 403) {
+              alert('🚫 ACESSO NÃO AUTORIZADO:\n' + (data.error || 'Acesso negado para postos deste setor.'));
+              return;
+            }
+            if (res.status === 401) {
+              alert('🔒 SESSÃO EXPIRADA:\nSua sessão expirou. Faça login novamente.');
+              encerrarSessao();
+              return;
+            }
+            alert('❌ ERRO NO PROCESSAMENTO:\n' + (data.error || 'Ocorreu um erro no servidor do CCO.'));
+            return;
+          }
+
+          localStorage.removeItem('cco_offline_relatorio');
+          ultimoRelatorioEnviado = data;
+          textoWhatsAppGerado = data.texto_whatsapp || '';
+
+          exibirSucessoOnline(data, payload);
+        } catch (networkErr) {
+          console.warn('Erro de rede ao enviar relatório:', networkErr);
+          if (!navigator.onLine) {
+            localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
+            exibirSucessoOffline(payload);
+          } else {
+            const salvar = confirm('⚠️ NÃO FOI POSSÍVEL CONECTAR AO SERVIDOR DO CCO.\n\nDeseja salvar este relatório na memória do celular para sincronizar quando a conexão for restabelecida?');
+            if (salvar) {
+              localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
+              exibirSucessoOffline(payload);
+            }
+          }
+        } finally {
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = '✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE';
+        }
+      }
+
+      function exibirSucessoOnline(data, payload) {
+        document.getElementById('view-supervisao').style.display = 'none';
+        document.getElementById('view-sucesso').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        document.getElementById('sucesso-info-texto').innerHTML = '<strong>RELATÓRIO Nº ' + (data.id || 'REGISTRADO') + '</strong><br>' +
+          'Data: ' + payload.data_servico + ' &bull; Turno: ' + payload.turno + '<br>' +
+          'Setor: ' + (currentUser.setor_nome || 'SETOR') + ' &bull; Postos: ' + payload.postos_supervisionados.length;
+
+        document.getElementById('sucessoWhatsPreview').textContent = data.texto_whatsapp || 'Relatório transmitido com sucesso.';
+      }
+
+      function exibirSucessoOffline(payload) {
+        document.getElementById('view-supervisao').style.display = 'none';
+        document.getElementById('view-sucesso').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        document.getElementById('sucesso-info-texto').innerHTML = '<span style="color:#f59e0b; font-weight:800;">REGISTRO GRAVADO LOCALMENTE (OFFLINE)!</span><br>' +
+          'Assim que a internet for restabelecida, o sistema sincronizará os dados com o CCO automaticamente.';
+
+        document.getElementById('sucessoWhatsPreview').textContent = '*CCO CEDAE — RELATÓRIO DE EXPEDIENTE (OFFLINE)*\nData: ' + payload.data_servico + '\nSetor: ' + currentUser.setor_nome + '\nPostos Auditados: ' + payload.postos_supervisionados.length + '\n(Aguardando sincronização de rede)';
+      }
+
+      window.sincronizarFilaOffline = async function () {
+        const item = localStorage.getItem('cco_offline_relatorio');
+        if (!item) return;
+
+        try {
+          const payload = JSON.parse(item);
+          const res = await fetch(API_BASE + '/formulario/enviar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (res.ok) {
+            localStorage.removeItem('cco_offline_relatorio');
+            alert('✓ Relatório offline sincronizado com o CCO com sucesso!');
+            checarFilaOffline();
+          } else {
+            alert('Falha ao sincronizar: ' + (data.error || 'Erro no servidor'));
+          }
+        } catch (e) {
+          alert('Ainda sem conexão para sincronizar: ' + e.message);
+        }
+      };
+
+      // 10. WHATSAPP & VISUALIZAÇÃO COMPLETA
+      document.getElementById('btnCopiarWhatsSucesso').addEventListener('click', () => {
+        if (!textoWhatsAppGerado) return;
+        navigator.clipboard.writeText(textoWhatsAppGerado).then(() => {
+          alert('✓ Texto copiado para a área de transferência! Pronto para colar no WhatsApp.');
+        });
+      });
+
+      document.getElementById('btnAbrirWhatsSucesso').addEventListener('click', () => {
+        if (!textoWhatsAppGerado) return;
+        window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(textoWhatsAppGerado), '_blank');
+      });
+
+      document.getElementById('btnVerRelatorioConsolidado').addEventListener('click', async () => {
+        if (!ultimoRelatorioEnviado || !ultimoRelatorioEnviado.id) {
+          alert('Relatório gravado offline ou ID não disponível.');
+          return;
+        }
+        await abrirModalVisualizacao(ultimoRelatorioEnviado.id);
+      });
+
+      async function abrirModalVisualizacao(id) {
+        try {
+          const res = await fetch(API_BASE + '/formulario/relatorio/' + id);
+          const r = await res.json();
+          if (!res.ok) throw new Error(r.error || 'Erro ao consultar');
+
+          document.getElementById('visuRelTitulo').textContent = 'RELATÓRIO CONSOLIDADO DO EXPEDIENTE #' + r.id;
+          
+          let postosHtml = '';
+          (r.postos || []).forEach(p => {
+            postosHtml += '<tr style="border-bottom:1px solid #1e3a8a;">' +
+              '<td style="padding:6px 4px; font-weight:700;">' + p.posto_nome + '</td>' +
+              '<td style="padding:6px 4px; text-align:center;">' + (p.horario_supervisao || '-') + '</td>' +
+              '<td style="padding:6px 4px; text-align:center;">' + (p.km_posto !== null ? p.km_posto : '-') + '</td>' +
+              '<td style="padding:6px 4px; text-align:center;">' + p.status_supervisao + '</td>' +
+              '<td style="padding:6px 4px;">' + (p.observacao || p.motivo_nao_supervisao || '-') + '</td>' +
+            '</tr>';
+          });
+
+          document.getElementById('visuRelCorpo').innerHTML = '<div style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px; margin-bottom:12px;">' +
+              '<div><strong>Setor:</strong> ' + r.setor_nome + ' &bull; <strong>Data:</strong> ' + r.data_servico + ' &bull; <strong>Turno:</strong> ' + r.turno + '</div>' +
+              '<div><strong>Supervisor:</strong> ' + (r.supervisor_nome || r.responsavel_nome) + '</div>' +
+              '<div><strong>Viatura:</strong> ' + (r.viatura_modelo || r.viatura_outros_texto || 'N/A') + ' (KM Rodado: ' + (r.km_rodado || 0) + ' km)</div>' +
+            '</div>' +
+            '<table style="width:100%; border-collapse:collapse; font-size:0.8rem; margin-bottom:12px;">' +
+              '<thead>' +
+                '<tr style="background:#1e293b; color:#00d2ff; text-align:left;">' +
+                  '<th style="padding:6px 4px;">Posto</th>' +
+                  '<th style="padding:6px 4px; text-align:center;">Hora</th>' +
+                  '<th style="padding:6px 4px; text-align:center;">KM</th>' +
+                  '<th style="padding:6px 4px; text-align:center;">Situação</th>' +
+                  '<th style="padding:6px 4px;">Obs / Motivo</th>' +
+                '</tr>' +
+              '</thead>' +
+              '<tbody>' + postosHtml + '</tbody>' +
+            '</table>' +
+            '<div style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px;">' +
+              '<strong>Observações Gerais / Ocorrências:</strong>' +
+              '<p style="margin:4px 0 0 0; color:#cbd5e1;">' + (r.observacoes_gerais || 'Nenhuma ocorrência registrada no turno.') + '</p>' +
+            '</div>';
+
+          document.getElementById('modalVisualizacaoRelatorio').classList.add('active');
+        } catch (e) {
+          alert('Erro ao carregar visualização: ' + e.message);
+        }
+      }
+
+      window.fecharModalVisualizacao = function () {
+        document.getElementById('modalVisualizacaoRelatorio').classList.remove('active');
+      };
+
+      document.getElementById('btnNovoExpediente').addEventListener('click', () => {
+        location.reload();
+      });
+
+    })();
+  </script>
+</body>
+</html>

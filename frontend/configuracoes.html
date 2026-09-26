@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações do CCO - CEDAE</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    .config-card { background: #fff; border-radius: 0.75rem; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .help-banner { background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: #1e3a8a; line-height: 1.5; }
+    .test-result-box { margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; font-size: 0.9rem; display: none; }
+    .test-result-success { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+    .test-result-error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+  </style>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar-overlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span style="color: #00d2ff; font-weight: 900;">CEDAE</span> &bull; CCO</div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">Dashboard Operacional</a>
+        <a href="formulario.html" class="nav-item">Formulário de Plantão</a>
+        <a href="plantoes.html" class="nav-item">Relatórios & Expedientes</a>
+        <a href="mapa-operacional.html" class="nav-item">Mapa Hierárquico</a>
+        <div class="nav-separator"></div>
+        <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
+        <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
+        <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
+        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
+        <a href="postos.html" class="nav-item">📍 Postos de Serviço</a>
+        <a href="configuracoes.html" class="nav-item active">⚙️ Configurações & E-mail</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <button class="sidebar-toggle" id="sidebarToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+        <div class="header-title" style="font-weight: 800;">CONFIGURAÇÕES &bull; CCO CEDAE</div>
+        <div class="header-actions">
+          <div class="clock" id="headerClock">00:00:00</div>
+          <span class="badge badge-primary">Admin</span>
+        </div>
+      </header>
+
+      <div class="content-area" style="padding: 1.5rem;">
+        
+        <!-- CARD 1: SERVIÇO DE DISPARO DE E-MAIL INSTITUCIONAL -->
+        <div class="config-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+            <h2 style="margin: 0; color: var(--cco-navy); font-size: 1.3rem;">CONFIGURAÇÃO DE E-MAIL INSTITUCIONAL (SMTP)</h2>
+            <span class="badge badge-primary">Disparo Automático</span>
+          </div>
+          <p style="margin: 0 0 1.25rem 0; color: #64748b; font-size: 0.9rem;">
+            Configure o servidor SMTP de saída e o e-mail oficial para onde os relatórios consolidados de expediente serão despachados a cada envio.
+          </p>
+
+          <div class="help-banner">
+            <strong>🔑 Instruções para Envio via Gmail:</strong><br>
+            Para enviar e-mails via Gmail, você deve utilizar uma <strong>Senha de Aplicativo (16 letras)</strong> gerada pelo Google:<br>
+            1. Acesse sua Conta Google (<code>myaccount.google.com</code>) &rarr; aba <strong>Segurança</strong>.<br>
+            2. Ative a <em>Verificação em duas etapas</em> se ainda não estiver ativa.<br>
+            3. Na busca interna da Conta Google, digite <strong>"Senhas de app"</strong>.<br>
+            4. Dê o nome <strong>"CCO CEDAE"</strong> e clique em <strong>Criar</strong>.<br>
+            5. Cole a senha de 16 caracteres gerada no campo abaixo e clique em <strong>Salvar Configurações</strong>.
+          </div>
+          
+          <form id="formSmtpConfig">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="smtpHost">Servidor Host SMTP *</label>
+                <input type="text" class="form-input" id="smtpHost" required value="smtp.gmail.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="smtpPort">Porta SMTP *</label>
+                <input type="number" class="form-input" id="smtpPort" required value="587">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="smtpSecure">Criptografia / Protocolo</label>
+                <select class="form-select" id="smtpSecure">
+                  <option value="false">STARTTLS / TLS (Porta 587 - Padrão)</option>
+                  <option value="true">SSL / TLS Direto (Porta 465)</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label class="form-label" for="smtpUser">E-mail Remetente (Gmail / Institucional) *</label>
+                <input type="email" class="form-input" id="smtpUser" required placeholder="seu-email@gmail.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="smtpPass">Senha de Aplicativo do Google (16 caracteres) *</label>
+                <input type="password" class="form-input" id="smtpPass" placeholder="Digite ou altere a senha de app">
+                <small style="color: #64748b; font-size: 0.75rem;">Deixe em branco para manter a senha atual salva no sistema.</small>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label class="form-label" for="smtpFrom">Nome / Rótulo do Remetente</label>
+                <input type="text" class="form-input" id="smtpFrom" placeholder='Ex: "CCO CEDAE" <seu-email@gmail.com>'>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="emailDestino">E-mail de Destino Oficial dos Relatórios *</label>
+                <input type="email" class="form-input" id="emailDestino" required value="eduardoalbertonsantos@gmail.com">
+              </div>
+            </div>
+
+            <button type="submit" id="btnSalvarSmtp" class="btn btn-primary" style="font-weight: 700; padding: 0.65rem 1.5rem;">
+              💾 Salvar Configurações de E-mail
+            </button>
+          </form>
+        </div>
+
+        <!-- CARD 2: TESTE DE ENVIO DE E-MAIL EM TEMPO REAL -->
+        <div class="config-card">
+          <h2 style="margin: 0 0 0.5rem 0; color: var(--cco-navy); font-size: 1.3rem;">TESTE DE CONECTIVIDADE E ENVIO DE E-MAIL</h2>
+          <p style="margin: 0 0 1.25rem 0; color: #64748b; font-size: 0.9rem;">
+            Teste o disparo agora para verificar se suas credenciais SMTP e conexão estão funcionando 100%.
+          </p>
+
+          <form id="formTestarEmail" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; min-width: 260px; margin: 0;">
+              <label class="form-label" for="emailTesteDestino">Enviar E-mail de Teste Para:</label>
+              <input type="email" class="form-input" id="emailTesteDestino" required value="eduardoalbertonsantos@gmail.com">
+            </div>
+            <button type="submit" id="btnTestarEmail" class="btn btn-success" style="font-weight: 700; padding: 0.65rem 1.5rem; background: #22c55e; border: none;">
+              🚀 Disparar E-mail de Teste Agora
+            </button>
+          </form>
+
+          <div id="statusTesteEmail" class="test-result-box"></div>
+        </div>
+
+        <!-- CARD 3: PARÂMETROS WHATSAPP -->
+        <div class="config-card">
+          <h2 style="margin: 0 0 0.5rem 0; color: var(--cco-navy); font-size: 1.3rem;">PARÂMETROS DE DISPARO WHATSAPP</h2>
+          <p style="margin: 0 0 1.25rem 0; color: #64748b; font-size: 0.9rem;">Nome do grupo de supervisão operacional de referência.</p>
+          
+          <form id="formWhatsConfig">
+            <div class="form-group">
+              <label class="form-label" for="whatsGrupo">Nome do Grupo de Referência</label>
+              <input type="text" class="form-input" id="whatsGrupo" value="CCO CEDAE OPERACIONAL">
+            </div>
+            <button type="submit" class="btn btn-primary" style="font-weight: 700;">Salvar Parâmetro WhatsApp</button>
+          </form>
+        <!-- CARD 4: GERENCIAMENTO DE DADOS / ZERAR SUPERVISÕES -->
+        <div class="config-card" style="border: 2px solid #ef4444; background: #fffaf0;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+            <span style="font-size: 1.6rem;">⚠️</span>
+            <h2 style="margin: 0; color: #b91c1c; font-size: 1.3rem;">ZONA OPERACIONAL — ZERAR SUPERVISÕES E RELATÓRIOS</h2>
+          </div>
+          <p style="margin: 0 0 1rem 0; color: #7f1d1d; font-size: 0.95rem; line-height: 1.5;">
+            Utilize esta opção para reiniciar os trabalhos operacionais e <strong>começar do zero</strong>:
+          </p>
+          <ul style="margin: 0 0 1.25rem 1.2rem; color: #475569; font-size: 0.9rem; line-height: 1.6;">
+            <li><strong>Apaga:</strong> Histórico de relatórios enviados, conferência de postos e ocorrências registradas.</li>
+            <li><strong>Preserva 100%:</strong> Todos os cadastros (4 Setores, 26 Supervisores, 6 Viaturas, 28 Postos, Usuários e Configurações SMTP).</li>
+            <li><strong>Numeração:</strong> O próximo relatório enviado iniciará no <strong>ID #1</strong>.</li>
+          </ul>
+
+          <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <button type="button" id="btnZerarDados" class="btn" style="background: #dc2626; color: #ffffff; font-weight: 700; padding: 0.75rem 1.75rem; border: none; border-radius: 6px; cursor: pointer;">
+              🗑️ Zerar Relatórios de Plantão e Começar do Zero
+            </button>
+            <span id="statusZerar" style="font-size: 0.9rem; font-weight: 600; display: none;"></span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await carregarConfiguracoes();
+
+      // Salvar SMTP
+      document.getElementById('formSmtpConfig').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnSalvarSmtp');
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
+        try {
+          const payload = {
+            smtp_host: document.getElementById('smtpHost').value.trim(),
+            smtp_port: parseInt(document.getElementById('smtpPort').value),
+            smtp_secure: document.getElementById('smtpSecure').value,
+            smtp_user: document.getElementById('smtpUser').value.trim(),
+            smtp_pass: document.getElementById('smtpPass').value,
+            smtp_from: document.getElementById('smtpFrom').value.trim(),
+            email_destino_relatorios: document.getElementById('emailDestino').value.trim()
+          };
+
+          await apiPost('/configuracoes/salvar-smtp', payload);
+          alert('✓ Configurações de e-mail e SMTP salvas com sucesso!');
+          
+          // Atualiza campo de teste com o novo destino
+          document.getElementById('emailTesteDestino').value = payload.email_destino_relatorios;
+        } catch (err) {
+          alert('Erro ao salvar: ' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '💾 Salvar Configurações de E-mail';
+        }
+      });
+
+      // Testar E-mail
+      document.getElementById('formTestarEmail').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('btnTestarEmail');
+        const statusBox = document.getElementById('statusTesteEmail');
+        const email = document.getElementById('emailTesteDestino').value.trim();
+
+        btn.disabled = true;
+        btn.textContent = 'Enviando e validando com o servidor...';
+        statusBox.style.display = 'block';
+        statusBox.className = 'test-result-box';
+        statusBox.style.background = '#f8fafc';
+        statusBox.style.border = '1px solid #cbd5e1';
+        statusBox.style.color = '#334155';
+        statusBox.innerHTML = '⏳ Conectando ao servidor SMTP e autenticando...';
+
+        try {
+          const res = await apiPost('/configuracoes/testar-email', { destinatario: email });
+          statusBox.className = 'test-result-box test-result-success';
+          statusBox.innerHTML = `<strong>✅ SUCESSO!</strong> ${res.message || 'E-mail de teste enviado com sucesso!'}`;
+        } catch (err) {
+          statusBox.className = 'test-result-box test-result-error';
+          statusBox.innerHTML = `<strong>❌ FALHA NO ENVIO:</strong> ${err.message}`;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🚀 Disparar E-mail de Teste Agora';
+        }
+      });
+
+      // Salvar WhatsApp
+      document.getElementById('formWhatsConfig').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await apiPost('/configuracoes', {
+            chave: 'whatsapp_grupo_nome',
+            valor: document.getElementById('whatsGrupo').value.trim(),
+            descricao: 'Nome de referência do grupo WhatsApp'
+          });
+          alert('✓ Configuração de WhatsApp salva com sucesso!');
+        } catch (err) {
+          alert('Erro ao salvar: ' + err.message);
+        }
+      });
+
+      // Zerar Supervisões e Relatórios
+      document.getElementById('btnZerarDados').addEventListener('click', async () => {
+        const confirmou = confirm(
+          '⚠️ ATENÇÃO - AÇÃO CRÍTICA!\n\n' +
+          'Deseja realmente apagar TODO o histórico de relatórios e supervisões para começar do zero?\n\n' +
+          '• Todos os cadastros (Setores, Supervisores, Viaturas e Postos) continuarão intactos.\n' +
+          '• A próxima supervisão enviada começará no ID #1.\n\n' +
+          'Clique em OK para confirmar ou Cancelar para desistir.'
+        );
+
+        if (!confirmou) return;
+
+        const btn = document.getElementById('btnZerarDados');
+        const statusBox = document.getElementById('statusZerar');
+        btn.disabled = true;
+        btn.textContent = 'Limpando dados...';
+        statusBox.style.display = 'inline';
+        statusBox.style.color = '#b45309';
+        statusBox.textContent = '⏳ Executando limpeza no banco de dados...';
+
+        try {
+          const res = await apiPost('/configuracoes/zerar-dados', {});
+          statusBox.style.color = '#15803d';
+          statusBox.textContent = '✅ ' + (res.message || 'Histórico zerado com sucesso!');
+          alert('✅ SUCESSO!\n\n' + (res.message || 'Histórico de supervisões zerado com sucesso! Os próximos envios iniciarão do ID #1.'));
+        } catch (err) {
+          statusBox.style.color = '#b91c1c';
+          statusBox.textContent = '❌ Erro: ' + err.message;
+          alert('Erro ao zerar dados: ' + err.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '🗑️ Zerar Relatórios de Plantão e Começar do Zero';
+        }
+      });
+    });
+
+    async function carregarConfiguracoes() {
+      try {
+        const configs = await apiGet('/configuracoes');
+        configs.forEach(c => {
+          if (c.chave === 'smtp_host' && c.valor) document.getElementById('smtpHost').value = c.valor;
+          if (c.chave === 'smtp_port' && c.valor) document.getElementById('smtpPort').value = c.valor;
+          if (c.chave === 'smtp_secure' && c.valor) document.getElementById('smtpSecure').value = c.valor;
+          if (c.chave === 'smtp_user' && c.valor) document.getElementById('smtpUser').value = c.valor;
+          if (c.chave === 'smtp_from' && c.valor) document.getElementById('smtpFrom').value = c.valor;
+          if (c.chave === 'email_destino_relatorios' && c.valor) {
+            document.getElementById('emailDestino').value = c.valor;
+            document.getElementById('emailTesteDestino').value = c.valor;
+          }
+          if (c.chave === 'whatsapp_grupo_nome' && c.valor) {
+            document.getElementById('whatsGrupo').value = c.valor;
+          }
+        });
+      } catch (e) {
+        console.warn('Configurações não carregadas:', e.message);
+      }
+    }
+  </script>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

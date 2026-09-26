@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Administrativo - CCO CEDAE</title>
+  <script>
+    // Redirecionamento instantâneo para o painel operacional se autenticado, ou login se não autenticado
+    const token = localStorage.getItem('cco_token');
+    if (token) {
+      window.location.replace('dashboard.html');
+    } else {
+      window.location.replace('login.html');
+    }
+  </script>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body style="background: #0a1628; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+  <p>Redirecionando para o Centro de Controle Operacional CEDAE...</p>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organização dos Postos - CCO CEDAE</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    :root {
+      --color-tingua: #16a34a;
+      --bg-tingua: #dcfce7;
+      --border-tingua: #86efac;
+      --color-guandu: #2563eb;
+      --bg-guandu: #dbeafe;
+      --border-guandu: #93c5fd;
+      --color-laranjal: #7c3aed;
+      --bg-laranjal: #f3e8ff;
+      --border-laranjal: #c4b5fd;
+      --color-plantao: #d97706;
+      --bg-plantao: #fef3c7;
+      --border-plantao: #fcd34d;
+      --color-nao-definido: #dc2626;
+      --bg-nao-definido: #fee2e2;
+      --border-nao-definido: #fca5a5;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .top-navbar {
+      background: #003366;
+      color: #ffffff;
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .top-navbar a {
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .top-navbar .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+    }
+    .top-navbar .nav-link-btn {
+      background: rgba(255,255,255,0.15);
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    .top-navbar .nav-link-btn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    .page-container {
+      max-width: 1440px;
+      margin: 1.5rem auto;
+      padding: 0 1.25rem;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #003366;
+      margin: 0 0 1rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Painel de Auditoria de Cadastro */
+    .audit-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+    .audit-card {
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      text-align: center;
+    }
+    .audit-card .num {
+      font-size: 2rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+    .audit-card .desc {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.05em;
+    }
+    .audit-card.status-ok .num { color: #16a34a; }
+    .audit-card.status-alert .num { color: #dc2626; }
+    .audit-card.status-primary .num { color: #003366; }
+
+    /* Setores Counters Grid */
+    .sectors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .sector-card {
+      padding: 1rem;
+      border-radius: 8px;
+      border: 1.5px solid transparent;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .sector-card.tingua { background: var(--bg-tingua); border-color: var(--border-tingua); }
+    .sector-card.guandu { background: var(--bg-guandu); border-color: var(--border-guandu); }
+    .sector-card.laranjal { background: var(--bg-laranjal); border-color: var(--border-laranjal); }
+    .sector-card.plantao { background: var(--bg-plantao); border-color: var(--border-plantao); }
+
+    .sector-card .header-sec {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .sector-card .header-sec .title {
+      font-weight: 800;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+    .sector-card.tingua .title { color: var(--color-tingua); }
+    .sector-card.guandu .title { color: var(--color-guandu); }
+    .sector-card.laranjal .title { color: var(--color-laranjal); }
+    .sector-card.plantao .title { color: var(--color-plantao); }
+
+    .sector-card .count-val {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #0f172a;
+    }
+    .sector-card .sub-info {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-top: 0.25rem;
+    }
+
+    /* Filters Bar */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .filter-pill {
+      background: #e2e8f0;
+      color: #334155;
+      border: none;
+      padding: 0.5rem 0.9rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-pill:hover {
+      background: #cbd5e1;
+    }
+    .filter-pill.active {
+      background: #003366;
+      color: #ffffff;
+    }
+    .filter-pill.active.pill-tingua { background: var(--color-tingua); }
+    .filter-pill.active.pill-guandu { background: var(--color-guandu); }
+    .filter-pill.active.pill-laranjal { background: var(--color-laranjal); }
+    .filter-pill.active.pill-plantao { background: var(--color-plantao); }
+    .filter-pill.active.pill-alerta { background: var(--color-nao-definido); }
+
+    .search-input {
+      padding: 0.5rem 0.85rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      min-width: 260px;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+    }
+
+    .btn-save-all {
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 0.65rem 1.25rem;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 4px rgba(22,163,74,0.3);
+      transition: background 0.15s;
+    }
+    .btn-save-all:hover {
+      background: #15803d;
+    }
+    .btn-save-all:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Table Styles */
+    .table-responsive {
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+    table.data-table thead th {
+      background: #003366;
+      color: #ffffff;
+      padding: 0.75rem 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #002244;
+    }
+    table.data-table tbody td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    table.data-table tbody tr:hover {
+      background: #f8fafc;
+    }
+    table.data-table tbody tr.row-pending {
+      background: #fefce8;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.3rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-tingua { background: var(--bg-tingua); color: var(--color-tingua); border: 1px solid var(--border-tingua); }
+    .badge-guandu { background: var(--bg-guandu); color: var(--color-guandu); border: 1px solid var(--border-guandu); }
+    .badge-laranjal { background: var(--bg-laranjal); color: var(--color-laranjal); border: 1px solid var(--border-laranjal); }
+    .badge-plantao { background: var(--bg-plantao); color: var(--color-plantao); border: 1px solid var(--border-plantao); }
+    .badge-alert { background: var(--bg-nao-definido); color: var(--color-nao-definido); border: 1px solid var(--border-nao-definido); font-weight: 900; }
+    .badge-ativo { background: #dcfce7; color: #15803d; }
+    .badge-inativo { background: #f1f5f9; color: #64748b; }
+
+    .select-setor {
+      padding: 0.45rem 0.65rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: #ffffff;
+      outline: none;
+      cursor: pointer;
+    }
+    .select-setor.changed {
+      border-color: #d97706;
+      background: #fffbeb;
+      box-shadow: 0 0 0 2px rgba(217,119,6,0.2);
+    }
+
+    .btn-action-save {
+      background: #003366;
+      color: #ffffff;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-action-save:hover {
+      background: #002244;
+    }
+    .btn-action-save:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+
+    /* Toast Notification */
+    #toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 1rem 1.5rem;
+      background: #003366;
+      color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      font-weight: 700;
+      display: none;
+      z-index: 9999;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="top-navbar">
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <a href="dashboard.html" style="font-size: 1.15rem; letter-spacing: 0.05em;">
+        <span style="color: #00d2ff; font-weight: 900;">CEDAE</span> &bull; CCO
+      </a>
+      <span style="color: #94a3b8; font-size: 0.85rem;">|</span>
+      <span style="font-size: 0.95rem; font-weight: 700; color: #e2e8f0;">Organização Oficial dos Postos</span>
+    </div>
+    <div class="nav-links">
+      <a href="dashboard.html" class="nav-link-btn">📊 Dashboard CCO</a>
+      <a href="plantoes.html" class="nav-link-btn">📋 Relatórios</a>
+      <a href="app-supervisao.html" target="_blank" class="nav-link-btn" style="color: #38bdf8;">📱 App Supervisor</a>
+    </div>
+  </header>
+
+  <div class="page-container">
+
+    <!-- Card 1: Auditoria Automática de Cadastro -->
+    <div class="card">
+      <div class="section-title">
+        <span>🔎 AUDITORIA DE CADASTRO</span>
+        <button id="btn-refresh-audit" style="margin-left:auto; background:none; border:1px solid #cbd5e1; border-radius:5px; padding:0.25rem 0.6rem; cursor:pointer; font-size:0.8rem; font-weight:700; color:#003366;">
+          🔄 Atualizar Auditoria
+        </button>
+      </div>
+      <div class="audit-grid">
+        <div class="audit-card status-primary">
+          <div class="num" id="audit-total">59</div>
+          <div class="desc">Postos Cadastrados</div>
+        </div>
+        <div class="audit-card status-ok">
+          <div class="num" id="audit-com-setor">59</div>
+          <div class="desc">Com Setor Definido</div>
+        </div>
+        <div class="audit-card" id="card-sem-setor">
+          <div class="num" id="audit-sem-setor">0</div>
+          <div class="desc">Sem Setor Definido</div>
+        </div>
+        <div class="audit-card status-ok">
+          <div class="num" id="audit-duplicados">0</div>
+          <div class="desc">Duplicados</div>
+        </div>
+        <div class="audit-card" id="card-com-erro">
+          <div class="num" id="audit-com-erro">0</div>
+          <div class="desc">Com Erro / Órfãos</div>
+        </div>
+        <div class="audit-card status-ok" id="card-status-geral">
+          <div class="num" id="audit-status" style="font-size: 1.35rem; margin-top: 0.35rem;">CONFORME</div>
+          <div class="desc">Status da Base</div>
+        </div>
+      </div>
+
+      <!-- Resumo por Setor -->
+      <div class="sectors-grid">
+        <div class="sector-card tingua">
+          <div class="header-sec">
+            <span class="title">TINGUÁ</span>
+            <span class="badge badge-tingua">Setor 1</span>
+          </div>
+          <div class="count-val" id="count-tingua">12</div>
+          <div class="sub-info">postos sob supervisão exclusiva</div>
+        </div>
+        <div class="sector-card guandu">
+          <div class="header-sec">
+            <span class="title">GUANDU</span>
+            <span class="badge badge-guandu">Setor 2</span>
+          </div>
+          <div class="count-val" id="count-guandu">11</div>
+          <div class="sub-info">postos sob supervisão exclusiva</div>
+        </div>
+        <div class="sector-card laranjal">
+          <div class="header-sec">
+            <span class="title">LARANJAL</span>
+            <span class="badge badge-laranjal">Setor 3</span>
+          </div>
+          <div class="count-val" id="count-laranjal">6</div>
+          <div class="sub-info">postos sob supervisão exclusiva</div>
+        </div>
+        <div class="sector-card plantao">
+          <div class="header-sec">
+            <span class="title">PLANTÃO</span>
+            <span class="badge badge-plantao">Setor 4</span>
+          </div>
+          <div class="count-val" id="count-plantao">30</div>
+          <div class="sub-info">postos próprios &bull; <strong id="count-plantao-supervisao">59</strong> supervisionáveis</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Matriz Oficial de Classificação -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+        <div>
+          <h2 class="section-title" style="margin:0;">🗂️ ORGANIZAÇÃO DOS POSTOS</h2>
+          <p style="margin:0.25rem 0 0 0; color:#64748b; font-size:0.85rem;">
+            Classifique manualmente cada posto da base oficial de 59 postos. O Plantão supervisiona todos os 59 postos automaticamente sem duplicidade.
+          </p>
+        </div>
+        <div>
+          <button id="btn-save-all" class="btn-save-all" disabled>
+            💾 SALVAR TODAS AS ALTERAÇÕES (<span id="pending-count">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros e Busca -->
+      <div class="toolbar">
+        <div class="filter-pills">
+          <button class="filter-pill active" data-filter="todos">TODOS (<span id="f-total">59</span>)</button>
+          <button class="filter-pill pill-tingua" data-filter="tingua">TINGUÁ (<span id="f-tingua">12</span>)</button>
+          <button class="filter-pill pill-guandu" data-filter="guandu">GUANDU (<span id="f-guandu">11</span>)</button>
+          <button class="filter-pill pill-laranjal" data-filter="laranjal">LARANJAL (<span id="f-laranjal">6</span>)</button>
+          <button class="filter-pill pill-plantao" data-filter="plantao">PLANTÃO (<span id="f-plantao">30</span>)</button>
+          <button class="filter-pill pill-alerta" data-filter="nao_definido" id="pill-nao-def" style="display:none;">⚠️ NÃO DEFINIDO (<span id="f-nao-def">0</span>)</button>
+        </div>
+        <div>
+          <input type="text" id="input-search" class="search-input" placeholder="🔍 Buscar por nome, endereço, localidade...">
+        </div>
+      </div>
+
+      <!-- Tabela Principal de Postos -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 50px; text-align: center;">ID</th>
+              <th>POSTO</th>
+              <th style="width: 170px;">SETOR ATUAL</th>
+              <th style="width: 200px;">NOVO SETOR</th>
+              <th style="width: 100px; text-align: center;">STATUS</th>
+              <th style="width: 110px; text-align: center;">AÇÃO</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-postos">
+            <tr>
+              <td colspan="6" style="text-align:center; padding: 2rem; color: #64748b;">
+                Carregando os 59 postos da base oficial CEDAE...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card 3: Histórico de Auditoria -->
+    <div class="card">
+      <div class="section-title">
+        <span>📜 HISTÓRICO DE AUDITORIA E RECLASSIFICAÇÕES</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 140px;">DATA / HORA</th>
+              <th>POSTO</th>
+              <th>SETOR ANTERIOR</th>
+              <th>NOVO SETOR</th>
+              <th>USUÁRIO RESPONSÁVEL</th>
+              <th style="text-align: center;">AÇÃO</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-historico">
+            <tr>
+              <td colspan="6" style="text-align:center; padding: 1.5rem; color: #64748b;">
+                Carregando histórico de alterações...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast-msg">Mensagem</div>
+
+  <script>
+    (function() {
+      const API_BASE = '/api/v1';
+      let postosData = [];
+      let pendingChanges = new Map(); // id -> novo_setor_id
+      let currentFilter = 'todos';
+      let searchQuery = '';
+
+      const token = localStorage.getItem('cco_token');
+
+      function showToast(msg, isError = false) {
+        const toast = document.getElementById('toast-msg');
+        toast.textContent = msg;
+        toast.style.background = isError ? '#dc2626' : '#003366';
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 3500);
+      }
+
+      async function carregarAuditoria() {
+        try {
+          const res = await fetch(`${API_BASE}/postos/auditoria-cadastro`);
+          const data = await res.json();
+          if (data.success) {
+            const a = data.auditoria;
+            const d = data.distribuicao;
+
+            document.getElementById('audit-total').textContent = a.total_postos;
+            document.getElementById('audit-com-setor').textContent = a.com_setor;
+            document.getElementById('audit-sem-setor').textContent = a.sem_setor;
+            document.getElementById('audit-duplicados').textContent = a.duplicados;
+            document.getElementById('audit-com-erro').textContent = a.com_erro;
+            document.getElementById('audit-status').textContent = a.status_geral;
+
+            const cardSemSetor = document.getElementById('card-sem-setor');
+            if (a.sem_setor > 0) {
+              cardSemSetor.className = 'audit-card status-alert';
+            } else {
+              cardSemSetor.className = 'audit-card status-ok';
+            }
+
+            const cardErro = document.getElementById('card-com-erro');
+            if (a.com_erro > 0) {
+              cardErro.className = 'audit-card status-alert';
+            } else {
+              cardErro.className = 'audit-card status-ok';
+            }
+
+            document.getElementById('count-tingua').textContent = d.tingua.quantidade;
+            document.getElementById('count-guandu').textContent = d.guandu.quantidade;
+            document.getElementById('count-laranjal').textContent = d.laranjal.quantidade;
+            document.getElementById('count-plantao').textContent = d.plantao.quantidade_proprios;
+            document.getElementById('count-plantao-supervisao').textContent = d.plantao.quantidade_supervisao_disponivel;
+
+            document.getElementById('f-total').textContent = a.total_postos;
+            document.getElementById('f-tingua').textContent = d.tingua.quantidade;
+            document.getElementById('f-guandu').textContent = d.guandu.quantidade;
+            document.getElementById('f-laranjal').textContent = d.laranjal.quantidade;
+            document.getElementById('f-plantao').textContent = d.plantao.quantidade_proprios;
+
+            const pillNaoDef = document.getElementById('pill-nao-def');
+            if (a.sem_setor > 0) {
+              pillNaoDef.style.display = 'inline-block';
+              document.getElementById('f-nao-def').textContent = a.sem_setor;
+            } else {
+              pillNaoDef.style.display = 'none';
+            }
+          }
+        } catch (err) {
+          console.error('Falha ao carregar auditoria:', err);
+        }
+      }
+
+      async function carregarPostos() {
+        try {
+          const res = await fetch(`${API_BASE}/postos/organizacao`);
+          const data = await res.json();
+          if (data.success) {
+            postosData = data.postos || [];
+            renderTabela();
+          }
+        } catch (err) {
+          console.error('Falha ao carregar postos:', err);
+          showToast('Erro ao carregar postos da base oficial', true);
+        }
+      }
+
+      async function carregarHistorico() {
+        try {
+          const res = await fetch(`${API_BASE}/postos/distribuicao/historico`);
+          const logs = await res.json();
+          const tbody = document.getElementById('tbody-historico');
+          tbody.innerHTML = '';
+
+          if (!logs || logs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#64748b;">Nenhuma alteração registrada ainda.</td></tr>`;
+            return;
+          }
+
+          logs.slice(0, 15).forEach(l => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="font-weight:700; color:#475569;">${l.data_hora || '-'}</td>
+              <td><strong>#${l.posto_id}</strong> ${l.posto_nome || '-'}</td>
+              <td>${l.setor_anterior_nome ? getBadgeHtml(l.setor_anterior_nome) : '<span style="color:#94a3b8;">-</span>'}</td>
+              <td>${getBadgeHtml(l.setor_novo_nome || l.setor_nome)}</td>
+              <td><span style="font-weight:600;">${l.usuario_nome || 'Administrador'}</span></td>
+              <td style="text-align:center;"><span class="badge badge-tingua" style="font-size:0.7rem;">${l.acao || 'ATRIBUIDO'}</span></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } catch (err) {
+          console.error('Falha ao carregar histórico:', err);
+        }
+      }
+
+      function getBadgeHtml(setorNome) {
+        if (!setorNome) return `<span class="badge badge-alert">⚠️ NÃO DEFINIDO</span>`;
+        const s = String(setorNome).toUpperCase();
+        if (s.includes('TINGU')) return `<span class="badge badge-tingua">TINGUÁ</span>`;
+        if (s.includes('GUANDU')) return `<span class="badge badge-guandu">GUANDU</span>`;
+        if (s.includes('LARANJAL')) return `<span class="badge badge-laranjal">LARANJAL</span>`;
+        if (s.includes('PLANT')) return `<span class="badge badge-plantao">PLANTÃO</span>`;
+        return `<span class="badge badge-alert">⚠️ NÃO DEFINIDO</span>`;
+      }
+
+      function renderTabela() {
+        const tbody = document.getElementById('tbody-postos');
+        tbody.innerHTML = '';
+
+        let filtrados = postosData.filter(p => {
+          // Filtro por setor
+          if (currentFilter === 'tingua' && p.setor_id !== 1) return false;
+          if (currentFilter === 'guandu' && p.setor_id !== 2) return false;
+          if (currentFilter === 'laranjal' && p.setor_id !== 3) return false;
+          if (currentFilter === 'plantao' && p.setor_id !== 4) return false;
+          if (currentFilter === 'nao_definido' && (p.setor_id && [1, 2, 3, 4].includes(p.setor_id))) return false;
+
+          // Busca textual
+          if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            const n = (p.nome || '').toLowerCase();
+            const e = (p.endereco || '').toLowerCase();
+            const l = (p.localidade || '').toLowerCase();
+            const em = (p.empresa || '').toLowerCase();
+            if (!n.includes(q) && !e.includes(q) && !l.includes(q) && !em.includes(q)) return false;
+          }
+
+          return true;
+        });
+
+        if (filtrados.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#64748b;">Nenhum posto encontrado para o filtro selecionado.</td></tr>`;
+          return;
+        }
+
+        filtrados.forEach(p => {
+          const tr = document.createElement('tr');
+          const isPending = pendingChanges.has(p.id);
+          const currentSelected = isPending ? pendingChanges.get(p.id) : (p.setor_id || 4);
+
+          if (isPending) {
+            tr.className = 'row-pending';
+          }
+
+          tr.innerHTML = `
+            <td style="text-align:center; font-weight:800; color:#003366;">${p.id}</td>
+            <td>
+              <div style="font-weight:800; font-size:0.95rem; color:#0f172a;">${p.nome}</div>
+              <div style="font-size:0.8rem; color:#64748b; margin-top:0.2rem;">
+                ${p.endereco || 'Endereço não cadastrado'} ${p.localidade ? `&bull; ${p.localidade}` : ''} ${p.empresa ? `&bull; ${p.empresa}` : ''}
+              </div>
+            </td>
+            <td>
+              ${getBadgeHtml(p.setor_atual)}
+            </td>
+            <td>
+              <select class="select-setor ${isPending ? 'changed' : ''}" data-id="${p.id}">
+                <option value="1" ${currentSelected === 1 ? 'selected' : ''}>TINGUÁ</option>
+                <option value="2" ${currentSelected === 2 ? 'selected' : ''}>GUANDU</option>
+                <option value="3" ${currentSelected === 3 ? 'selected' : ''}>LARANJAL</option>
+                <option value="4" ${currentSelected === 4 ? 'selected' : ''}>PLANTÃO</option>
+              </select>
+            </td>
+            <td style="text-align:center;">
+              <span class="badge ${p.status === 'ativo' ? 'badge-ativo' : 'badge-inativo'}">
+                ${p.status === 'ativo' ? 'Ativo' : 'Inativo'}
+              </span>
+            </td>
+            <td style="text-align:center;">
+              <button class="btn-action-save" data-id="${p.id}" ${!isPending ? 'disabled' : ''}>
+                💾 Salvar
+              </button>
+            </td>
+          `;
+
+          tbody.appendChild(tr);
+        });
+
+        // Eventos dos selects
+        tbody.querySelectorAll('.select-setor').forEach(sel => {
+          sel.addEventListener('change', (e) => {
+            const pId = parseInt(e.target.dataset.id);
+            const nVal = parseInt(e.target.value);
+            const originalPosto = postosData.find(x => x.id === pId);
+
+            if (originalPosto && originalPosto.setor_id === nVal) {
+              pendingChanges.delete(pId);
+            } else {
+              pendingChanges.set(pId, nVal);
+            }
+            updatePendingButton();
+            renderTabela();
+          });
+        });
+
+        // Eventos dos botões Salvar individual
+        tbody.querySelectorAll('.btn-action-save').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const pId = parseInt(e.target.dataset.id);
+            const nVal = pendingChanges.get(pId);
+            if (!nVal) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Salvando...';
+
+            await salvarIndividual(pId, nVal);
+          });
+        });
+      }
+
+      function updatePendingButton() {
+        const btnSaveAll = document.getElementById('btn-save-all');
+        const countSpan = document.getElementById('pending-count');
+        const count = pendingChanges.size;
+
+        countSpan.textContent = count;
+        btnSaveAll.disabled = count === 0;
+      }
+
+      async function salvarIndividual(postoId, novoSetorId) {
+        try {
+          const res = await fetch(`${API_BASE}/postos/organizacao/reclassificar`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              posto_id: postoId,
+              novo_setor_id: novoSetorId,
+              usuario_nome: 'Administrador / Chefia'
+            })
+          });
+
+          const data = await res.json();
+          if (res.ok && data.success) {
+            pendingChanges.delete(postoId);
+            updatePendingButton();
+            showToast(data.message || 'Posto reclassificado com sucesso!');
+            await carregarAuditoria();
+            await carregarPostos();
+            await carregarHistorico();
+          } else {
+            throw new Error(data.error || 'Falha ao reclassificar');
+          }
+        } catch (err) {
+          showToast('Erro: ' + err.message, true);
+        }
+      }
+
+      async function salvarTodos() {
+        if (pendingChanges.size === 0) return;
+
+        const alteracoes = [];
+        pendingChanges.forEach((novoSetorId, postoId) => {
+          alteracoes.push({ posto_id: postoId, novo_setor_id: novoSetorId });
+        });
+
+        const btnSaveAll = document.getElementById('btn-save-all');
+        btnSaveAll.disabled = true;
+        btnSaveAll.textContent = `Gravando ${alteracoes.length} alterações...`;
+
+        try {
+          const res = await fetch(`${API_BASE}/postos/organizacao/reclassificar`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              alteracoes,
+              usuario_nome: 'Administrador / Chefia'
+            })
+          });
+
+          const data = await res.json();
+          if (res.ok && data.success) {
+            pendingChanges.clear();
+            updatePendingButton();
+            btnSaveAll.textContent = '💾 SALVAR TODAS AS ALTERAÇÕES (0)';
+            showToast(`✅ ${alteracoes.length} postos reclassificados e auditados com sucesso!`);
+            await carregarAuditoria();
+            await carregarPostos();
+            await carregarHistorico();
+          } else {
+            throw new Error(data.error || 'Falha ao salvar lote');
+          }
+        } catch (err) {
+          showToast('Erro: ' + err.message, true);
+          btnSaveAll.disabled = false;
+          btnSaveAll.textContent = `💾 SALVAR TODAS AS ALTERAÇÕES (${alteracoes.length})`;
+        }
+      }
+
+      // Eventos de Filtro
+      document.querySelectorAll('.filter-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          currentFilter = btn.dataset.filter;
+          renderTabela();
+        });
+      });
+
+      // Busca
+      document.getElementById('input-search').addEventListener('input', (e) => {
+        searchQuery = e.target.value.trim();
+        renderTabela();
+      });
+
+      // Botão Salvar Todas
+      document.getElementById('btn-save-all').addEventListener('click', salvarTodos);
+
+      // Botão Atualizar Auditoria
+      document.getElementById('btn-refresh-audit').addEventListener('click', async () => {
+        await carregarAuditoria();
+        await carregarPostos();
+        await carregarHistorico();
+        showToast('Auditoria e postos sincronizados.');
+      });
+
+      // Inicialização
+      carregarAuditoria();
+      carregarPostos();
+      carregarHistorico();
+
+    })();
+  </script>
+</body>
+</html>

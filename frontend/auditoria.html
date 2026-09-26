@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auditoria - CCO Sistema</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar-overlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand">CCO <span>Painel</span></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">Dashboard</a>
+        <a href="plantoes.html" class="nav-item">Plantões</a>
+        <a href="postos.html" class="nav-item">Postos</a>
+        <a href="supervisores.html" class="nav-item">Supervisores</a>
+        <a href="viaturas.html" class="nav-item">Viaturas</a>
+        <a href="relatorios.html" class="nav-item">Relatórios</a>
+        <a href="auditoria.html" class="nav-item active">Auditoria</a>
+        <a href="mapa.html" class="nav-item">Mapa</a>
+        <div class="nav-separator"></div>
+        <a href="index.html" class="nav-item">Sair</a>
+      </nav>
+    </aside>
+    <main class="main-content">
+      <header class="header">
+        <div class="header-title">CCO &mdash; CENTRO DE CONTROLE OPERACIONAL</div>
+      </header>
+      <div class="content-area">
+        <div class="page-header">
+          <h1>AUDITORIA DE FISCALIZAÇÃO</h1>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 2rem;">
+          <div class="card" style="margin-bottom:0; text-align:center;"><h3 style="font-size:2rem; margin:0;">150</h3><p>Total Postos</p></div>
+          <div class="card" style="margin-bottom:0; text-align:center; border-bottom:4px solid var(--cco-green);"><h3 style="font-size:2rem; margin:0;">120</h3><p>Normal 🟢</p></div>
+          <div class="card" style="margin-bottom:0; text-align:center; border-bottom:4px solid var(--cco-yellow);"><h3 style="font-size:2rem; margin:0;">20</h3><p>Atenção 🟡</p></div>
+          <div class="card" style="margin-bottom:0; text-align:center; border-bottom:4px solid var(--cco-red);"><h3 style="font-size:2rem; margin:0;">8</h3><p>Crítico 🔴</p></div>
+          <div class="card" style="margin-bottom:0; text-align:center; border-bottom:4px solid var(--cco-gray-500);"><h3 style="font-size:2rem; margin:0;">2</h3><p>Nunca Fisc.</p></div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Posto</th>
+                <th>Setor</th>
+                <th>Última Fiscalização</th>
+                <th>Supervisor</th>
+                <th>Situação</th>
+                <th>Tempo (horas)</th>
+                <th>Classificação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Posto Y</td>
+                <td>Setor Leste</td>
+                <td>18/09/2026</td>
+                <td>Maria</td>
+                <td>Falta</td>
+                <td>73h</td>
+                <td><span class="badge badge-red">Crítico</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

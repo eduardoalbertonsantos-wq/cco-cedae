@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciamento de Setores - CCO CEDAE</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    .admin-card { background: #fff; border-radius: 0.75rem; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10,22,40,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.active { display: flex !important; }
+    .modal-box { background: #ffffff; width: 100%; max-width: 500px; border-radius: 0.75rem; box-shadow: 0 20px 30px rgba(0,0,0,0.25); border-top: 5px solid #2563eb; overflow: hidden; }
+    .modal-box-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid #e2e8f0; }
+    .modal-box-body { padding: 1.5rem; }
+    .modal-box-footer { padding: 1rem 1.5rem; border-top: 1px solid #e2e8f0; background: #f8fafc; display: flex; justify-content: flex-end; gap: 0.75rem; }
+  </style>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar-overlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span style="color: #00d2ff; font-weight: 900;">CEDAE</span> &bull; CCO</div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">Dashboard Operacional</a>
+        <a href="formulario.html" class="nav-item">Formulário de Plantão</a>
+        <a href="plantoes.html" class="nav-item">Relatórios & Expedientes</a>
+        <a href="mapa-operacional.html" class="nav-item">Mapa Hierárquico</a>
+        <div class="nav-separator"></div>
+        <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
+        <a href="gerenciar-setores.html" class="nav-item active">🏢 Gerenciamento Setores</a>
+        <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
+        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
+        <a href="postos.html" class="nav-item">📍 Postos de Serviço</a>
+        <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <button class="sidebar-toggle" id="sidebarToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+        <div class="header-title" style="font-weight: 800;">ADMINISTRAÇÃO DE SETORES &bull; CCO CEDAE</div>
+        <div class="header-actions">
+          <div class="clock" id="headerClock">00:00:00</div>
+          <span class="badge badge-primary">Admin</span>
+        </div>
+      </header>
+
+      <div class="content-area" style="padding: 1.5rem;">
+        <div class="admin-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+              <h2 style="margin: 0; color: var(--cco-navy); font-size: 1.3rem;">GERENCIAMENTO DE SETORES OPERACIONAIS</h2>
+              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.9rem;">Cadastre novos setores e controle o status ativo/inativo sem alterar o código.</p>
+            </div>
+            <button id="btnNovoSetor" class="btn btn-primary" style="font-weight: 700;">+ Cadastrar Novo Setor</button>
+          </div>
+
+          <div class="table-container">
+            <table class="table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome do Setor</th>
+                  <th>Sigla</th>
+                  <th>Supervisores</th>
+                  <th>Viaturas</th>
+                  <th>Postos</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="setoresTableBody">
+                <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">Carregando setores operacionais...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Setor com classe modal-overlay independente de main.css -->
+  <div id="modalSetor" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-box-header">
+        <h3 id="modalSetorTitle" style="margin: 0; color: var(--cco-navy); font-size: 1.2rem;">Novo Setor Operacional</h3>
+        <button type="button" id="btnFecharModal" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#64748b;">&times;</button>
+      </div>
+
+      <form id="formSetor">
+        <div class="modal-box-body">
+          <input type="hidden" id="setorId">
+          <div class="form-group">
+            <label class="form-label" for="nomeSetor">Nome do Setor *</label>
+            <input type="text" class="form-input" id="nomeSetor" required placeholder="Ex: CCO BARRA DA TIJUCA">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="siglaSetor">Sigla</label>
+            <input type="text" class="form-input" id="siglaSetor" placeholder="Ex: BARRA">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="obsSetor">Observação</label>
+            <textarea class="form-textarea" id="obsSetor" rows="2" placeholder="Informações de cobertura do setor..."></textarea>
+          </div>
+        </div>
+        
+        <div class="modal-box-footer">
+          <button type="button" id="btnCancelarModal" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" class="btn btn-primary" style="font-weight: 700;">Salvar Setor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let setoresMemoria = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await carregarSetores();
+      setupModalSetor();
+    });
+
+    async function carregarSetores() {
+      try {
+        setoresMemoria = await apiGet('/setores');
+        const tbody = document.getElementById('setoresTableBody');
+        tbody.innerHTML = '';
+
+        if (!setoresMemoria || setoresMemoria.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b;">Nenhum setor cadastrado.</td></tr>';
+          return;
+        }
+
+        setoresMemoria.forEach(s => {
+          const isAtivo = s.status === 'ativo';
+          const badgeClass = isAtivo ? 'badge-green' : 'badge-red';
+          const btnStatusText = isAtivo ? 'Desativar' : 'Ativar';
+          const btnStatusClass = isAtivo ? 'btn-outline' : 'btn-success';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>#${s.id}</td>
+            <td><strong>${s.nome}</strong></td>
+            <td><span class="badge badge-primary">${s.sigla || '-'}</span></td>
+            <td>${s.total_supervisores || 0}</td>
+            <td>${s.total_viaturas || 0}</td>
+            <td>${s.total_postos || 0}</td>
+            <td><span class="badge ${badgeClass}">${s.status.toUpperCase()}</span></td>
+            <td>
+              <button class="btn btn-sm btn-outline btn-editar-setor" data-id="${s.id}">Editar</button>
+              <button class="btn btn-sm ${btnStatusClass} btn-status-setor" style="margin-left:0.25rem;" data-id="${s.id}">${btnStatusText}</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        // Adicionar event listeners aos botões de ação
+        document.querySelectorAll('.btn-editar-setor').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = parseInt(btn.dataset.id);
+            const item = setoresMemoria.find(s => s.id === id);
+            if (item) abrirEdicaoSetor(item);
+          });
+        });
+
+        document.querySelectorAll('.btn-status-setor').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = parseInt(btn.dataset.id);
+            alternarStatusSetor(id);
+          });
+        });
+
+      } catch (e) {
+        alert('Erro ao listar setores: ' + e.message);
+      }
+    }
+
+    function setupModalSetor() {
+      const modal = document.getElementById('modalSetor');
+      const btnNovo = document.getElementById('btnNovoSetor');
+      const btnFechar = document.getElementById('btnFecharModal');
+      const btnCanc = document.getElementById('btnCancelarModal');
+
+      btnNovo.addEventListener('click', () => {
+        document.getElementById('modalSetorTitle').textContent = 'Cadastrar Novo Setor Operacional';
+        document.getElementById('setorId').value = '';
+        document.getElementById('nomeSetor').value = '';
+        document.getElementById('siglaSetor').value = '';
+        document.getElementById('obsSetor').value = '';
+        modal.classList.add('active');
+      });
+
+      const fechar = () => modal.classList.remove('active');
+      btnFechar.addEventListener('click', fechar);
+      btnCanc.addEventListener('click', fechar);
+
+      document.getElementById('formSetor').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('setorId').value;
+        const payload = {
+          nome: document.getElementById('nomeSetor').value.trim(),
+          sigla: document.getElementById('siglaSetor').value.trim(),
+          observacao: document.getElementById('obsSetor').value.trim()
+        };
+
+        try {
+          if (id) {
+            await apiPut(`/setores/${id}`, payload);
+            alert('✓ Setor atualizado com sucesso!');
+          } else {
+            await apiPost('/setores', payload);
+            alert('✓ Setor criado com sucesso!');
+          }
+          fechar();
+          carregarSetores();
+        } catch (err) {
+          alert('Erro ao salvar setor: ' + err.message);
+        }
+      });
+    }
+
+    function abrirEdicaoSetor(s) {
+      document.getElementById('modalSetorTitle').textContent = 'Editar Setor Operacional';
+      document.getElementById('setorId').value = s.id;
+      document.getElementById('nomeSetor').value = s.nome || '';
+      document.getElementById('siglaSetor').value = s.sigla || '';
+      document.getElementById('obsSetor').value = s.observacao || '';
+      document.getElementById('modalSetor').classList.add('active');
+    }
+
+    async function alternarStatusSetor(id) {
+      if (!confirm('Deseja alternar o status deste setor? Os dados históricos serão preservados.')) return;
+      try {
+        await apiPut(`/setores/${id}/status`, {});
+        carregarSetores();
+      } catch (err) {
+        alert('Erro ao alterar status: ' + err.message);
+      }
+    }
+  </script>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

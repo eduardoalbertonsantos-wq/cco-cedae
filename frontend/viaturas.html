@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viaturas - CCO CEDAE</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
+  <style>
+    .modal-overlay { 
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(10,22,40,0.65); 
+      z-index: 9999; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 1rem; 
+      backdrop-filter: blur(2px);
+    }
+    .modal-overlay.active { display: flex !important; }
+    .modal-box { 
+      background: #ffffff; 
+      width: 100%; 
+      max-width: 600px; 
+      border-radius: 0.75rem; 
+      box-shadow: 0 25px 35px -5px rgba(0,0,0,0.3); 
+      border-top: 5px solid #003366; 
+      overflow: hidden; 
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-box-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      padding: 1.15rem 1.5rem; 
+      border-bottom: 1px solid #e2e8f0; 
+      background: #f8fafc;
+    }
+    .modal-box-body { 
+      padding: 1.5rem; 
+      overflow-y: auto; 
+    }
+    .modal-box-footer { 
+      padding: 1rem 1.5rem; 
+      border-top: 1px solid #e2e8f0; 
+      background: #f8fafc; 
+      display: flex; 
+      justify-content: flex-end; 
+      gap: 0.75rem; 
+      align-items: center;
+    }
+    .status-toast {
+      padding: 0.45rem 0.9rem;
+      border-radius: 0.4rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+    .status-toast.loading { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .status-toast.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .status-toast.error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+  </style>
+  <!-- PWA & Mobile Capabilities -->
+  <meta name="theme-color" content="#0a1628">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+</head>
+<body>
+  <div class="app-container">
+    <div class="sidebar-overlay"></div>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span style="color: #00d2ff; font-weight: 900;">CEDAE</span> &bull; CCO</div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">Dashboard Operacional</a>
+        <a href="formulario.html" class="nav-item">Formulário de Plantão</a>
+        <a href="plantoes.html" class="nav-item">Relatórios & Expedientes</a>
+        <a href="mapa-operacional.html" class="nav-item">Mapa Hierárquico</a>
+        <div class="nav-separator"></div>
+        <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
+        <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
+        <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
+        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="viaturas.html" class="nav-item active">🚗 Viaturas</a>
+        <a href="postos.html" class="nav-item">📍 Postos de Serviço</a>
+        <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="header">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+        <div class="header-title" style="font-weight: 800;">CONTROLE DE FROTA E VIATURAS &bull; CCO CEDAE</div>
+        <div class="header-actions">
+          <div class="clock" id="headerClock">00:00:00</div>
+          <span class="badge badge-primary">Admin</span>
+        </div>
+      </header>
+
+      <div class="content-area" style="padding: 1.5rem;">
+        <div class="table-wrapper" style="background:#fff; border-radius:0.75rem; padding:1.5rem; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+              <h2 style="margin: 0; color: #003366; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🚗 VIATURAS OPERACIONAIS</span>
+                <span id="badgeContagemViaturas" class="badge badge-primary" style="font-size: 0.8rem;">0 Viaturas</span>
+              </h2>
+              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Veículos de ronda com controle de odômetro, setor e supervisor responsável.</p>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+              <span id="refreshStatusViaturas" class="status-toast" style="display: none;"></span>
+              <button id="btnAtualizarViaturas" class="btn btn-secondary" style="font-weight: 700; display: inline-flex; align-items: center; gap: 0.4rem;">
+                <span>🔄</span> ATUALIZAR
+              </button>
+              <button id="btnNovaViatura" class="btn btn-primary" style="font-weight: 700; background: #003366;">
+                + Cadastrar Viatura
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters bar -->
+          <div style="margin-bottom: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; background: #f8fafc; padding: 0.85rem; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+            <div style="min-width: 220px;">
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Filtrar por Setor:</label>
+              <select id="filterSetorVtr" class="form-select" style="padding:0.45rem 0.75rem; font-size:0.85rem;">
+                <option value="">Todos os Setores</option>
+              </select>
+            </div>
+
+            <div style="min-width: 170px;">
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Status:</label>
+              <select id="filterStatusVtr" class="form-select" style="padding:0.45rem 0.75rem; font-size:0.85rem;">
+                <option value="">Todos os Status</option>
+                <option value="ativo">Ativas</option>
+                <option value="inativo">Inativas</option>
+              </select>
+            </div>
+
+            <div style="flex: 1; min-width: 220px;">
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Buscar viatura:</label>
+              <input type="text" id="searchVtr" class="form-input" style="padding:0.45rem 0.75rem; font-size:0.85rem;" placeholder="🔍 Buscar por placa, modelo, supervisor...">
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div style="overflow-x: auto;">
+            <table class="table" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f1f5f9; text-align: left;">
+                  <th style="width: 50px; text-align: center;">ID</th>
+                  <th>Veículo / Modelo</th>
+                  <th>Placa</th>
+                  <th>Setor</th>
+                  <th>Supervisor Responsável</th>
+                  <th>Status</th>
+                  <th>KM Acumulado</th>
+                  <th>Expedientes</th>
+                  <th style="text-align: center; width: 160px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="viaturasTableBody">
+                <tr><td colspan="9" style="text-align: center; color: #64748b; padding: 2rem;">Carregando viaturas...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Viatura -->
+  <div id="modalViatura" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-box-header">
+        <h3 id="modalVtrTitle" style="margin: 0; color: #003366; font-size: 1.15rem; font-weight: 800;">Cadastrar Viatura</h3>
+        <button type="button" id="btnFecharModalVtr" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#64748b; line-height: 1;">&times;</button>
+      </div>
+
+      <form id="formViatura">
+        <div class="modal-box-body">
+          <input type="hidden" id="vtrId">
+          
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #475569;">Identificador da Viatura:</span>
+            <span id="modalVtrIdLabel" class="badge badge-primary" style="font-size: 0.85rem; font-family: monospace;">Nova Viatura</span>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label class="form-label" for="vtrModelo" style="font-weight: 700;">Veículo / Modelo *</label>
+            <input type="text" class="form-input" id="vtrModelo" required placeholder="Ex: S-10 Cabine Dupla 4x4">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="vtrPlaca" style="font-weight: 700;">Placa do Veículo *</label>
+              <input type="text" class="form-input" id="vtrPlaca" required maxlength="8" placeholder="Ex: TTU-2F83 ou ABC1234" style="text-transform: uppercase; font-family: monospace; font-weight: 700;">
+              <small style="color:#64748b; font-size:0.75rem;">Padrão Mercosul ou Tradicional</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="vtrMarca" style="font-weight: 700;">Marca / Montadora</label>
+              <input type="text" class="form-input" id="vtrMarca" placeholder="Ex: CHEVROLET">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="vtrSetor" style="font-weight: 700;">Setor Vinculado *</label>
+              <select class="form-select" id="vtrSetor" required>
+                <option value="">Selecione o setor...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="vtrSupervisor" style="font-weight: 700;">Supervisor Responsável</label>
+              <select class="form-select" id="vtrSupervisor">
+                <option value="">Selecione (Opcional)...</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <div class="form-group">
+              <label class="form-label" for="vtrStatus" style="font-weight: 700;">Status Operacional</label>
+              <select class="form-select" id="vtrStatus">
+                <option value="ativo">ATIVO</option>
+                <option value="inativo">INATIVO</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="vtrPrefixo" style="font-weight: 700;">Prefixo Operacional</label>
+              <input type="text" class="form-input" id="vtrPrefixo" placeholder="Ex: VTR-CEDAE-01">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="vtrObs" style="font-weight: 700;">Observação</label>
+            <textarea class="form-textarea" id="vtrObs" rows="2" placeholder="Informações de manutenção, checklist, etc..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-box-footer">
+          <button type="button" id="btnCancVtr" class="btn btn-secondary">Cancelar</button>
+          <button type="submit" id="btnSalvarVtrSubmit" class="btn btn-primary" style="font-weight: 700; background: #16a34a; border-color: #16a34a;">
+            💾 SALVAR VIATURA
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    let viaturasMemoria = [];
+    let setoresMemoria = [];
+    let supervisoresMemoria = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await carregarAuxiliares();
+      await carregarViaturas();
+      setupModalVtr();
+      setupAtualizarBotao();
+
+      document.getElementById('filterSetorVtr').addEventListener('change', aplicarFiltrosLocais);
+      document.getElementById('filterStatusVtr').addEventListener('change', aplicarFiltrosLocais);
+      document.getElementById('searchVtr').addEventListener('input', debounce(aplicarFiltrosLocais, 250));
+    });
+
+    async function carregarAuxiliares() {
+      try {
+        const [setores, supervisores] = await Promise.all([
+          apiGet('/setores?apenas_ativos=true').catch(() => []),
+          apiGet('/supervisores?apenas_ativos=true').catch(() => [])
+        ]);
+
+        setoresMemoria = Array.isArray(setores) ? setores : [];
+        supervisoresMemoria = Array.isArray(supervisores) ? supervisores : [];
+
+        const fSet = document.getElementById('filterSetorVtr');
+        const mSet = document.getElementById('vtrSetor');
+        fSet.innerHTML = '<option value="">Todos os Setores</option>';
+        mSet.innerHTML = '<option value="">Selecione o setor...</option>';
+
+        setoresMemoria.forEach(s => {
+          fSet.innerHTML += `<option value="${s.id}">${s.nome}</option>`;
+          mSet.innerHTML += `<option value="${s.id}">${s.nome}</option>`;
+        });
+
+        const mSup = document.getElementById('vtrSupervisor');
+        mSup.innerHTML = '<option value="">Selecione (Opcional)...</option>';
+        supervisoresMemoria.forEach(sup => {
+          mSup.innerHTML += `<option value="${sup.id}">${sup.nome} (${sup.setor_nome || 'Setor'})</option>`;
+        });
+      } catch (e) {
+        console.warn('Erro ao carregar dados auxiliares:', e);
+      }
+    }
+
+    function setupAtualizarBotao() {
+      const btn = document.getElementById('btnAtualizarViaturas');
+      const toast = document.getElementById('refreshStatusViaturas');
+
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        toast.className = 'status-toast loading';
+        toast.textContent = 'Atualizando dados...';
+        toast.style.display = 'inline-flex';
+
+        try {
+          await carregarAuxiliares();
+          await carregarViaturas();
+          toast.className = 'status-toast success';
+          toast.textContent = '✓ Dados atualizados com sucesso.';
+          setTimeout(() => {
+            toast.style.display = 'none';
+            btn.disabled = false;
+          }, 2500);
+        } catch (e) {
+          toast.className = 'status-toast error';
+          toast.textContent = 'Erro ao atualizar dados: ' + e.message;
+          btn.disabled = false;
+        }
+      });
+    }
+
+    async function carregarViaturas() {
+      const tbody = document.getElementById('viaturasTableBody');
+      try {
+        const dados = await apiGet('/viaturas');
+        viaturasMemoria = Array.isArray(dados) ? dados : [];
+        
+        const countBadge = document.getElementById('badgeContagemViaturas');
+        if (countBadge) countBadge.textContent = `${viaturasMemoria.length} Viaturas`;
+
+        aplicarFiltrosLocais();
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #dc2626; padding: 2rem;">Erro ao carregar viaturas: ${e.message}</td></tr>`;
+      }
+    }
+
+    function aplicarFiltrosLocais() {
+      const setorId = document.getElementById('filterSetorVtr').value;
+      const statusFiltro = document.getElementById('filterStatusVtr').value;
+      const busca = (document.getElementById('searchVtr').value || '').trim().toLowerCase();
+      const tbody = document.getElementById('viaturasTableBody');
+
+      let lista = viaturasMemoria || [];
+
+      if (setorId) {
+        lista = lista.filter(v => v.setor_id === parseInt(setorId));
+      }
+
+      if (statusFiltro) {
+        lista = lista.filter(v => (v.status || '').toLowerCase() === statusFiltro);
+      }
+
+      if (busca) {
+        lista = lista.filter(v => 
+          (v.tipo_modelo || '').toLowerCase().includes(busca) || 
+          (v.placa || '').toLowerCase().includes(busca) || 
+          (v.marca || '').toLowerCase().includes(busca) ||
+          (v.supervisor_nome || '').toLowerCase().includes(busca) ||
+          (v.prefixo || '').toLowerCase().includes(busca)
+        );
+      }
+
+      tbody.innerHTML = '';
+
+      if (lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748b; padding: 2rem;">Nenhuma viatura encontrada para os filtros selecionados.</td></tr>';
+        return;
+      }
+
+      lista.forEach(v => {
+        const isAtiva = (v.status || 'ativo').toLowerCase() === 'ativo';
+        const badgeClass = isAtiva ? 'badge-green' : 'badge-red';
+        const btnStatusText = isAtiva ? 'Desativar' : 'Ativar';
+        const btnStatusClass = isAtiva ? 'btn-outline' : 'btn-success';
+
+        const supDisplay = v.supervisor_nome 
+          ? `<strong>${v.supervisor_nome}</strong>` 
+          : '<span style="color:#94a3b8; font-style:italic;">Não atribuído</span>';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align: center; font-weight: 800; color: #64748b;">#${v.id}</td>
+          <td><strong>${v.tipo_modelo}</strong> ${v.marca ? `<small style="color:#64748b;">(${v.marca})</small>` : ''}</td>
+          <td><span class="badge" style="background:#0a1628; color:#00d2ff; font-weight:800; font-family:monospace; font-size:0.85rem;">${v.placa}</span></td>
+          <td><span class="badge badge-primary">${v.setor_nome || 'Setor'}</span></td>
+          <td>${supDisplay}</td>
+          <td><span class="badge ${badgeClass}">${(v.status || 'ativo').toUpperCase()}</span></td>
+          <td><strong>${(v.km_acumulado || 0).toFixed(1)} km</strong></td>
+          <td>${v.total_plantoes || 0}</td>
+          <td style="text-align: center;">
+            <button class="btn btn-sm btn-outline btn-editar-vtr" data-id="${v.id}" title="Editar viatura">✏️ Editar</button>
+            <button class="btn btn-sm ${btnStatusClass} btn-status-vtr" style="margin-left:0.25rem;" data-id="${v.id}" title="Alternar status">${btnStatusText}</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.querySelectorAll('.btn-editar-vtr').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id);
+          const item = viaturasMemoria.find(v => v.id === id);
+          if (item) abrirEdicaoViatura(item);
+        });
+      });
+
+      document.querySelectorAll('.btn-status-vtr').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = parseInt(btn.dataset.id);
+          alternarStatusViatura(id);
+        });
+      });
+    }
+
+    function setupModalVtr() {
+      const modal = document.getElementById('modalViatura');
+      const btnNovo = document.getElementById('btnNovaViatura');
+      const btnFechar = document.getElementById('btnFecharModalVtr');
+      const btnCanc = document.getElementById('btnCancVtr');
+
+      btnNovo.addEventListener('click', () => {
+        document.getElementById('modalVtrTitle').textContent = 'Cadastrar Nova Viatura';
+        document.getElementById('modalVtrIdLabel').textContent = 'Nova Viatura';
+        document.getElementById('vtrId').value = '';
+        document.getElementById('vtrModelo').value = '';
+        document.getElementById('vtrMarca').value = '';
+        document.getElementById('vtrPlaca').value = '';
+        document.getElementById('vtrPrefixo').value = '';
+        document.getElementById('vtrSetor').value = '';
+        document.getElementById('vtrSupervisor').value = '';
+        document.getElementById('vtrStatus').value = 'ativo';
+        document.getElementById('vtrObs').value = '';
+        modal.classList.add('active');
+      });
+
+      const fechar = () => modal.classList.remove('active');
+      btnFechar.addEventListener('click', fechar);
+      btnCanc.addEventListener('click', fechar);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) fechar();
+      });
+
+      document.getElementById('formViatura').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('vtrId').value;
+        const btnSalvar = document.getElementById('btnSalvarVtrSubmit');
+
+        const placaLimpa = document.getElementById('vtrPlaca').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (placaLimpa.length < 7) {
+          alert('Por favor, informe uma placa válida com pelo menos 7 caracteres (Ex: ABC1234 ou ABC1D23).');
+          return;
+        }
+
+        const supIdVal = document.getElementById('vtrSupervisor').value;
+
+        const payload = {
+          tipo_modelo: document.getElementById('vtrModelo').value.trim(),
+          marca: document.getElementById('vtrMarca').value.trim(),
+          placa: placaLimpa,
+          prefixo: document.getElementById('vtrPrefixo').value.trim(),
+          setor_id: parseInt(document.getElementById('vtrSetor').value),
+          supervisor_id: supIdVal ? parseInt(supIdVal) : null,
+          status: document.getElementById('vtrStatus').value,
+          observacao: document.getElementById('vtrObs').value.trim()
+        };
+
+        btnSalvar.disabled = true;
+        btnSalvar.textContent = 'Salvando no Banco...';
+
+        try {
+          // REGRA DE SALVAMENTO:
+          // Verificar se a viatura já existe pelo ID. Se existir -> PUT, se não -> POST.
+          if (id) {
+            await apiPut(`/viaturas/${id}`, payload);
+            alert('✓ Viatura atualizada com sucesso no banco de dados!');
+          } else {
+            await apiPost('/viaturas', payload);
+            alert('✓ Viatura cadastrada com sucesso no banco de dados!');
+          }
+          fechar();
+          await carregarViaturas();
+        } catch (err) {
+          alert('Erro ao salvar viatura: ' + err.message);
+        } finally {
+          btnSalvar.disabled = false;
+          btnSalvar.textContent = '💾 SALVAR VIATURA';
+        }
+      });
+    }
+
+    function abrirEdicaoViatura(v) {
+      document.getElementById('modalVtrTitle').textContent = `Editar Viatura #${v.id} - ${v.placa}`;
+      document.getElementById('modalVtrIdLabel').textContent = `ID #${v.id}`;
+      document.getElementById('vtrId').value = v.id;
+      document.getElementById('vtrModelo').value = v.tipo_modelo || '';
+      document.getElementById('vtrMarca').value = v.marca || '';
+      document.getElementById('vtrPlaca').value = v.placa || '';
+      document.getElementById('vtrPrefixo').value = v.prefixo || '';
+      document.getElementById('vtrSetor').value = v.setor_id || '';
+      document.getElementById('vtrSupervisor').value = v.supervisor_id || '';
+      document.getElementById('vtrStatus').value = (v.status || 'ativo').toLowerCase();
+      document.getElementById('vtrObs').value = v.observacao || '';
+      document.getElementById('modalViatura').classList.add('active');
+    }
+
+    async function alternarStatusViatura(id) {
+      const v = viaturasMemoria.find(item => item.id === id);
+      const acao = v && v.status === 'ativo' ? 'desativar' : 'ativar';
+      if (!confirm(`Deseja realmente ${acao} a viatura #${id} (${v ? v.placa : ''})?`)) return;
+
+      try {
+        await apiPut(`/viaturas/${id}/status`, {});
+        await carregarViaturas();
+      } catch (err) {
+        alert('Erro ao alterar status: ' + err.message);
+      }
+    }
+  </script>
+  <script src="js/pwa.js" defer></script>
+</body>
+</html>

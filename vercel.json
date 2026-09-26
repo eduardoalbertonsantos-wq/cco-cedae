@@ -1,0 +1,39 @@
+﻿{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/formulario",
+      "dest": "/frontend/formulario.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/frontend/admin.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/frontend/login.html"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/frontend/dashboard.html"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ]
+}
