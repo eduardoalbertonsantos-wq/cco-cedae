@@ -752,8 +752,10 @@
       // Resolução inteligente da API: no app web oficial usa '/api/v1', em Android Capacitor ou file local usa o backend de produção
       const PROD_CLOUD_URL = 'https://cco-cedae.onrender.com';
       let API_BASE = '/api/v1';
+      let HEALTH_CHECK_URL = '/api/health';
       if (window.location.protocol === 'file:' || (window.location.hostname === 'localhost' && window.location.port !== '3000') || (window.location.hostname === '127.0.0.1' && window.location.port !== '3000')) {
         API_BASE = PROD_CLOUD_URL + '/api/v1';
+        HEALTH_CHECK_URL = PROD_CLOUD_URL + '/api/health';
       }
 
       function getHojeBrasiliaISO() {
@@ -824,12 +826,12 @@
       });
       window.addEventListener('offline', testarConectividade);
       
-      // Checagem periódica não intrusiva a cada 30 segundos se conectado
+      // Checagem periódica não intrusiva a cada 25 segundos
       setInterval(() => {
-        if (statusConexaoAtual === 'conectado') {
+        if (statusConexaoAtual !== 'conectando') {
           testarConectividade();
         }
-      }, 30000);
+      }, 25000);
 
       async function testarConectividade() {
         const offBanner = document.getElementById('conn-banner-offline');
@@ -848,8 +850,9 @@
 
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 4500);
-          const res = await fetch(API_BASE + '/health', {
+          // Timeout resiliente de 15 segundos para conexões móveis 3G/4G/5G
+          const timeoutId = setTimeout(() => controller.abort(), 15000);
+          const res = await fetch(HEALTH_CHECK_URL, {
             method: 'GET',
             cache: 'no-store',
             signal: controller.signal
@@ -908,6 +911,9 @@
                 </button>
               </div>
             `;
+            // Auto-recuperação resiliente contínua em segundo plano a cada 10 segundos
+            if (timerRetryConexao) clearTimeout(timerRetryConexao);
+            timerRetryConexao = setTimeout(testarConectividade, 10000);
           }
         }
         checarFilaOffline();

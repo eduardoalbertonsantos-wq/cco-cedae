@@ -4,7 +4,7 @@
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-supervisao-v2.0.0-definitivo';
+const CACHE_NAME = 'cco-supervisao-v2.3.0-producao-ativa';
 const STATIC_ASSETS = [
   '/',
   '/app',
@@ -65,9 +65,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. REQUISIÇÕES DE API (/api/):
+  // 1. REQUISIÇÕES DE API E HEALTH CHECK (/api/, /health, /api/health):
   // NUNCA cachear nem interceptar. Acesso 100% direto à rede para integridade dos dados em tempo real.
-  if (url.pathname.startsWith('/api/')) {
+  if (url.pathname.startsWith('/api/') || url.pathname === '/health' || url.pathname === '/api/health') {
     return;
   }
 

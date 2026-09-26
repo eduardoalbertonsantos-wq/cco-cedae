@@ -4,12 +4,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const https = require('https');
 const { initializeDatabase, closeDatabase, getDb } = require('./database/db');
 const { getBrasiliaDateTime } = require('./utils/date.utils');
 
 const app = express();
 
-// Confiança em proxy reverso (Nginx, Traefik, Localtunnel, Cloudflare)
+// Confiança em proxy reverso (Nginx, Traefik, Localtunnel, Cloudflare, Render)
 app.set('trust proxy', 1);
 
 // Redirecionamento HTTPS condicional para ambientes de produção
@@ -35,7 +36,15 @@ app.use(helmet({
         }
     }
 }));
-app.use(cors());
+
+// CORS configurado para máxima compatibilidade com APKs, PWAs e navegadores
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Pragma', 'Expires', 'X-Requested-With'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
+}));
+app.options('*', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -184,6 +193,18 @@ const server = app.listen(PORT, () => {
     console.log(`Acesse: http://localhost:${PORT}`);
     console.log('----------------------------------------');
 });
+
+// Keep-Alive automatizado para manter a instância na nuvem sempre acordada 24/7
+const KEEP_ALIVE_URL = process.env.RENDER_EXTERNAL_URL || 'https://cco-cedae.onrender.com';
+if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    setInterval(() => {
+        try {
+            https.get(`${KEEP_ALIVE_URL}/api/health`, (res) => {
+                // Instância de produção mantida ativa
+            }).on('error', () => {});
+        } catch (e) {}
+    }, 8 * 60 * 1000); // Ping a cada 8 minutos para evitar suspensão
+}
 
 // Graceful shutdown
 const shutdown = () => {
