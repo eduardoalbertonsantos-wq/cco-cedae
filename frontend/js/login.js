@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorContainer.style.display = 'none';
                 errorContainer.textContent = '';
             }
-            
+            try {
                 const response = await apiPost('/auth/login', { email, senha });
                 const userObj = response.usuario || response.user;
                 setAuth(response.token, userObj);

@@ -4,7 +4,7 @@
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-supervisao-v2.3.2-logout-fix';
+const CACHE_NAME = 'cco-supervisao-v2.3.3-syntax-fix';
 const STATIC_ASSETS = [
   '/',
   '/app',
