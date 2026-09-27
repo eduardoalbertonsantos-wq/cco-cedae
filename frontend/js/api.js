@@ -33,7 +33,20 @@ function clearAuth() {
 }
 
 function isAuthenticated() {
-    return !!getToken();
+    const token = getToken();
+    if (!token) return false;
+    try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+                console.warn('[AUTH] Token JWT expirado. Limpando credenciais.');
+                clearAuth();
+                return false;
+            }
+        }
+    } catch (e) {}
+    return true;
 }
 
 async function apiRequest(endpoint, options = {}) {
@@ -56,6 +69,12 @@ async function apiRequest(endpoint, options = {}) {
         }
 
         if (!response.ok) {
+            if (response.status === 401 && !url.includes('/auth/login') && !url.includes('/formulario')) {
+                console.warn('[AUTH] Sessão expirada ou token inválido. Redirecionando para login.');
+                clearAuth();
+                window.location.href = '/login.html?sessao_expirada=1';
+                return;
+            }
             const errorMsg = data.error || data.message || `Erro ${response.status}: ${response.statusText}`;
             console.error(`[API ERROR] ${options.method || 'GET'} ${url} -> Status ${response.status}:`, errorMsg, data);
             throw new Error(errorMsg);

@@ -4,7 +4,7 @@
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-supervisao-v2.3.0-producao-ativa';
+const CACHE_NAME = 'cco-supervisao-v2.3.1-dashboard-fix';
 const STATIC_ASSETS = [
   '/',
   '/app',

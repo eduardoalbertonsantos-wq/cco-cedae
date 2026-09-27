@@ -150,6 +150,10 @@ async function atualizarDashboard() {
 
     } catch (e) {
         console.error('Erro ao atualizar dashboard CEDAE:', e);
+        if (e.message && (e.message.includes('401') || e.message.includes('Acesso negado') || e.message.includes('Token'))) {
+            clearAuth();
+            window.location.href = '/login.html?sessao_expirada=1';
+        }
     }
 }
 

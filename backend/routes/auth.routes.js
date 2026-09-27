@@ -53,7 +53,7 @@ router.post('/login', (req, res) => {
         const token = jwt.sign(
             { id: user.id, nome: user.nome, email: user.email, perfil: user.perfil, setor_id: user.setor_id, setor_nome: setorNome },
             process.env.JWT_SECRET || 'cco-secret-key-change-in-production-2026',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '12h' }
+            { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
         );
 
         const usuario = {
