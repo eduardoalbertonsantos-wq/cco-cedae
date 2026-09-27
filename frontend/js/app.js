@@ -52,7 +52,10 @@ function initApp() {
     const logoutBtn = document.getElementById('logoutBtn') || document.querySelector('a[href="index.html"]');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             clearAuth();
+            try { localStorage.clear(); sessionStorage.clear(); } catch (err) {}
+            window.location.href = '/login.html?logout=1';
         });
     }
 

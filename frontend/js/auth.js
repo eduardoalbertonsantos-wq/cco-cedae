@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    if (isAuthenticated()) {
+    if (window.location.search.includes('logout') || window.location.search.includes('sair') || window.location.search.includes('limpar') || window.location.search.includes('sessao_expirada')) {
+        clearAuth();
+        try { localStorage.clear(); sessionStorage.clear(); } catch (err) {}
+    } else if (isAuthenticated()) {
         window.location.href = '/dashboard.html';
         return;
     }

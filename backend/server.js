@@ -157,6 +157,9 @@ app.use((req, res, next) => {
 app.get('/app.html', (req, res) => res.redirect(301, '/app'));
 app.get('/app', (req, res) => res.sendFile(path.join(frontendPath, 'app-supervisao.html')));
 app.get('/painel', (req, res) => res.sendFile(path.join(frontendPath, 'dashboard.html')));
+app.get('/logout', (req, res) => res.redirect('/login.html?logout=1'));
+app.get('/sair', (req, res) => res.redirect('/login.html?logout=1'));
+app.get('/login', (req, res) => res.sendFile(path.join(frontendPath, 'login.html')));
 
 app.use(express.static(frontendPath));
 
