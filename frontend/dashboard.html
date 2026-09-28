@@ -28,7 +28,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <meta name="apple-mobile-web-app-title" content="CCO Fiscalização">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/favicon.png">
@@ -70,7 +70,7 @@
         <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
         <a href="organizacao-postos.html" class="nav-item" style="color: #00d2ff; font-weight: 800;">🗂️ Organização dos Postos</a>
         <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
-        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="supervisores.html" class="nav-item">👮 Fiscais</a>
         <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
         <a href="postos.html" class="nav-item">📍 Gerenciar Postos</a>
         <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
@@ -109,7 +109,7 @@
         <div class="cedae-banner">
           <div>
             <h1>CCO &mdash; CONTROLE OPERACIONAL CEDAE</h1>
-            <p>Gestão Integrada de Supervisão, Viaturas, Postos e Expedientes</p>
+            <p>Gestão Integrada de Fiscalização, Viaturas, Postos e Expedientes</p>
           </div>
           <div>
             <a href="formulario.html" class="btn-new-shift">
@@ -157,11 +157,11 @@
             <div class="stat-value" id="statPostosCadastrados">0</div>
           </div>
           <div class="stat-card green">
-            <div class="stat-label">🟢 Supervisionados</div>
+            <div class="stat-label">🟢 Fiscalizados</div>
             <div class="stat-value" id="statPostosSupervisionados" style="color: var(--cco-green);">0</div>
           </div>
           <div class="stat-card red">
-            <div class="stat-label">🔴 Não Supervisionados</div>
+            <div class="stat-label">🔴 Não Fiscalizados</div>
             <div class="stat-value" id="statPostosNaoSupervisionados" style="color: var(--cco-red);">0</div>
           </div>
           <div class="stat-card yellow">
@@ -173,7 +173,7 @@
             <div class="stat-value" id="statPercentualSupervisao" style="color: #0284c7;">0%</div>
           </div>
           <div class="stat-card blue">
-            <div class="stat-label">Supervisores Ativos</div>
+            <div class="stat-label">Fiscais Ativos</div>
             <div class="stat-value" id="statSupervisoresAtivos">0</div>
           </div>
           <div class="stat-card blue">
@@ -242,7 +242,7 @@
                   <th style="padding:0.75rem; text-align:left;">Setor Operacional</th>
                   <th style="padding:0.75rem; text-align:center;">Tempo Sem Vistoria</th>
                   <th style="padding:0.75rem; text-align:center;">Última Vistoria</th>
-                  <th style="padding:0.75rem; text-align:left;">Último Supervisor</th>
+                  <th style="padding:0.75rem; text-align:left;">Último Fiscal</th>
                   <th style="padding:0.75rem; text-align:center;">Status</th>
                 </tr>
               </thead>
@@ -271,7 +271,7 @@
             </div>
           </div>
           <div class="chart-container" style="background:#fff; padding:1.25rem; border-radius:0.5rem; border:1px solid #e2e8f0;">
-            <h3 class="chart-title">Postos Supervisionados por Setor</h3>
+            <h3 class="chart-title">Postos Fiscalizados por Setor</h3>
             <div style="height: 260px; position: relative;">
               <canvas id="chart-postos-setores"></canvas>
             </div>

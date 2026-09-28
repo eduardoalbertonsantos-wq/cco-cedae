@@ -106,7 +106,7 @@ app.get('/api/v1/version', (req, res) => {
     } catch (e) {}
 
     res.json({
-        appName: 'CCO — SUPERVISÃO OPERACIONAL',
+        appName: 'CCO — FISCALIZAÇÃO OPERACIONAL',
         version: '2.0.0',
         releaseDate: '2026-09-26',
         status: 'stable',

@@ -179,7 +179,7 @@ class EmailService {
             if (ocorrencias && ocorrencias.length > 0) {
                 ocorrenciasHtml = `<h3 style="color: #ef4444; margin-top: 20px; border-bottom: 2px solid #ef4444; padding-bottom: 4px;">🚨 Ocorrências e Providências Registradas</h3><ul style="padding-left: 20px; line-height: 1.6;">`;
                 ocorrencias.forEach(oc => {
-                    ocorrenciasHtml += `<li style="margin-bottom: 8px;"><strong>[${oc.posto_nome || 'Geral'}]</strong> ${oc.descricao} &mdash; <span style="color: #0369a1;"><em>Providência: ${oc.providencias_adotadas || 'Adotada pelo supervisor'}</em></span></li>`;
+                    ocorrenciasHtml += `<li style="margin-bottom: 8px;"><strong>[${oc.posto_nome || 'Geral'}]</strong> ${oc.descricao} &mdash; <span style="color: #0369a1;"><em>Providência: ${oc.providencias_adotadas || 'Adotada pelo fiscal'}</em></span></li>`;
                 });
                 ocorrenciasHtml += `</ul>`;
             }
@@ -202,7 +202,7 @@ class EmailService {
                                 <td style="padding: 6px 0;"><strong>Data do Serviço:</strong> ${relatorio.data_servico}</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 6px 0;"><strong>Supervisor:</strong> ${relatorio.supervisor_nome || relatorio.responsavel_nome || 'N/A'}</td>
+                                <td style="padding: 6px 0;"><strong>Fiscal:</strong> ${relatorio.supervisor_nome || relatorio.responsavel_nome || 'N/A'}</td>
                                 <td style="padding: 6px 0;"><strong>Turno:</strong> ${relatorio.turno}</td>
                             </tr>
                             <tr style="border-bottom: 1px solid #f1f5f9;">
@@ -211,7 +211,7 @@ class EmailService {
                             </tr>
                         </table>
 
-                        <h3 style="color: #0a1628; border-bottom: 2px solid #2563eb; padding-bottom: 5px; margin-top: 15px;">Postos Supervisionados (${postos ? postos.length : 0})</h3>
+                        <h3 style="color: #0a1628; border-bottom: 2px solid #2563eb; padding-bottom: 5px; margin-top: 15px;">Postos Fiscalizados (${postos ? postos.length : 0})</h3>
                         <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                             <thead>
                                 <tr style="background: #f8fafc; text-align: left; color: #64748b;">

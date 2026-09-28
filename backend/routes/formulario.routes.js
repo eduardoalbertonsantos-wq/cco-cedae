@@ -104,7 +104,7 @@ const enviarRelatorioHandler = async (req, res) => {
                     horario: formatDisplayTime(existente.created_at),
                     timestamp: existente.created_at,
                     timezone: 'America/Sao_Paulo',
-                    message: '✅ SUPERVISÃO JÁ SINCRONIZADA ANTERIORMENTE',
+                    message: '✅ FISCALIZAÇÃO JÁ SINCRONIZADA ANTERIORMENTE',
                     ja_existia: true
                 });
             }
@@ -116,14 +116,14 @@ const enviarRelatorioHandler = async (req, res) => {
         }
 
         if (!supervisor_id && !responsavel_nome) {
-            return res.status(400).json({ error: 'Identificação do Supervisor ou Responsável é obrigatória' });
+            return res.status(400).json({ error: 'Identificação do Fiscal ou Responsável é obrigatória' });
         }
 
         // Regra de Isolamento: Se supervisor_id informado, deve pertencer obrigatoriamente ao setor_id
         if (supervisor_id) {
             const supValido = db.prepare("SELECT id, nome FROM supervisores WHERE id = ? AND setor_id = ? AND status = 'ativo'").get(supervisor_id, setor_id);
             if (!supValido) {
-                return res.status(400).json({ error: 'O supervisor selecionado não pertence ao setor do expediente ou está inativo.' });
+                return res.status(400).json({ error: 'O fiscal selecionado não pertence ao setor do expediente ou está inativo.' });
             }
         }
 
@@ -151,12 +151,12 @@ const enviarRelatorioHandler = async (req, res) => {
             const rotulo = p.posto_nome ? `"${p.posto_nome}"` : `ID ${p.posto_id}`;
             if (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') {
                 if (!p.motivo_nao_supervisao || !p.motivo_nao_supervisao.trim()) {
-                    return res.status(400).json({ error: `O posto ${rotulo} foi marcado como NÃO SUPERVISIONADO. É obrigatório informar o motivo.` });
+                    return res.status(400).json({ error: `O posto ${rotulo} foi marcado como NÃO FISCALIZADO. É obrigatório informar o motivo.` });
                 }
             } else {
-                // Posto supervisionado: exigir Hora, KM e Situação
+                // Posto fiscalizado: exigir Hora, KM e Situação
                 if (!p.horario_supervisao || !p.horario_supervisao.trim()) {
-                    return res.status(400).json({ error: `Informe a Hora da supervisão para o posto ${rotulo}.` });
+                    return res.status(400).json({ error: `Informe a Hora da fiscalização para o posto ${rotulo}.` });
                 }
                 if (p.km_posto === undefined || p.km_posto === null || String(p.km_posto).trim() === '') {
                     return res.status(400).json({ error: `Informe o KM no posto para o posto ${rotulo}.` });
@@ -222,7 +222,7 @@ const enviarRelatorioHandler = async (req, res) => {
         const relatorioExistente = db.prepare(dupCheckSql).get(...dupParams);
         if (relatorioExistente) {
             return res.status(409).json({
-                error: `Atenção: Já existe um relatório registrado para este Setor, Data, Turno e Supervisor (Relatório #${relatorioExistente.id} em ${relatorioExistente.created_at}). Para evitar duplicidade acidental, o novo envio foi bloqueado.`
+                error: `Atenção: Já existe um relatório registrado para este Setor, Data, Turno e Fiscal (Relatório #${relatorioExistente.id} em ${relatorioExistente.created_at}). Para evitar duplicidade acidental, o novo envio foi bloqueado.`
             });
         }
         
@@ -328,7 +328,7 @@ const enviarRelatorioHandler = async (req, res) => {
                         pId,
                         'COM_OCORRENCIA',
                         p.descricao_ocorrencia,
-                        'Informado no posto pelo supervisor',
+                        'Informado no posto pelo fiscal',
                         'resolvido'
                     );
                 }
@@ -381,16 +381,16 @@ const enviarRelatorioHandler = async (req, res) => {
         let textoWhatsApp = `*CEDAE — CCO CONTROLE OPERACIONAL*\n`;
         textoWhatsApp += `*RELATÓRIO DO EXPEDIENTE (#${newRelatorioId})*\n\n`;
         textoWhatsApp += `📍 *SETOR:* ${dadosCompletos.setor_nome}\n`;
-        textoWhatsApp += `👮 *SUPERVISOR:* ${dadosCompletos.supervisor_nome || dadosCompletos.responsavel_nome || 'N/A'}\n`;
+        textoWhatsApp += `👮 *FISCAL:* ${dadosCompletos.supervisor_nome || dadosCompletos.responsavel_nome || 'N/A'}\n`;
         textoWhatsApp += `🚗 *VIATURA:* ${dadosCompletos.viatura_modelo || dadosCompletos.viatura_outros_texto || 'OUTROS'} (${dadosCompletos.viatura_placa || 'N/A'})\n`;
-        textoWhatsApp += `📅 *DATA DA SUPERVISÃO:* ${formatDisplayDate(dadosCompletos.data_servico)} | ⏱️ *TURNO:* ${dadosCompletos.turno}\n`;
+        textoWhatsApp += `📅 *DATA DA FISCALIZAÇÃO:* ${formatDisplayDate(dadosCompletos.data_servico)} | ⏱️ *TURNO:* ${dadosCompletos.turno}\n`;
         textoWhatsApp += `🕒 *FECHAMENTO / ENVIO:* ${spNow.displayDateTime} (Horário de Brasília)\n`;
         textoWhatsApp += `🛣️ *KM RODADOS GERAL:* ${dadosCompletos.km_rodado || 0} km (Inicial: ${dadosCompletos.km_inicial} | Final: ${dadosCompletos.km_final})\n\n`;
         
-        textoWhatsApp += `📋 *SUPERVISÃO INDIVIDUAL DOS POSTOS (${postosSalvos.length}):*\n`;
+        textoWhatsApp += `📋 *FISCALIZAÇÃO INDIVIDUAL DOS POSTOS (${postosSalvos.length}):*\n`;
         postosSalvos.forEach((p, index) => {
             if (p.supervisionado === 0) {
-                textoWhatsApp += `${index + 1}. *${p.posto_nome}* — 🔴 NÃO SUPERVISIONADO (Motivo: ${p.motivo_nao_supervisao || 'Sem motivo'})\n`;
+                textoWhatsApp += `${index + 1}. *${p.posto_nome}* — 🔴 NÃO FISCALIZADO (Motivo: ${p.motivo_nao_supervisao || 'Sem motivo'})\n`;
             } else {
                 const efetivoStr = (p.efetivo_completo === 0) ? `FALTA (${p.falta_efetivo_qtd || '1'})` : `COMPLETO`;
                 const ocorrStr = (p.tem_ocorrencia === 1 || p.descricao_ocorrencia) ? `SIM (${p.descricao_ocorrencia})` : `NÃO`;
@@ -410,7 +410,7 @@ const enviarRelatorioHandler = async (req, res) => {
             textoWhatsApp += `\n📝 *OBSERVAÇÕES GERAIS:*\n${dadosCompletos.observacoes_gerais}\n`;
         }
         
-        textoWhatsApp += `\n*RESPONSÁVEL PELO RELATÓRIO:* ${dadosCompletos.responsavel_nome || dadosCompletos.supervisor_nome || 'Supervisor'}\n`;
+        textoWhatsApp += `\n*RESPONSÁVEL PELO RELATÓRIO:* ${dadosCompletos.responsavel_nome || dadosCompletos.supervisor_nome || 'Fiscal'}\n`;
         textoWhatsApp += `*STATUS:* RECEBIDO E CONSOLIDADO NO CCO CEDAE`;
 
         // 5. Enviar Notificação por E-mail (Async)
@@ -432,7 +432,7 @@ const enviarRelatorioHandler = async (req, res) => {
             horario: spNow.horaCurta,
             timestamp_envio: spNow.dataHora,
             timezone: 'America/Sao_Paulo',
-            message: '✅ SUPERVISÃO ENVIADA COM SUCESSO',
+            message: '✅ FISCALIZAÇÃO ENVIADA COM SUCESSO',
             texto_whatsapp: textoWhatsApp
         });
         

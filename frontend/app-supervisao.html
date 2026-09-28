@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>CCO — SUPERVISÃO OPERACIONAL</title>
+  <title>CCO — FISCALIZAÇÃO OPERACIONAL</title>
   
   <!-- PWA & Mobile Capabilities -->
   <meta name="theme-color" content="#0a1628">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <meta name="apple-mobile-web-app-title" content="CCO Fiscalização">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
   <link rel="apple-touch-icon" href="icons/icon.svg">
@@ -412,7 +412,7 @@
   <header class="app-header">
     <div class="app-brand">
       <span style="font-size:1.3rem;">🛡️</span>
-      <h1 class="app-brand-title">CCO CEDAE <span>&bull; SUPERVISÃO</span></h1>
+      <h1 class="app-brand-title">CCO CEDAE <span>&bull; FISCALIZAÇÃO</span></h1>
     </div>
     <div id="auth-actions" style="display:none; align-items:center; gap:8px;">
       <span id="header-user-nome" style="font-size:0.8rem; font-weight:700; color:#00d2ff;"></span>
@@ -433,11 +433,11 @@
 
   <main class="app-content">
 
-    <!-- ==================== TELA 1: LOGIN DO SUPERVISOR ==================== -->
+    <!-- ==================== TELA 1: LOGIN DO FISCAL ==================== -->
     <section id="view-login" class="view-card" style="margin-top:20px; text-align:center;">
       <div style="font-size:2.4rem; margin-bottom:10px;">🛡️</div>
-      <h2 style="margin:0 0 4px 0; font-size:1.35rem; color:#ffffff; font-weight:900;">CCO &mdash; SUPERVISÃO OPERACIONAL</h2>
-      <p style="color:#94a3b8; font-size:0.88rem; margin:0 0 20px 0;">Acesso exclusivo para Supervisores Operacionais CEDAE</p>
+      <h2 style="margin:0 0 4px 0; font-size:1.35rem; color:#ffffff; font-weight:900;">CCO &mdash; FISCALIZAÇÃO OPERACIONAL</h2>
+      <p style="color:#94a3b8; font-size:0.88rem; margin:0 0 20px 0;">Acesso exclusivo para Fiscais Operacionais CEDAE</p>
 
       <form id="form-login" style="text-align:left;">
         <div class="form-group-mobile">
@@ -458,17 +458,17 @@
       </form>
 
       <div style="margin-top:20px; padding-top:14px; border-top:1px solid #1e3a8a; font-size:0.75rem; color:#94a3b8; text-align:center;">
-        🔒 Acesso restrito e monitorado &bull; Supervisão Operacional CEDAE
+        🔒 Acesso restrito e monitorado &bull; Fiscalização Operacional CEDAE
       </div>
     </section>
 
-    <!-- ==================== TELA 2: SUPERVISÃO OPERACIONAL (IDÊNTICA AO COMPUTADOR) ==================== -->
+    <!-- ==================== TELA 2: FISCALIZAÇÃO OPERACIONAL (IDÊNTICA AO COMPUTADOR) ==================== -->
     <section id="view-supervisao" style="display:none;">
 
-      <!-- Faixa de Identificação do Supervisor e Setor -->
+      <!-- Faixa de Identificação do Fiscal e Setor -->
       <div class="supervisor-badge-bar">
         <div class="sup-saudacao">
-          <span>Supervisor: <strong id="sup-nome-bold" style="color:#fff;">---</strong></span>
+          <span>Fiscal: <strong id="sup-nome-bold" style="color:#fff;">---</strong></span>
           <span class="sup-setor-pill" id="sup-setor-badge">SETOR</span>
         </div>
         <div class="sup-counters-grid">
@@ -478,7 +478,7 @@
           </div>
           <div class="sup-counter-item sup-ok">
             <span class="count-num" id="cnt-sup-postos">0</span>
-            <span class="count-lbl">Supervisionados</span>
+            <span class="count-lbl">Fiscalizados</span>
           </div>
           <div class="sup-counter-item sup-pend">
             <span class="count-num" id="cnt-pend-postos">0</span>
@@ -486,7 +486,7 @@
           </div>
           <div class="sup-counter-item sup-warn">
             <span class="count-num" id="cnt-nao-postos">0</span>
-            <span class="count-lbl">Não Superv.</span>
+            <span class="count-lbl">Não Fiscaliz.</span>
           </div>
         </div>
       </div>
@@ -516,9 +516,9 @@
           </div>
 
           <div class="form-group-mobile">
-            <label for="selectSupervisorAtivo">Selecionar Supervisor do Expediente *</label>
+            <label for="selectSupervisorAtivo">Selecionar Fiscal do Expediente *</label>
             <select id="selectSupervisorAtivo" class="select-mobile" required>
-              <option value="">Carregando supervisores do setor...</option>
+              <option value="">Carregando fiscais do setor...</option>
             </select>
           </div>
 
@@ -565,7 +565,7 @@
         <div class="view-card">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:6px;">
             <h3 style="margin:0; font-size:0.95rem; color:#00d2ff; text-transform:uppercase; border-left:3px solid #00d2ff; padding-left:8px;">
-              2. POSTOS SUPERVISIONADOS (<span id="lblQtdPostosSetor">0</span>)
+              2. POSTOS FISCALIZADOS (<span id="lblQtdPostosSetor">0</span>)
             </h3>
             <span id="badgeTipoSetor" style="font-size:0.75rem; background:#1e3a8a; color:#fff; padding:2px 8px; border-radius:4px; font-weight:700;"></span>
           </div>
@@ -595,12 +595,12 @@
 
           <div class="form-group-mobile">
             <label for="providenciasGerais">Providências Adotadas</label>
-            <textarea id="providenciasGerais" class="textarea-mobile" rows="2" placeholder="Providências imediatas tomadas pela supervisão..."></textarea>
+            <textarea id="providenciasGerais" class="textarea-mobile" rows="2" placeholder="Providências imediatas tomadas pela fiscalização..."></textarea>
           </div>
 
           <div class="form-group-mobile">
             <label for="pendenciasGerais">Pendências a Transmitir para o Próximo Plantão</label>
-            <textarea id="pendenciasGerais" class="textarea-mobile" rows="2" placeholder="Assuntos pendentes a repassar ao próximo supervisor..."></textarea>
+            <textarea id="pendenciasGerais" class="textarea-mobile" rows="2" placeholder="Assuntos pendentes a repassar ao próximo fiscal..."></textarea>
           </div>
         </div>
 
@@ -609,7 +609,7 @@
           <label style="display:flex; align-items:flex-start; gap:8px; cursor:pointer; margin-bottom:14px;">
             <input type="checkbox" id="checkConfirmacao" required style="width:20px; height:20px; margin-top:2px; accent-color:#22c55e;">
             <span style="font-size:0.85rem; color:#cbd5e1; font-weight:700;">
-              Declaro que as informações deste relatório correspondem fielmente às supervisões realizadas durante o expediente.
+              Declaro que as informações deste relatório correspondem fielmente às fiscalizações realizadas durante o expediente.
             </span>
           </label>
 
@@ -676,7 +676,7 @@
 
       <div style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px; font-size:0.85rem; line-height:1.6; margin-bottom:12px;">
         <div><strong>Setor:</strong> <span id="confSetor" style="color:#00d2ff;">-</span> | <strong>Data:</strong> <span id="confData">-</span> | <strong>Turno:</strong> <span id="confTurno">-</span></div>
-        <div><strong>Supervisor:</strong> <span id="confSupervisor">-</span></div>
+        <div><strong>Fiscal:</strong> <span id="confSupervisor">-</span></div>
         <div><strong>Viatura:</strong> <span id="confViatura">-</span></div>
         <div><strong>KM:</strong> <span id="confKmIni">-</span> até <span id="confKmFim">-</span> &bull; <strong>Total Rodado:</strong> <span id="confKmRodado" style="color:#4ade80; font-weight:800;">-</span></div>
       </div>
@@ -689,7 +689,7 @@
         </div>
         <div style="background:#091322; border:1px solid #1e3a8a; border-radius:6px; padding:6px 2px;">
           <div style="font-size:1.1rem; font-weight:900; color:#4ade80;" id="confQtdSup">0</div>
-          <div style="font-size:0.65rem; color:#86efac;">Superv.</div>
+          <div style="font-size:0.65rem; color:#86efac;">Fiscaliz.</div>
         </div>
         <div style="background:#091322; border:1px solid #1e3a8a; border-radius:6px; padding:6px 2px;">
           <div style="font-size:1.1rem; font-weight:900; color:#facc15;" id="confQtdPend">0</div>
@@ -697,7 +697,7 @@
         </div>
         <div style="background:#091322; border:1px solid #1e3a8a; border-radius:6px; padding:6px 2px;">
           <div style="font-size:1.1rem; font-weight:900; color:#f87171;" id="confQtdNao">0</div>
-          <div style="font-size:0.65rem; color:#fecaca;">Não Superv.</div>
+          <div style="font-size:0.65rem; color:#fecaca;">Não Fiscaliz.</div>
         </div>
       </div>
 
@@ -963,7 +963,7 @@
       }
 
       document.getElementById('btn-logout').addEventListener('click', () => {
-        if (confirm('Deseja realmente sair do aplicativo CCO Supervisão?')) {
+        if (confirm('Deseja realmente sair do aplicativo CCO Fiscalização?')) {
           encerrarSessao();
         }
       });
@@ -1012,8 +1012,8 @@
         document.getElementById('view-supervisao').style.display = 'block';
         document.getElementById('auth-actions').style.display = 'flex';
 
-        document.getElementById('header-user-nome').textContent = currentUser.nome || 'SUPERVISOR';
-        document.getElementById('sup-nome-bold').textContent = currentUser.nome || 'SUPERVISOR';
+        document.getElementById('header-user-nome').textContent = currentUser.nome || 'FISCAL';
+        document.getElementById('sup-nome-bold').textContent = currentUser.nome || 'FISCAL';
         document.getElementById('sup-setor-badge').textContent = currentUser.setor_nome || 'SETOR';
         document.getElementById('inputResponsavel').value = currentUser.nome || '';
         document.getElementById('inputDataServico').value = getHojeBrasiliaISO();
@@ -1048,7 +1048,7 @@
 
       function popularSupervisores(sups) {
         const select = document.getElementById('selectSupervisorAtivo');
-        select.innerHTML = '<option value="">Selecione o supervisor da escala...</option>';
+        select.innerHTML = '<option value="">Selecione o fiscal da escala...</option>';
         if (sups && sups.length > 0) {
           sups.forEach(s => {
             const mat = s.matricula ? ' (Mat. ' + s.matricula + ')' : '';
@@ -1140,7 +1140,7 @@
           document.getElementById('lblQtdPostosSetor').textContent = '59 postos disponíveis (até 12 por turno)';
           document.getElementById('badgeTipoSetor').textContent = 'PLANTÃO (59 POSTOS)';
 
-          let optsPlantao = '<option value="">-- [Vazio / Selecione o Posto Supervisionado] --</option>';
+          let optsPlantao = '<option value="">-- [Vazio / Selecione o Posto Fiscalizado] --</option>';
           optsPlantao += '<option value="MANUAL">➕ OUTRO POSTO (Digitar manualmente)</option>';
           postos.forEach(p => {
             const rotuloOrigem = p.setor_origem ? ' [' + p.setor_origem + ']' : '';
@@ -1202,7 +1202,7 @@
                 '<option value="SEM_ALTERACAO">⚪ SEM ALTERAÇÃO</option>' +
                 '<option value="COM_OCORRENCIA">🔴 COM OCORRÊNCIA</option>' +
                 '<option value="PENDENCIA">🟡 PENDÊNCIA</option>' +
-                '<option value="NAO_SUPERVISIONADO">⚫ NÃO SUPERVISIONADO</option>' +
+                '<option value="NAO_SUPERVISIONADO">⚫ NÃO FISCALIZADO</option>' +
               '</select>' +
             '</div>' +
             '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; background:#040911; padding:8px; border-radius:6px; margin-bottom:8px;">' +
@@ -1228,7 +1228,7 @@
               '</div>' +
             '</div>' +
             '<div id="wrap_motivo_ns_' + slot + '" style="display:none; background:#20111a; border:1px solid #7f1d1d; border-radius:6px; padding:8px; margin-bottom:8px;">' +
-              '<label style="font-size:0.75rem; color:#fca5a5; font-weight:700;">Motivo da Não Supervisão *</label>' +
+              '<label style="font-size:0.75rem; color:#fca5a5; font-weight:700;">Motivo da Não Fiscalização *</label>' +
               '<select class="select-mobile" id="motivo_sel_' + slot + '" style="min-height:36px; margin-bottom:4px;">' +
                 '<option value="">Selecione o motivo...</option>' +
                 '<option value="Posto fechado">Posto fechado</option>' +
@@ -1280,7 +1280,7 @@
                 '<option value="SEM_ALTERACAO">⚪ SEM ALTERAÇÃO</option>' +
                 '<option value="COM_OCORRENCIA">🔴 COM OCORRÊNCIA</option>' +
                 '<option value="PENDENCIA">🟡 PENDÊNCIA</option>' +
-                '<option value="NAO_SUPERVISIONADO">⚫ NÃO SUPERVISIONADO</option>' +
+                '<option value="NAO_SUPERVISIONADO">⚫ NÃO FISCALIZADO</option>' +
               '</select>' +
             '</div>' +
             '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; background:#040911; padding:8px; border-radius:6px; margin-bottom:8px;">' +
@@ -1306,7 +1306,7 @@
               '</div>' +
             '</div>' +
             '<div id="reg_wrap_motivo_ns_' + slot + '" style="display:none; background:#20111a; border:1px solid #7f1d1d; border-radius:6px; padding:8px; margin-bottom:8px;">' +
-              '<label style="font-size:0.75rem; color:#fca5a5; font-weight:700;">Motivo da Não Supervisão *</label>' +
+              '<label style="font-size:0.75rem; color:#fca5a5; font-weight:700;">Motivo da Não Fiscalização *</label>' +
               '<select class="select-mobile" id="reg_motivo_sel_' + slot + '" style="min-height:36px; margin-bottom:4px;">' +
                 '<option value="">Selecione o motivo...</option>' +
                 '<option value="Posto fechado">Posto fechado</option>' +
@@ -1418,7 +1418,7 @@
               else if (val === 'SEM_ALTERACAO') { badge.textContent = '⚪ SEM ALTERAÇÃO'; badge.classList.add('badge-sit-sem-alt'); }
               else if (val === 'COM_OCORRENCIA') { badge.textContent = '🔴 COM OCORRÊNCIA'; badge.classList.add('badge-sit-ocorrencia'); }
               else if (val === 'PENDENCIA') { badge.textContent = '🟡 PENDÊNCIA'; badge.classList.add('badge-sit-pendencia'); }
-              else if (val === 'NAO_SUPERVISIONADO') { badge.textContent = '⚫ NÃO SUPERVISIONADO'; badge.classList.add('badge-sit-nao-sup'); }
+              else if (val === 'NAO_SUPERVISIONADO') { badge.textContent = '⚫ NÃO FISCALIZADO'; badge.classList.add('badge-sit-nao-sup'); }
             }
 
             if (wrapMotivo) {
@@ -1509,7 +1509,7 @@
 
             if (sel.value === 'MANUAL') {
               nomePosto = document.getElementById('manual_posto_' + i)?.value.trim() || 'Posto Manual';
-              endPosto = 'Cadastrado manualmente via Supervisão do Plantão';
+              endPosto = 'Cadastrado manualmente via Fiscalização do Plantão';
               locPosto = 'Rio de Janeiro';
               empPosto = 'CEDAE';
             } else {
@@ -1639,7 +1639,7 @@
         postos.forEach(p => {
           let icone = '✓';
           let cor = '#4ade80';
-          let txtSit = 'Supervisionado';
+          let txtSit = 'Fiscalizado';
 
           if (p.supervisionado === 1) {
             sup++;
@@ -1659,7 +1659,7 @@
             nao++;
             icone = '✕';
             cor = '#f87171';
-            txtSit = 'Não Supervisionado: ' + (p.motivo_nao_supervisao || 'Sem justificativa');
+            txtSit = 'Não Fiscalizado: ' + (p.motivo_nao_supervisao || 'Sem justificativa');
           }
 
           listaDiv.innerHTML += '<div style="padding:6px 0; border-bottom:1px solid #1e3a8a; display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">' +
@@ -1715,12 +1715,12 @@
         for (const p of postos) {
           if (p.supervisionado === 0) {
             if (!p.motivo_nao_supervisao || !p.motivo_nao_supervisao.trim()) {
-              alert('O posto "' + p.posto_nome + '" foi marcado como NÃO SUPERVISIONADO. Informe o Motivo da Não Supervisão.');
+              alert('O posto "' + p.posto_nome + '" foi marcado como NÃO FISCALIZADO. Informe o Motivo da Não Fiscalização.');
               return;
             }
           } else {
             if (!p.horario_supervisao) {
-              alert('Informe a Hora da supervisão para o posto "' + p.posto_nome + '".');
+              alert('Informe a Hora da fiscalização para o posto "' + p.posto_nome + '".');
               return;
             }
             if (p.km_posto === null || isNaN(p.km_posto)) {
@@ -1756,7 +1756,7 @@
             posto_id: null,
             tipo_ocorrencia: 'Geral',
             descricao: ocorrGerais,
-            providencias_adotadas: document.getElementById('providenciasGerais').value.trim() || 'Registrado pela supervisão',
+            providencias_adotadas: document.getElementById('providenciasGerais').value.trim() || 'Registrado pela fiscalização',
             status: 'resolvido'
           });
         }
@@ -1814,7 +1814,7 @@
 
           if (!res.ok) {
             if (res.status === 409) {
-              alert('⚠️ RELATÓRIO JÁ REGISTRADO:\n' + (data.error || 'Já existe um relatório registrado para este supervisor, setor, data e turno. Evitando envio duplicado.'));
+              alert('⚠️ RELATÓRIO JÁ REGISTRADO:\n' + (data.error || 'Já existe um relatório registrado para este fiscal, setor, data e turno. Evitando envio duplicado.'));
               return;
             }
             if (res.status === 400) {
@@ -1946,7 +1946,7 @@
 
           document.getElementById('visuRelCorpo').innerHTML = '<div style="background:#091322; border:1px solid #1e3a8a; border-radius:8px; padding:10px; margin-bottom:12px;">' +
               '<div><strong>Setor:</strong> ' + r.setor_nome + ' &bull; <strong>Data:</strong> ' + r.data_servico + ' &bull; <strong>Turno:</strong> ' + r.turno + '</div>' +
-              '<div><strong>Supervisor:</strong> ' + (r.supervisor_nome || r.responsavel_nome) + '</div>' +
+              '<div><strong>Fiscal:</strong> ' + (r.supervisor_nome || r.responsavel_nome) + '</div>' +
               '<div><strong>Viatura:</strong> ' + (r.viatura_modelo || r.viatura_outros_texto || 'N/A') + ' (KM Rodado: ' + (r.km_rodado || 0) + ' km)</div>' +
             '</div>' +
             '<table style="width:100%; border-collapse:collapse; font-size:0.8rem; margin-bottom:12px;">' +

@@ -135,7 +135,7 @@ async function atualizarDashboard() {
         if (ult && ultTexto) {
             const sup = ult.supervisor_nome || ult.responsavel_nome || 'N/A';
             const vtr = ult.viatura_modelo || ult.viatura_outros_texto || 'VTR';
-            ultTexto.textContent = `${ult.setor_nome} — Turno ${ult.turno} | Sup: ${sup} | Vtr: ${vtr} (${ult.viatura_placa || 'N/A'})`;
+            ultTexto.textContent = `${ult.setor_nome} — Turno ${ult.turno} | Fiscal: ${sup} | Vtr: ${vtr} (${ult.viatura_placa || 'N/A'})`;
             if (ultData) ultData.textContent = `📅 ${formatDate(ult.data_servico)} (#${ult.id})`;
         } else if (ultTexto) {
             ultTexto.textContent = 'Nenhum relatório recente encontrado';
@@ -260,7 +260,7 @@ function renderizarPainelPorSetor(setores) {
             </div>
             
             <div class="setor-box-meta">
-                <strong>👮 Supervisor de Serviço:</strong> ${s.supervisor_atual || 'Não designado'}
+                <strong>👮 Fiscal de Serviço:</strong> ${s.supervisor_atual || 'Não designado'}
             </div>
             <div class="setor-box-meta">
                 <strong>🚗 Viatura Utilizada:</strong> ${s.viatura_atual || 'Nenhuma'}
@@ -272,7 +272,7 @@ function renderizarPainelPorSetor(setores) {
             <div class="setor-box-badges">
                 ${s.id === 4 || (s.nome && s.nome.includes('PLANT')) ? `
                     <span class="badge badge-primary" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a;">📍 Postos Próprios: ${s.postos_cadastrados || 30}</span>
-                    <span class="badge" style="background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd;">🌐 Supervisão Operacional: 59 Postos</span>
+                    <span class="badge" style="background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd;">🌐 Fiscalização Operacional: 61 Postos</span>
                 ` : `
                     <span class="badge badge-primary">📍 Quantidade de Postos: ${s.postos_cadastrados}</span>
                 `}
@@ -333,7 +333,7 @@ function renderizarGraficos(stats) {
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Postos Supervisionados',
+                    label: 'Postos Fiscalizados',
                     data: data,
                     backgroundColor: '#2563eb',
                     borderRadius: 4

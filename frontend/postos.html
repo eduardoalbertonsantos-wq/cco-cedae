@@ -97,7 +97,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <meta name="apple-mobile-web-app-title" content="CCO Fiscalização">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/favicon.png">
@@ -116,7 +116,7 @@
         <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
         <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
         <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
-        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="supervisores.html" class="nav-item">👮 Fiscais</a>
         <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
         <a href="postos.html" class="nav-item active">📍 Gerenciar Postos</a>
         <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
@@ -143,7 +143,7 @@
                 <span>📍 GERENCIAR POSTOS</span>
                 <span id="badgeContagemPostos" class="badge badge-primary" style="font-size: 0.8rem;">59 Postos</span>
               </h2>
-              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Base única de postos operacionais do CCO. Plantão supervisiona todos os postos.</p>
+              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Base única de postos operacionais do CCO. Plantão fiscaliza todos os postos.</p>
             </div>
             
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
@@ -204,7 +204,7 @@
                   <th style="width: 55px; text-align: center;">ID</th>
                   <th>Nome do Posto</th>
                   <th>Setor(es)</th>
-                  <th>Supervisor Resp.</th>
+                  <th>Fiscal Resp.</th>
                   <th>Viatura / Placa</th>
                   <th>Status</th>
                   <th>Observação</th>
@@ -254,13 +254,13 @@
               <option value="SEM_SETOR">⚠️ SETOR NÃO DEFINIDO</option>
             </select>
             <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 0.4rem; padding: 0.5rem 0.75rem; margin-top: 0.4rem; font-size: 0.78rem; color: #92400e; line-height: 1.4;">
-              <strong>🔵 REGRA ESPECIAL DO PLANTÃO:</strong> O Plantão supervisiona todos os postos da base central, mas o posto pertence ao seu setor oficial selecionado acima (<strong>SETOR DO POSTO &ne; SETOR DO SUPERVISOR</strong>).
+              <strong>🔵 REGRA ESPECIAL DO PLANTÃO:</strong> O Plantão fiscaliza todos os postos da base central, mas o posto pertence ao seu setor oficial selecionado acima (<strong>SETOR DO POSTO &ne; SETOR DO FISCAL</strong>).
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
             <div class="form-group">
-              <label class="form-label" for="postoSupervisor" style="font-weight: 700;">Supervisor Responsável</label>
+              <label class="form-label" for="postoSupervisor" style="font-weight: 700;">Fiscal Responsável</label>
               <select class="form-select" id="postoSupervisor">
                 <option value="">Selecione (Opcional)...</option>
               </select>

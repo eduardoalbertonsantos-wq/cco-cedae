@@ -118,14 +118,14 @@ async function carregarEstruturaDoSetor(setorId) {
         
         // 2.1 Preencher Supervisores do Setor
         const selectSup = document.getElementById('selectSupervisor');
-        selectSup.innerHTML = '<option value="">Selecione o supervisor...</option>';
+        selectSup.innerHTML = '<option value="">Selecione o fiscal...</option>';
         if (data.supervisores && data.supervisores.length > 0) {
             data.supervisores.forEach(sup => {
                 const mat = sup.matricula ? `(Mat. ${sup.matricula})` : '';
                 selectSup.innerHTML += `<option value="${sup.id}" data-nome="${sup.nome}">${sup.nome} ${mat}</option>`;
             });
         } else {
-            selectSup.innerHTML = '<option value="">Nenhum supervisor ativo cadastrado para este setor</option>';
+            selectSup.innerHTML = '<option value="">Nenhum fiscal ativo cadastrado para este setor</option>';
         }
 
         // 2.2 Preencher Viaturas do Setor + Opção OUTROS
@@ -159,7 +159,7 @@ async function carregarEstruturaDoSetor(setorId) {
         if (isPlantao) {
             document.getElementById('contadorPostosBadge').textContent = `Plantão: 59 postos disponíveis (até 12 por expediente)`;
 
-            let optionsPlantao = '<option value="">-- [Vazio / Selecione o Posto Supervisionado] --</option>';
+            let optionsPlantao = '<option value="">-- [Vazio / Selecione o Posto Fiscalizado] --</option>';
             optionsPlantao += '<option value="MANUAL">➕ OUTRO POSTO (Digitar manualmente)</option>';
             
             postosDoSetor.forEach(p => {
@@ -214,7 +214,7 @@ async function carregarEstruturaDoSetor(setorId) {
                         <div class="plantao-posto-campos" id="plantao_campos_${i}" style="display:none; background:#fafafa; padding:1rem; border-radius:0.375rem; border:1px solid #e2e8f0; margin-top:0.5rem;">
                             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom:0.85rem;">
                                 <div class="form-group" style="margin:0;">
-                                    <label class="form-label" style="font-size:0.8rem; font-weight:700; color:#334155;">Hora da supervisão: *</label>
+                                    <label class="form-label" style="font-size:0.8rem; font-weight:700; color:#334155;">Hora da fiscalização: *</label>
                                     <input type="time" class="form-input plantao-hora" data-slot="${i}" id="plantao_hora_${i}">
                                 </div>
                                 <div class="form-group" style="margin:0;">
@@ -228,7 +228,7 @@ async function carregarEstruturaDoSetor(setorId) {
                                         <option value="SEM_ALTERACAO">⚪ SEM ALTERAÇÃO</option>
                                         <option value="COM_OCORRENCIA">🔴 COM OCORRÊNCIA</option>
                                         <option value="PENDENCIA">🟡 PENDÊNCIA</option>
-                                        <option value="NAO_SUPERVISIONADO">⚫ POSTO NÃO SUPERVISIONADO</option>
+                                        <option value="NAO_SUPERVISIONADO">⚫ POSTO NÃO FISCALIZADO</option>
                                     </select>
                                 </div>
                             </div>
@@ -275,7 +275,7 @@ async function carregarEstruturaDoSetor(setorId) {
 
                             <!-- Se marcar NÃO SUPERVISIONADO no select -->
                             <div class="campo-motivo-nao-sup" id="campo_motivo_nao_sup_${i}" style="display:none; margin-top:0.75rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.375rem; padding:0.75rem;">
-                                <label style="font-size:0.8rem; font-weight:800; color:#b91c1c;">Motivo / Justificativa da Não Supervisão *</label>
+                                <label style="font-size:0.8rem; font-weight:800; color:#b91c1c;">Motivo / Justificativa da Não Fiscalização *</label>
                                 <select class="form-select plantao-motivo-select" data-slot="${i}" id="plantao_motivo_${i}">
                                     <option value="">Selecione o motivo...</option>
                                     <option value="Posto fechado">Posto fechado</option>
@@ -325,13 +325,13 @@ async function carregarEstruturaDoSetor(setorId) {
                             <select class="form-select regular-posto-select" data-slot="${i}" id="reg_posto_select_${i}" style="font-weight:600; font-size:0.95rem; min-height:46px;">
                                 ${optionsHtml}
                             </select>
-                            <small style="color:#64748b; font-size:0.75rem;">Deixe vazio se não supervisionou este posto (postos vazios são desconsiderados).</small>
+                            <small style="color:#64748b; font-size:0.75rem;">Deixe vazio se não fiscalizou este posto (postos vazios são desconsiderados).</small>
                         </div>
 
                         <div class="regular-posto-campos" id="reg_campos_${i}" style="display:none; background:#fafafa; padding:1rem; border-radius:0.375rem; border:1px solid #e2e8f0; margin-top:0.5rem;">
                             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom:0.85rem;">
                                 <div class="form-group" style="margin:0;">
-                                    <label class="form-label" style="font-size:0.8rem; font-weight:700; color:#334155;">Hora da supervisão: *</label>
+                                    <label class="form-label" style="font-size:0.8rem; font-weight:700; color:#334155;">Hora da fiscalização: *</label>
                                     <input type="time" class="form-input reg-hora" data-slot="${i}" id="reg_hora_${i}" style="min-height:44px;">
                                 </div>
                                 <div class="form-group" style="margin:0;">
@@ -345,7 +345,7 @@ async function carregarEstruturaDoSetor(setorId) {
                                         <option value="SEM_ALTERACAO">⚪ SEM ALTERAÇÃO</option>
                                         <option value="COM_OCORRENCIA">🔴 COM OCORRÊNCIA</option>
                                         <option value="PENDENCIA">🟡 PENDÊNCIA</option>
-                                        <option value="NAO_SUPERVISIONADO">⚫ NÃO SUPERVISIONADO</option>
+                                        <option value="NAO_SUPERVISIONADO">⚫ NÃO FISCALIZADO</option>
                                     </select>
                                 </div>
                             </div>
@@ -392,7 +392,7 @@ async function carregarEstruturaDoSetor(setorId) {
 
                             <!-- Se marcar NÃO SUPERVISIONADO no select -->
                             <div class="campo-motivo-nao-sup" id="reg_campo_motivo_nao_sup_${i}" style="display:none; margin-top:0.75rem; background:#fef2f2; border:1px solid #fecaca; border-radius:0.375rem; padding:0.75rem;">
-                                <label style="font-size:0.8rem; font-weight:800; color:#b91c1c;">Motivo da Não Supervisão *</label>
+                                <label style="font-size:0.8rem; font-weight:800; color:#b91c1c;">Motivo da Não Fiscalização *</label>
                                 <select class="form-select reg-motivo-select" data-slot="${i}" id="reg_motivo_${i}" style="min-height:44px;">
                                     <option value="">Selecione o motivo...</option>
                                     <option value="Posto fechado">Posto fechado</option>
@@ -425,7 +425,7 @@ async function carregarEstruturaDoSetor(setorId) {
         }
 
     } catch (e) {
-        alert('Erro ao carregar supervisores e postos do setor: ' + e.message);
+        alert('Erro ao carregar fiscais e postos do setor: ' + e.message);
     }
 }
 
@@ -812,7 +812,7 @@ function setupFormSubmit() {
                     const inpManual = document.getElementById(`posto_nome_manual_${i}`);
                     nomePosto = inpManual?.value?.trim() || '';
                     if (!nomePosto) continue;
-                    endPosto = 'Cadastrado manualmente via Supervisão do Plantão';
+                    endPosto = 'Cadastrado manualmente via Fiscalização do Plantão';
                     locPosto = 'Rio de Janeiro';
                     empPosto = 'CEDAE';
                 } else {
@@ -840,13 +840,13 @@ function setupFormSubmit() {
                     const motivoOutro = document.getElementById(`plantao_motivo_outro_${i}`)?.value?.trim() || '';
                     motivoNaoSup = motivoSel === 'Outro' ? motivoOutro : (motivoSel || motivoOutro);
                     if (!motivoNaoSup) {
-                        pendenciaValidacao = `Por favor, informe o MOTIVO / JUSTIFICATIVA DA NÃO SUPERVISÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
+                        pendenciaValidacao = `Por favor, informe o MOTIVO / JUSTIFICATIVA DA NÃO FISCALIZAÇÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
                         document.getElementById(`plantao_slot_${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         break;
                     }
                 } else {
                     if (!hora) {
-                        pendenciaValidacao = `Por favor, informe a HORA DA SUPERVISÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
+                        pendenciaValidacao = `Por favor, informe a HORA DA FISCALIZAÇÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
                         document.getElementById(`plantao_hora_${i}`)?.focus();
                         break;
                     }
@@ -894,7 +894,7 @@ function setupFormSubmit() {
                         posto_nome: nomePosto,
                         tipo_ocorrencia: 'COM_OCORRENCIA',
                         descricao: `[${nomePosto}] ${ocorrenciaTxt}`,
-                        providencias_adotadas: 'Registrado pelo supervisor no posto',
+                        providencias_adotadas: 'Registrado pelo fiscal no posto',
                         status: 'resolvido'
                     });
                 }
@@ -929,13 +929,13 @@ function setupFormSubmit() {
                     const motivoOutro = document.getElementById(`reg_motivo_outro_${i}`)?.value?.trim() || '';
                     motivoNaoSup = motivoSel === 'Outro' ? motivoOutro : motivoSel;
                     if (!motivoNaoSup) {
-                        pendenciaValidacao = `Por favor, informe o MOTIVO DA NÃO SUPERVISÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
+                        pendenciaValidacao = `Por favor, informe o MOTIVO DA NÃO FISCALIZAÇÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
                         document.getElementById(`reg_slot_${i}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         break;
                     }
                 } else {
                     if (!hora) {
-                        pendenciaValidacao = `Por favor, informe a HORA DA SUPERVISÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
+                        pendenciaValidacao = `Por favor, informe a HORA DA FISCALIZAÇÃO no POSTO ${i.toString().padStart(2, '0')} (${nomePosto}).`;
                         document.getElementById(`reg_hora_${i}`)?.focus();
                         break;
                     }
@@ -978,7 +978,7 @@ function setupFormSubmit() {
                         posto_id: postoId,
                         tipo_ocorrencia: 'COM_OCORRENCIA',
                         descricao: `[${nomePosto}] ${ocorrenciaTxt}`,
-                        providencias_adotadas: 'Registrado pelo supervisor no posto',
+                        providencias_adotadas: 'Registrado pelo fiscal no posto',
                         status: 'resolvido'
                     });
                 }
@@ -1107,7 +1107,7 @@ async function exibirRelatorioModal(id) {
         (r.postos || []).forEach(p => {
             let badge = '<span class="badge badge-green">NORMAL</span>';
             if (p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') {
-                badge = `<span class="badge badge-red">NÃO SUPERVISIONADO</span><br><small style="color:#b91c1c; font-weight:700;">Motivo: ${p.motivo_nao_supervisao || 'Não informado'}</small>`;
+                badge = `<span class="badge badge-red">NÃO FISCALIZADO</span><br><small style="color:#b91c1c; font-weight:700;">Motivo: ${p.motivo_nao_supervisao || 'Não informado'}</small>`;
             } else if (p.status_supervisao === 'COM_OCORRENCIA') {
                 badge = '<span class="badge badge-red">COM OCORRÊNCIA</span>';
             } else if (p.status_supervisao === 'PENDENCIA') {
@@ -1255,7 +1255,7 @@ function setupConferenciaDesktop() {
                 nao++;
                 icone = '✕';
                 cor = '#b91c1c';
-                desc = `Não Supervisionado: ${p.motivoNao || 'Sem justificativa'}`;
+                desc = `Não Fiscalizado: ${p.motivoNao || 'Sem justificativa'}`;
             } else {
                 sup++;
                 if (p.situacao === 'PENDENCIA') {

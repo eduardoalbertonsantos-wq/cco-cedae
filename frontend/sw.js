@@ -1,10 +1,10 @@
 /**
- * CCO — SUPERVISÃO OPERACIONAL
- * Service Worker v2.0.0 DEFINITIVO
+ * CCO — FISCALIZAÇÃO OPERACIONAL
+ * Service Worker v3.0.0 DEFINITIVO
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-supervisao-v2.3.3-syntax-fix';
+const CACHE_NAME = 'cco-fiscalizacao-v3.0.0';
 const STATIC_ASSETS = [
   '/',
   '/app',

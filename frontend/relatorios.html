@@ -174,11 +174,11 @@
     <!-- Card Principal com Abas -->
     <div class="card">
       <div class="tab-nav">
-        <button class="tab-btn active" onclick="trocarAba('supervisao')">📋 1. Supervisão Operacional</button>
+        <button class="tab-btn active" onclick="trocarAba('supervisao')">📋 1. Fiscalização Operacional</button>
         <button class="tab-btn" onclick="trocarAba('ocorrencias')">⚠️ 2. Ocorrências</button>
         <button class="tab-btn" onclick="trocarAba('por-posto')">📍 3. Por Posto (Base 59)</button>
         <button class="tab-btn" onclick="trocarAba('por-setor')">🏢 4. Por Setor</button>
-        <button class="tab-btn" onclick="trocarAba('por-supervisor')">👮 5. Por Supervisor</button>
+        <button class="tab-btn" onclick="trocarAba('por-supervisor')">👮 5. Por Fiscal</button>
       </div>
 
       <!-- Barra de Filtros Universal -->
@@ -201,8 +201,8 @@
           <label>Situação</label>
           <select id="filtroSituacao" class="filter-control">
             <option value="">Todas</option>
-            <option value="supervisionado">Supervisionados</option>
-            <option value="nao_supervisionado">Não Supervisionados</option>
+            <option value="supervisionado">Fiscalizados</option>
+            <option value="nao_supervisionado">Não Fiscalizados</option>
             <option value="ocorrencia">Com Ocorrência</option>
           </select>
         </div>
@@ -326,15 +326,15 @@
       lblTotal.textContent = `Total: ${dados.length} registro(s)`;
 
       if (abaAtual === 'supervisao') {
-        lblTitulo.textContent = '1. Supervisão Operacional Detalhada';
+        lblTitulo.textContent = '1. Fiscalização Operacional Detalhada';
         thead.innerHTML = `
           <tr>
             <th>DATA/TURNO</th>
             <th>HORA</th>
             <th>POSTO</th>
             <th>SETOR POSTO</th>
-            <th>SUPERVISOR</th>
-            <th>SETOR SUP.</th>
+            <th>FISCAL</th>
+            <th>SETOR FISCAL</th>
             <th>VEÍCULO</th>
             <th>SITUAÇÃO</th>
             <th>DETALHES / JUSTIFICATIVA</th>
@@ -345,8 +345,8 @@
           return;
         }
         tbody.innerHTML = dados.map(r => {
-          let badge = '<span class="badge-situacao-ok">SUPERVISIONADO</span>';
-          if (r.situacao === 'Não supervisionado') badge = '<span class="badge-situacao-warn">NÃO SUPERVISIONADO</span>';
+          let badge = '<span class="badge-situacao-ok">FISCALIZADO</span>';
+          if (r.situacao === 'Não fiscalizado' || r.situacao === 'Não supervisionado') badge = '<span class="badge-situacao-warn">NÃO FISCALIZADO</span>';
           if (r.situacao === 'Com ocorrência') badge = '<span class="badge-situacao-ocorrencia">COM OCORRÊNCIA</span>';
 
           return `
@@ -375,7 +375,7 @@
             <th>DESCRIÇÃO</th>
             <th>PROVIDÊNCIAS</th>
             <th>STATUS</th>
-            <th>SUPERVISOR</th>
+            <th>FISCAL</th>
           </tr>
         `;
         if (dados.length === 0) {
@@ -403,10 +403,10 @@
             <th>SETOR ATUAL</th>
             <th>MUNICÍPIO / LOCALIDADE</th>
             <th>TOTAL FISCALIZAÇÕES</th>
-            <th>SUPERVISIONADOS</th>
-            <th>NÃO SUPERVISIONADOS</th>
+            <th>FISCALIZADOS</th>
+            <th>NÃO FISCALIZADOS</th>
             <th>OCORRÊNCIAS</th>
-            <th>ÚLTIMA SUPERVISÃO</th>
+            <th>ÚLTIMA FISCALIZAÇÃO</th>
           </tr>
         `;
         tbody.innerHTML = dados.map(r => `
@@ -430,8 +430,8 @@
             <th>RESPONSÁVEL</th>
             <th>POSTOS CADASTRADOS</th>
             <th>TOTAL RONDAS</th>
-            <th>SUPERVISIONADOS</th>
-            <th>NÃO SUPERVISIONADOS</th>
+            <th>FISCALIZADOS</th>
+            <th>NÃO FISCALIZADOS</th>
             <th>OCORRÊNCIAS</th>
             <th>TAXA CUMPRIMENTO</th>
           </tr>
@@ -450,16 +450,16 @@
         `).join('');
 
       } else if (abaAtual === 'por-supervisor') {
-        lblTitulo.textContent = '5. Produtividade por Supervisor';
+        lblTitulo.textContent = '5. Produtividade por Fiscal';
         thead.innerHTML = `
           <tr>
-            <th>SUPERVISOR</th>
+            <th>FISCAL</th>
             <th>MATRÍCULA</th>
             <th>SETOR VINCULADO</th>
             <th>PLANTÕES</th>
             <th>POSTOS AVALIADOS</th>
-            <th>SUPERVISIONADOS</th>
-            <th>NÃO SUPERVISIONADOS</th>
+            <th>FISCALIZADOS</th>
+            <th>NÃO FISCALIZADOS</th>
             <th>KM TOTAL RODADO</th>
             <th>ÚLTIMO SERVIÇO</th>
           </tr>

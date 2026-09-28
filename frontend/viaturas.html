@@ -73,7 +73,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <meta name="apple-mobile-web-app-title" content="CCO Fiscalização">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/favicon.png">
@@ -92,7 +92,7 @@
         <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
         <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
         <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
-        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="supervisores.html" class="nav-item">👮 Fiscais</a>
         <a href="viaturas.html" class="nav-item active">🚗 Viaturas</a>
         <a href="postos.html" class="nav-item">📍 Postos de Serviço</a>
         <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
@@ -118,7 +118,7 @@
                 <span>🚗 VIATURAS OPERACIONAIS</span>
                 <span id="badgeContagemViaturas" class="badge badge-primary" style="font-size: 0.8rem;">0 Viaturas</span>
               </h2>
-              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Veículos de ronda com controle de odômetro, setor e supervisor responsável.</p>
+              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Veículos de ronda com controle de odômetro, setor e fiscal responsável.</p>
             </div>
             
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
@@ -152,7 +152,7 @@
 
             <div style="flex: 1; min-width: 220px;">
               <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Buscar viatura:</label>
-              <input type="text" id="searchVtr" class="form-input" style="padding:0.45rem 0.75rem; font-size:0.85rem;" placeholder="🔍 Buscar por placa, modelo, supervisor...">
+              <input type="text" id="searchVtr" class="form-input" style="padding:0.45rem 0.75rem; font-size:0.85rem;" placeholder="🔍 Buscar por placa, modelo, fiscal...">
             </div>
           </div>
 
@@ -165,7 +165,7 @@
                   <th>Veículo / Modelo</th>
                   <th>Placa</th>
                   <th>Setor</th>
-                  <th>Supervisor Responsável</th>
+                  <th>Fiscal Responsável</th>
                   <th>Status</th>
                   <th>KM Acumulado</th>
                   <th>Expedientes</th>
@@ -224,7 +224,7 @@
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label" for="vtrSupervisor" style="font-weight: 700;">Supervisor Responsável</label>
+              <label class="form-label" for="vtrSupervisor" style="font-weight: 700;">Fiscal Responsável</label>
               <select class="form-select" id="vtrSupervisor">
                 <option value="">Selecione (Opcional)...</option>
               </select>

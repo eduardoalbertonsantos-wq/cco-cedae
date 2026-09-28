@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supervisores - CCO CEDAE</title>
+  <title>Fiscais - CCO CEDAE</title>
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/components.css">
@@ -73,7 +73,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <meta name="apple-mobile-web-app-title" content="CCO Fiscalização">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/favicon.png">
@@ -92,7 +92,7 @@
         <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
         <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
         <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
-        <a href="supervisores.html" class="nav-item active">👮 Supervisores</a>
+        <a href="supervisores.html" class="nav-item active">👮 Fiscais</a>
         <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
         <a href="postos.html" class="nav-item">📍 Postos de Serviço</a>
         <a href="configuracoes.html" class="nav-item">⚙️ Configurações & E-mail</a>
@@ -102,7 +102,7 @@
     <main class="main-content">
       <header class="header">
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
-        <div class="header-title" style="font-weight: 800;">CADASTRO DE SUPERVISORES POR SETOR &bull; CCO CEDAE</div>
+        <div class="header-title" style="font-weight: 800;">CADASTRO DE FISCAIS POR SETOR &bull; CCO CEDAE</div>
         <div class="header-actions">
           <div class="clock" id="headerClock">00:00:00</div>
           <span class="badge badge-primary">Admin</span>
@@ -115,10 +115,10 @@
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
             <div>
               <h2 style="margin: 0; color: #003366; font-size: 1.3rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span>👮 EQUIPE DE SUPERVISÃO OPERACIONAL</span>
-                <span id="badgeContagemSupervisores" class="badge badge-primary" style="font-size: 0.8rem;">0 Supervisores</span>
+                <span>👮 EQUIPE DE FISCALIZAÇÃO OPERACIONAL</span>
+                <span id="badgeContagemSupervisores" class="badge badge-primary" style="font-size: 0.8rem;">0 Fiscais</span>
               </h2>
-              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Supervisores com acesso aos formulários de vistoria de seus respectivos setores.</p>
+              <p style="margin: 0.25rem 0 0 0; color: #64748b; font-size: 0.88rem;">Fiscais com acesso aos formulários de vistoria de seus respectivos setores.</p>
             </div>
             
             <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
@@ -127,7 +127,7 @@
                 <span>🔄</span> ATUALIZAR
               </button>
               <button id="btnNovoSupervisor" class="btn btn-primary" style="font-weight: 700; background: #003366;">
-                + Cadastrar Supervisor
+                + Cadastrar Fiscal
               </button>
             </div>
           </div>
@@ -151,7 +151,7 @@
             </div>
 
             <div style="flex: 1; min-width: 220px;">
-              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Buscar supervisor:</label>
+              <label style="display:block; font-size:0.75rem; font-weight:700; color:#475569; margin-bottom:0.25rem;">Buscar fiscal:</label>
               <input type="text" id="searchSup" class="form-input" style="padding:0.45rem 0.75rem; font-size:0.85rem;" placeholder="🔍 Buscar por nome, matrícula, telefone...">
             </div>
           </div>
@@ -172,7 +172,7 @@
                 </tr>
               </thead>
               <tbody id="supervisoresTableBody">
-                <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">Carregando supervisores...</td></tr>
+                <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">Carregando fiscais...</td></tr>
               </tbody>
             </table>
           </div>
@@ -185,7 +185,7 @@
   <div id="modalSupervisor" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-box-header">
-        <h3 id="modalSupTitle" style="margin: 0; color: #003366; font-size: 1.15rem; font-weight: 800;">Cadastrar Supervisor</h3>
+        <h3 id="modalSupTitle" style="margin: 0; color: #003366; font-size: 1.15rem; font-weight: 800;">Cadastrar Fiscal</h3>
         <button type="button" id="btnFecharModalSup" style="background:none; border:none; font-size:1.8rem; cursor:pointer; color:#64748b; line-height: 1;">&times;</button>
       </div>
 
@@ -194,8 +194,8 @@
           <input type="hidden" id="supId">
           
           <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.6rem 0.85rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.85rem; font-weight: 700; color: #475569;">Identificador do Supervisor:</span>
-            <span id="modalSupIdLabel" class="badge badge-primary" style="font-size: 0.85rem; font-family: monospace;">Novo Supervisor</span>
+            <span style="font-size: 0.85rem; font-weight: 700; color: #475569;">Identificador do Fiscal:</span>
+            <span id="modalSupIdLabel" class="badge badge-primary" style="font-size: 0.85rem; font-family: monospace;">Novo Fiscal</span>
           </div>
 
           <div class="form-group" style="margin-bottom: 1rem;">
@@ -232,7 +232,7 @@
 
           <div class="form-group" style="margin-bottom: 1rem;">
             <label class="form-label" for="supFuncao" style="font-weight: 700;">Função</label>
-            <input type="text" class="form-input" id="supFuncao" value="Supervisor Operacional">
+            <input type="text" class="form-input" id="supFuncao" value="Fiscal Operacional">
           </div>
 
           <div class="form-group">
@@ -244,7 +244,7 @@
         <div class="modal-box-footer">
           <button type="button" id="btnCancSup" class="btn btn-secondary">Cancelar</button>
           <button type="submit" id="btnSalvarSupSubmit" class="btn btn-primary" style="font-weight: 700; background: #16a34a; border-color: #16a34a;">
-            💾 SALVAR SUPERVISOR
+            💾 SALVAR FISCAL
           </button>
         </div>
       </form>
@@ -322,11 +322,11 @@
         supervisoresMemoria = Array.isArray(dados) ? dados : [];
         
         const countBadge = document.getElementById('badgeContagemSupervisores');
-        if (countBadge) countBadge.textContent = `${supervisoresMemoria.length} Supervisores`;
+        if (countBadge) countBadge.textContent = `${supervisoresMemoria.length} Fiscais`;
 
         aplicarFiltrosLocais();
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #dc2626; padding: 2rem;">Erro ao carregar supervisores: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #dc2626; padding: 2rem;">Erro ao carregar fiscais: ${e.message}</td></tr>`;
       }
     }
 
@@ -359,7 +359,7 @@
       tbody.innerHTML = '';
 
       if (lista.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">Nenhum supervisor encontrado para os filtros selecionados.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #64748b; padding: 2rem;">Nenhum fiscal encontrado para os filtros selecionados.</td></tr>';
         return;
       }
 
@@ -379,7 +379,7 @@
           <td><span class="badge ${badgeClass}">${(sup.status || 'ativo').toUpperCase()}</span></td>
           <td><strong>${sup.total_relatorios || 0}</strong></td>
           <td style="text-align: center;">
-            <button class="btn btn-sm btn-outline btn-editar-sup" data-id="${sup.id}" title="Editar supervisor">✏️ Editar</button>
+            <button class="btn btn-sm btn-outline btn-editar-sup" data-id="${sup.id}" title="Editar fiscal">✏️ Editar</button>
             <button class="btn btn-sm ${btnStatusClass} btn-status-sup" style="margin-left:0.25rem;" data-id="${sup.id}" title="Alternar status">${btnStatusText}</button>
           </td>
         `;
@@ -409,15 +409,15 @@
       const btnCanc = document.getElementById('btnCancSup');
 
       btnNovo.addEventListener('click', () => {
-        document.getElementById('modalSupTitle').textContent = 'Cadastrar Novo Supervisor';
-        document.getElementById('modalSupIdLabel').textContent = 'Novo Supervisor';
+        document.getElementById('modalSupTitle').textContent = 'Cadastrar Novo Fiscal';
+        document.getElementById('modalSupIdLabel').textContent = 'Novo Fiscal';
         document.getElementById('supId').value = '';
         document.getElementById('supNome').value = '';
         document.getElementById('supMatricula').value = '';
         document.getElementById('supTelefone').value = '';
         document.getElementById('supSetor').value = '';
         document.getElementById('supStatus').value = 'ativo';
-        document.getElementById('supFuncao').value = 'Supervisor Operacional';
+        document.getElementById('supFuncao').value = 'Fiscal Operacional';
         document.getElementById('supObs').value = '';
         modal.classList.add('active');
       });
@@ -449,28 +449,26 @@
         btnSalvar.textContent = 'Salvando no Banco...';
 
         try {
-          // REGRA DE SALVAMENTO:
-          // Verificar se o supervisor já existe pelo ID. Se existir -> PUT, se não -> POST.
           if (id) {
             await apiPut(`/supervisores/${id}`, payload);
-            alert('✓ Supervisor atualizado com sucesso no banco de dados!');
+            alert('✓ Fiscal atualizado com sucesso no banco de dados!');
           } else {
             await apiPost('/supervisores', payload);
-            alert('✓ Supervisor cadastrado com sucesso no banco de dados!');
+            alert('✓ Fiscal cadastrado com sucesso no banco de dados!');
           }
           fechar();
           await carregarSupervisores();
         } catch (err) {
-          alert('Erro ao salvar supervisor: ' + err.message);
+          alert('Erro ao salvar fiscal: ' + err.message);
         } finally {
           btnSalvar.disabled = false;
-          btnSalvar.textContent = '💾 SALVAR SUPERVISOR';
+          btnSalvar.textContent = '💾 SALVAR FISCAL';
         }
       });
     }
 
     function abrirEdicaoSupervisor(sup) {
-      document.getElementById('modalSupTitle').textContent = `Editar Supervisor #${sup.id} - ${sup.nome}`;
+      document.getElementById('modalSupTitle').textContent = `Editar Fiscal #${sup.id} - ${sup.nome}`;
       document.getElementById('modalSupIdLabel').textContent = `ID #${sup.id}`;
       document.getElementById('supId').value = sup.id;
       document.getElementById('supNome').value = sup.nome || '';
@@ -478,7 +476,7 @@
       document.getElementById('supTelefone').value = sup.telefone || '';
       document.getElementById('supSetor').value = sup.setor_id || '';
       document.getElementById('supStatus').value = (sup.status || 'ativo').toLowerCase();
-      document.getElementById('supFuncao').value = sup.funcao || 'Supervisor Operacional';
+      document.getElementById('supFuncao').value = sup.funcao || 'Fiscal Operacional';
       document.getElementById('supObs').value = sup.observacoes || '';
       document.getElementById('modalSupervisor').classList.add('active');
     }
@@ -486,7 +484,7 @@
     async function alternarStatusSupervisor(id) {
       const s = supervisoresMemoria.find(item => item.id === id);
       const acao = s && s.status === 'ativo' ? 'desativar' : 'ativar';
-      if (!confirm(`Deseja realmente ${acao} o supervisor #${id} (${s ? s.nome : ''})? O histórico permanecerá intacto.`)) return;
+      if (!confirm(`Deseja realmente ${acao} o fiscal #${id} (${s ? s.nome : ''})? O histórico permanecerá intacto.`)) return;
 
       try {
         await apiPut(`/supervisores/${id}/status`, {});

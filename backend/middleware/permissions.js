@@ -18,7 +18,7 @@ const requireSupervisor = (req, res, next) => {
     }
     
     if (req.user.perfil !== PERFIL.ADMIN && req.user.perfil !== PERFIL.SUPERVISOR) {
-        return res.status(403).json({ success: false, message: 'Acesso negado. Requer privilégios de supervisor ou administrador.' });
+        return res.status(403).json({ success: false, message: 'Acesso negado. Requer privilégios de fiscal ou administrador.' });
     }
     
     next();

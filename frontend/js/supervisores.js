@@ -26,7 +26,7 @@ async function loadSupervisores() {
             tbody.appendChild(tr);
         });
     } catch (e) {
-        showToast('Erro ao carregar supervisores', 'error');
+        showToast('Erro ao carregar fiscais', 'error');
     } finally {
         hideLoading('tableContainer');
     }

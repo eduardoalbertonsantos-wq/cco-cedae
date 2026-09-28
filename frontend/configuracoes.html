@@ -20,7 +20,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CCO Supervisão">
+  <meta name="apple-mobile-web-app-title" content="CCO Fiscalização">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/favicon.png">
@@ -39,7 +39,7 @@
         <div style="padding: 0.5rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 800;">Cadastros do CCO</div>
         <a href="gerenciar-setores.html" class="nav-item">🏢 Gerenciamento Setores</a>
         <a href="distribuicao-postos.html" class="nav-item">📍 Distribuição de Postos</a>
-        <a href="supervisores.html" class="nav-item">👮 Supervisores</a>
+        <a href="supervisores.html" class="nav-item">👮 Fiscais</a>
         <a href="viaturas.html" class="nav-item">🚗 Viaturas</a>
         <a href="postos.html" class="nav-item">📍 Postos de Serviço</a>
         <a href="configuracoes.html" class="nav-item active">⚙️ Configurações & E-mail</a>
@@ -149,7 +149,7 @@
         <!-- CARD 3: PARÂMETROS WHATSAPP -->
         <div class="config-card">
           <h2 style="margin: 0 0 0.5rem 0; color: var(--cco-navy); font-size: 1.3rem;">PARÂMETROS DE DISPARO WHATSAPP</h2>
-          <p style="margin: 0 0 1.25rem 0; color: #64748b; font-size: 0.9rem;">Nome do grupo de supervisão operacional de referência.</p>
+          <p style="margin: 0 0 1.25rem 0; color: #64748b; font-size: 0.9rem;">Nome do grupo de fiscalização operacional de referência.</p>
           
           <form id="formWhatsConfig">
             <div class="form-group">
@@ -158,18 +158,18 @@
             </div>
             <button type="submit" class="btn btn-primary" style="font-weight: 700;">Salvar Parâmetro WhatsApp</button>
           </form>
-        <!-- CARD 4: GERENCIAMENTO DE DADOS / ZERAR SUPERVISÕES -->
+        <!-- CARD 4: GERENCIAMENTO DE DADOS / ZERAR FISCALIZAÇÕES -->
         <div class="config-card" style="border: 2px solid #ef4444; background: #fffaf0;">
           <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
             <span style="font-size: 1.6rem;">⚠️</span>
-            <h2 style="margin: 0; color: #b91c1c; font-size: 1.3rem;">ZONA OPERACIONAL — ZERAR SUPERVISÕES E RELATÓRIOS</h2>
+            <h2 style="margin: 0; color: #b91c1c; font-size: 1.3rem;">ZONA OPERACIONAL — ZERAR FISCALIZAÇÕES E RELATÓRIOS</h2>
           </div>
           <p style="margin: 0 0 1rem 0; color: #7f1d1d; font-size: 0.95rem; line-height: 1.5;">
             Utilize esta opção para reiniciar os trabalhos operacionais e <strong>começar do zero</strong>:
           </p>
           <ul style="margin: 0 0 1.25rem 1.2rem; color: #475569; font-size: 0.9rem; line-height: 1.6;">
             <li><strong>Apaga:</strong> Histórico de relatórios enviados, conferência de postos e ocorrências registradas.</li>
-            <li><strong>Preserva 100%:</strong> Todos os cadastros (4 Setores, 26 Supervisores, 6 Viaturas, 28 Postos, Usuários e Configurações SMTP).</li>
+            <li><strong>Preserva 100%:</strong> Todos os cadastros (4 Setores, 26 Fiscais, 6 Viaturas, 28 Postos, Usuários e Configurações SMTP).</li>
             <li><strong>Numeração:</strong> O próximo relatório enviado iniciará no <strong>ID #1</strong>.</li>
           </ul>
 
@@ -267,13 +267,13 @@
         }
       });
 
-      // Zerar Supervisões e Relatórios
+      // Zerar Fiscalizações e Relatórios
       document.getElementById('btnZerarDados').addEventListener('click', async () => {
         const confirmou = confirm(
           '⚠️ ATENÇÃO - AÇÃO CRÍTICA!\n\n' +
-          'Deseja realmente apagar TODO o histórico de relatórios e supervisões para começar do zero?\n\n' +
-          '• Todos os cadastros (Setores, Supervisores, Viaturas e Postos) continuarão intactos.\n' +
-          '• A próxima supervisão enviada começará no ID #1.\n\n' +
+          'Deseja realmente apagar TODO o histórico de relatórios e fiscalizações para começar do zero?\n\n' +
+          '• Todos os cadastros (Setores, Fiscais, Viaturas e Postos) continuarão intactos.\n' +
+          '• A próxima fiscalização enviada começará no ID #1.\n\n' +
           'Clique em OK para confirmar ou Cancelar para desistir.'
         );
 
@@ -291,7 +291,7 @@
           const res = await apiPost('/configuracoes/zerar-dados', {});
           statusBox.style.color = '#15803d';
           statusBox.textContent = '✅ ' + (res.message || 'Histórico zerado com sucesso!');
-          alert('✅ SUCESSO!\n\n' + (res.message || 'Histórico de supervisões zerado com sucesso! Os próximos envios iniciarão do ID #1.'));
+          alert('✅ SUCESSO!\n\n' + (res.message || 'Histórico de fiscalizações zerado com sucesso! Os próximos envios iniciarão do ID #1.'));
         } catch (err) {
           statusBox.style.color = '#b91c1c';
           statusBox.textContent = '❌ Erro: ' + err.message;

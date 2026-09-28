@@ -22,13 +22,13 @@ router.get('/supervisao', (req, res) => {
                 p.id as posto_id,
                 COALESCE(p.nome, pr.nome_posto_digitado) as posto_nome,
                 COALESCE(sp.nome, pr.setor_nome_posto, 'PLANTÃO') as setor_posto,
-                COALESCE(r.responsavel_nome, sup.nome, 'SUPERVISOR') as supervisor_nome,
+                COALESCE(r.responsavel_nome, sup.nome, 'FISCAL') as supervisor_nome,
                 s_rel.nome as setor_supervisor,
                 COALESCE(v.tipo_modelo || ' (' || v.placa || ')', r.viatura_outros_texto, 'Não informada') as veiculo,
                 CASE 
-                    WHEN pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO' THEN 'Não supervisionado'
+                    WHEN pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO' THEN 'Não fiscalizado'
                     WHEN pr.tem_ocorrencia = 1 OR pr.status_supervisao = 'COM_OCORRENCIA' THEN 'Com ocorrência'
-                    ELSE 'Supervisionado'
+                    ELSE 'Fiscalizado'
                 END as situacao,
                 pr.motivo_nao_supervisao,
                 pr.descricao_ocorrencia,
@@ -77,13 +77,13 @@ router.get('/supervisoes-detalhadas', (req, res) => {
             p.id as posto_id,
             COALESCE(p.nome, pr.nome_posto_digitado) as posto_nome,
             COALESCE(pr.setor_nome_posto, sp.nome, 'PLANTÃO') as setor_posto,
-            COALESCE(r.responsavel_nome, sup.nome, 'SUPERVISOR') as supervisor_nome,
+            COALESCE(r.responsavel_nome, sup.nome, 'FISCAL') as supervisor_nome,
             s_rel.nome as setor_supervisor,
             COALESCE(v.tipo_modelo || ' (' || v.placa || ')', r.viatura_outros_texto, 'Não informada') as veiculo,
             CASE 
-                WHEN pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO' THEN 'Não supervisionado'
+                WHEN pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO' THEN 'Não fiscalizado'
                 WHEN pr.tem_ocorrencia = 1 OR pr.status_supervisao = 'COM_OCORRENCIA' THEN 'Com ocorrência'
-                ELSE 'Supervisionado'
+                ELSE 'Fiscalizado'
             END as situacao,
             pr.motivo_nao_supervisao,
             pr.descricao_ocorrencia,

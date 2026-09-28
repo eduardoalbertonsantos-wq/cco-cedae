@@ -7,9 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (isAuthenticated()) {
         const user = getUser();
-        // Supervisor não pode acessar telas administrativas
+        // Fiscal não pode acessar telas administrativas
         if (user && user.perfil === 'supervisor' && !window.location.pathname.includes('app-supervisao.html')) {
-            alert('ACESSO NEGADO: O painel CCO é restrito à chefia e administração. Redirecionando para a Supervisão Operacional.');
+            alert('ACESSO NEGADO: O painel CCO é restrito à chefia e administração. Redirecionando para a Fiscalização Operacional.');
             window.location.href = '/app-supervisao.html';
             return;
         }
