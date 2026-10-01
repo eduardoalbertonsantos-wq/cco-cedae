@@ -1,10 +1,10 @@
 {
-  "name": "CCO — SUPERVISÃO OPERACIONAL",
-  "short_name": "CCO Supervisão",
-  "description": "Sistema de Supervisão Operacional e Centro de Controle da Segurança Patrimonial.",
+  "name": "CCO — FISCALIZAÇÃO OPERACIONAL",
+  "short_name": "CCO Fiscalização",
+  "description": "Sistema de Fiscalização Operacional e Centro de Controle da Segurança Patrimonial.",
   "start_url": "/dashboard.html",
   "scope": "/",
-  "id": "br.gov.rj.cedae.cco.supervisao",
+  "id": "br.gov.rj.cedae.cco.fiscalizacao",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0a1628",
@@ -50,13 +50,13 @@
     {
       "name": "Distribuir Postos",
       "short_name": "Postos",
-      "description": "Distribuição dos 59 postos por setor",
+      "description": "Distribuição dos postos por setor",
       "url": "/distribuicao-postos.html",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Formulário de Supervisão",
-      "short_name": "Supervisão",
+      "name": "Formulário de Fiscalização",
+      "short_name": "Fiscalização",
       "description": "Preencher e enviar expediente operacional",
       "url": "/formulario.html",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]

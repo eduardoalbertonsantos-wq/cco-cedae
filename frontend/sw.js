@@ -1,10 +1,10 @@
 /**
  * CCO — FISCALIZAÇÃO OPERACIONAL
- * Service Worker v3.0.0 DEFINITIVO
+ * Service Worker v3.1.0 (Ícone Oficial CCO CEDAE Fiscalização Operacional)
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-fiscalizacao-v3.0.0';
+const CACHE_NAME = 'cco-fiscalizacao-v3.1.0-emblem';
 const STATIC_ASSETS = [
   '/',
   '/app',
