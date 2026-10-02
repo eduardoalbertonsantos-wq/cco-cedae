@@ -31,7 +31,18 @@ app.use(helmet({
             scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:", "https://*.tile.openstreetmap.org", "https://*.basemaps.cartocdn.com"],
+            imgSrc: [
+                "'self'", 
+                "data:", 
+                "blob:", 
+                "https://*.tile.openstreetmap.org", 
+                "https://tile.openstreetmap.org",
+                "https://*.tile.openstreetmap.fr",
+                "https://*.basemaps.cartocdn.com",
+                "https://server.arcgisonline.com",
+                "https://*.arcgisonline.com",
+                "https://unpkg.com"
+            ],
             connectSrc: ["'self'", "https:", "wss:"]
         }
     }

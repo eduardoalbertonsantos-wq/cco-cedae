@@ -1,6 +1,261 @@
 let postosDoSetor = [];
 let textoWhatsAppGerado = '';
 let relatorioIdAtivoDesk = null;
+let setorAtivoAnteriorDesk = null;
+let rascunhoPorSetorDesk = {};
+
+try {
+    const rawSalvo = localStorage.getItem('cco_rascunho_setores_desk');
+    if (rawSalvo) rascunhoPorSetorDesk = JSON.parse(rawSalvo);
+} catch (e) {
+    rascunhoPorSetorDesk = {};
+}
+
+// Indicador visual de status do salvamento automático (conforme padrão CCO)
+function atualizarStatusRascunho(status, msgAdicional) {
+    const elIcon = document.getElementById('indicadorStatusIcon');
+    const elTexto = document.getElementById('indicadorStatusTexto');
+    const elHora = document.getElementById('indicadorStatusHora');
+    if (!elTexto) return;
+
+    const agora = new Date().toLocaleTimeString('pt-BR');
+
+    switch (status) {
+        case 'salvando':
+            if (elIcon) elIcon.textContent = '🟡';
+            elTexto.textContent = 'Salvando rascunho...';
+            break;
+        case 'salvo':
+            if (elIcon) elIcon.textContent = '🟢';
+            elTexto.textContent = msgAdicional || 'Rascunho salvo.';
+            if (elHora) elHora.textContent = `Salvo às ${agora}`;
+            break;
+        case 'sincronizando':
+            if (elIcon) elIcon.textContent = '🔵';
+            elTexto.textContent = 'Sincronizando com o servidor...';
+            break;
+        case 'erro':
+            if (elIcon) elIcon.textContent = '🔴';
+            elTexto.textContent = 'Erro ao salvar — dados mantidos localmente.';
+            if (elHora) elHora.textContent = `Tentativa às ${agora}`;
+            break;
+        case 'offline':
+            if (elIcon) elIcon.textContent = '⚪';
+            elTexto.textContent = 'Aguardando conexão (dados salvos localmente).';
+            break;
+    }
+}
+
+function extrairDadosAtuaisDoSetor(setorId) {
+    if (!setorId) return null;
+    const isPlantao = document.querySelectorAll('.plantao-posto-card').length > 0;
+    const postos = [];
+
+    if (isPlantao) {
+        for (let i = 1; i <= 12; i++) {
+            const sel = document.getElementById(`plantao_posto_select_${i}`);
+            const selVal = sel?.value || '';
+            if (!selVal) continue;
+
+            const opt = sel.selectedOptions[0];
+            const inpManual = document.getElementById(`posto_nome_manual_${i}`);
+            const hora = document.getElementById(`plantao_hora_${i}`)?.value || '';
+            const kmVal = document.getElementById(`plantao_km_${i}`)?.value;
+            const situacao = document.getElementById(`plantao_situacao_${i}`)?.value || 'NORMAL';
+            const efetivoRad = document.querySelector(`input[name="efetivo_slot_${i}"]:checked`)?.value || 'SIM';
+            const faltaTxt = document.getElementById(`plantao_falta_${i}`)?.value?.trim() || '';
+            const ocorrenciaRad = document.querySelector(`input[name="ocorrencia_slot_${i}"]:checked`)?.value || 'NAO';
+            const ocorrenciaTxt = document.getElementById(`plantao_ocorrencia_desc_${i}`)?.value?.trim() || '';
+            const motivoSel = document.getElementById(`plantao_motivo_${i}`)?.value || '';
+            const motivoOutro = document.getElementById(`plantao_motivo_outro_${i}`)?.value?.trim() || '';
+
+            postos.push({
+                slot: i,
+                posto_id: selVal === 'MANUAL' ? null : parseInt(selVal),
+                nome_posto_digitado: selVal === 'MANUAL' ? inpManual?.value?.trim() : '',
+                posto_nome: selVal === 'MANUAL' ? inpManual?.value?.trim() : decodeURIComponent(opt?.dataset.nome || ''),
+                horario_supervisao: hora,
+                km_posto: kmVal !== '' && kmVal !== null && !isNaN(parseFloat(kmVal)) ? parseFloat(kmVal) : null,
+                status_supervisao: (ocorrenciaRad === 'SIM' && situacao !== 'NAO_SUPERVISIONADO') ? 'COM_OCORRENCIA' : situacao,
+                efetivo_completo: efetivoRad === 'SIM' ? 1 : 0,
+                falta_efetivo_qtd: faltaTxt,
+                tem_ocorrencia: ocorrenciaRad === 'SIM' ? 1 : 0,
+                descricao_ocorrencia: ocorrenciaTxt,
+                observacao: ocorrenciaRad === 'SIM' ? ocorrenciaTxt : (efetivoRad === 'NAO' ? 'Falta: ' + faltaTxt : ''),
+                motivo_nao_supervisao: motivoSel === 'Outro' ? motivoOutro : (motivoSel || motivoOutro)
+            });
+        }
+    } else {
+        const cards = document.querySelectorAll('.regular-posto-card');
+        cards.forEach(card => {
+            const slot = card.dataset.slot;
+            const sel = document.getElementById(`reg_posto_select_${slot}`);
+            const pIdVal = sel?.value;
+            if (!pIdVal) return;
+
+            const hora = document.getElementById(`reg_hora_${slot}`)?.value || '';
+            const kmVal = document.getElementById(`reg_km_${slot}`)?.value;
+            const situacao = document.getElementById(`reg_situacao_${slot}`)?.value || 'NORMAL';
+            const efetivoRad = document.querySelector(`input[name="reg_efetivo_slot_${slot}"]:checked`)?.value || 'SIM';
+            const faltaTxt = document.getElementById(`reg_falta_${slot}`)?.value?.trim() || '';
+            const ocorrenciaRad = document.querySelector(`input[name="reg_ocorrencia_slot_${slot}"]:checked`)?.value || 'NAO';
+            const ocorrenciaTxt = document.getElementById(`reg_ocorrencia_desc_${slot}`)?.value?.trim() || '';
+            const motivoSel = document.getElementById(`reg_motivo_${slot}`)?.value || '';
+            const motivoOutro = document.getElementById(`reg_motivo_outro_${slot}`)?.value?.trim() || '';
+
+            postos.push({
+                slot: parseInt(slot),
+                posto_id: parseInt(pIdVal),
+                posto_nome: sel.selectedOptions[0]?.textContent || `Posto #${pIdVal}`,
+                horario_supervisao: hora,
+                km_posto: kmVal !== '' && kmVal !== null && !isNaN(parseFloat(kmVal)) ? parseFloat(kmVal) : null,
+                status_supervisao: (ocorrenciaRad === 'SIM' && situacao !== 'NAO_SUPERVISIONADO') ? 'COM_OCORRENCIA' : situacao,
+                efetivo_completo: efetivoRad === 'SIM' ? 1 : 0,
+                falta_efetivo_qtd: faltaTxt,
+                tem_ocorrencia: ocorrenciaRad === 'SIM' ? 1 : 0,
+                descricao_ocorrencia: ocorrenciaTxt,
+                observacao: ocorrenciaRad === 'SIM' ? ocorrenciaTxt : (efetivoRad === 'NAO' ? 'Falta: ' + faltaTxt : ''),
+                motivo_nao_supervisao: motivoSel === 'Outro' ? motivoOutro : (motivoSel || motivoOutro)
+            });
+        });
+    }
+
+    return {
+        setor_id: parseInt(setorId),
+        supervisor_id: document.getElementById('selectSupervisor')?.value || '',
+        viatura_id: document.getElementById('selectViatura')?.value || '',
+        viatura_outros_texto: document.getElementById('viaturaOutrosTexto')?.value || '',
+        data_servico: document.getElementById('data_servico')?.value || '',
+        turno: document.getElementById('selectTurno')?.value || '',
+        responsavel_nome: document.getElementById('responsavel_nome')?.value || '',
+        km_inicial: document.getElementById('km_inicial')?.value || '',
+        km_final: document.getElementById('km_final')?.value || '',
+        km_rodado: document.getElementById('km_rodado')?.value || '',
+        ocorrencias_gerais: document.getElementById('ocorrencias_gerais')?.value || '',
+        providencias_gerais: document.getElementById('providencias_gerais')?.value || '',
+        pendencias_gerais: document.getElementById('pendencias_gerais')?.value || '',
+        postos: postos,
+        atualizado_em: Date.now()
+    };
+}
+
+function snapshotSetorParaRascunho(setorId) {
+    if (!setorId) return;
+    const dados = extrairDadosAtuaisDoSetor(setorId);
+    if (!dados) return;
+    rascunhoPorSetorDesk[setorId] = dados;
+    try {
+        localStorage.setItem('cco_rascunho_setores_desk', JSON.stringify(rascunhoPorSetorDesk));
+        localStorage.setItem('cco_ultimo_setor_desk', setorId);
+    } catch (e) {
+        console.warn('Erro ao salvar rascunho no localStorage:', e);
+    }
+}
+
+function restaurarRascunhoDoSetor(setorId) {
+    if (!setorId) return;
+    const r = rascunhoPorSetorDesk[setorId];
+    if (r) {
+        if (r.supervisor_id) {
+            const selSup = document.getElementById('selectSupervisor');
+            if (selSup) selSup.value = r.supervisor_id;
+        }
+        if (r.viatura_id) {
+            const selVtr = document.getElementById('selectViatura');
+            if (selVtr) {
+                selVtr.value = r.viatura_id;
+                selVtr.dispatchEvent(new Event('change'));
+            }
+        }
+        if (r.viatura_outros_texto) {
+            const inpOutros = document.getElementById('viaturaOutrosTexto');
+            if (inpOutros) inpOutros.value = r.viatura_outros_texto;
+        }
+        if (r.data_servico) {
+            const inpData = document.getElementById('data_servico');
+            if (inpData) inpData.value = r.data_servico;
+        }
+        if (r.turno) {
+            const selTurno = document.getElementById('selectTurno');
+            if (selTurno) selTurno.value = r.turno;
+        }
+        if (r.responsavel_nome) {
+            const inpResp = document.getElementById('responsavel_nome');
+            if (inpResp) inpResp.value = r.responsavel_nome;
+        }
+        if (r.km_inicial) {
+            const inpKmIni = document.getElementById('km_inicial');
+            if (inpKmIni) inpKmIni.value = r.km_inicial;
+        }
+        if (r.km_final) {
+            const inpKmFim = document.getElementById('km_final');
+            if (inpKmFim) inpKmFim.value = r.km_final;
+        }
+        if (r.km_rodado) {
+            const inpKmRod = document.getElementById('km_rodado');
+            if (inpKmRod) inpKmRod.value = r.km_rodado;
+        }
+        if (r.ocorrencias_gerais) {
+            const txtOc = document.getElementById('ocorrencias_gerais');
+            if (txtOc) txtOc.value = r.ocorrencias_gerais;
+        }
+        if (r.providencias_gerais) {
+            const txtProv = document.getElementById('providencias_gerais');
+            if (txtProv) txtProv.value = r.providencias_gerais;
+        }
+        if (r.pendencias_gerais) {
+            const txtPend = document.getElementById('pendencias_gerais');
+            if (txtPend) txtPend.value = r.pendencias_gerais;
+        }
+
+        if (r.postos && r.postos.length > 0) {
+            preencherCardsDesktopComDados(r.postos);
+        }
+
+        atualizarStatusRascunho('salvo', `Rascunho restaurado (${r.postos ? r.postos.length : 0} postos).`);
+    }
+
+    // Consulta também o servidor para mesclar dados em andamento
+    checarERecuperarRelatorioEmAndamentoDesk();
+}
+
+let debounceTimerAutoSaveDesk = null;
+function dispararAutoSaveDesk() {
+    atualizarStatusRascunho('salvando');
+    clearTimeout(debounceTimerAutoSaveDesk);
+    debounceTimerAutoSaveDesk = setTimeout(async () => {
+        const sId = document.getElementById('selectSetor')?.value;
+        if (!sId) {
+            atualizarStatusRascunho('salvo', 'Aguardando seleção do setor...');
+            return;
+        }
+
+        snapshotSetorParaRascunho(sId);
+
+        if (!navigator.onLine) {
+            atualizarStatusRascunho('offline');
+            return;
+        }
+
+        atualizarStatusRascunho('sincronizando');
+        try {
+            const dataServico = document.getElementById('data_servico')?.value;
+            const turno = document.getElementById('selectTurno')?.value;
+            if (dataServico && turno) {
+                const sucesso = await salvarProgressoDesktop(true);
+                if (sucesso) {
+                    atualizarStatusRascunho('salvo');
+                } else {
+                    atualizarStatusRascunho('erro');
+                }
+            } else {
+                atualizarStatusRascunho('salvo', 'Rascunho salvo no dispositivo.');
+            }
+        } catch (e) {
+            atualizarStatusRascunho('erro');
+        }
+    }, 1200);
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Definir data operacional de Brasília como padrão
@@ -88,19 +343,32 @@ async function carregarSetoresIniciais() {
             selectSetor.innerHTML += `<option value="${s.id}">${s.nome} (${s.sigla || 'CEDAE'})</option>`;
         });
 
-        // Verificar se veio setor na URL (?setor=1)
+        // Verificar se veio setor na URL (?setor=1) ou salvo no rascunho local
         const urlParams = new URLSearchParams(window.location.search);
-        const setorUrl = urlParams.get('setor');
+        const setorUrl = urlParams.get('setor') || localStorage.getItem('cco_ultimo_setor_desk');
         if (setorUrl) {
             selectSetor.value = setorUrl;
-            carregarEstruturaDoSetor(setorUrl);
+            setorAtivoAnteriorDesk = setorUrl;
+            await carregarEstruturaDoSetor(setorUrl);
+            restaurarRascunhoDoSetor(setorUrl);
         }
 
-        selectSetor.addEventListener('change', (e) => {
+        selectSetor.addEventListener('change', async (e) => {
             const val = e.target.value;
+
+            // 1. Salvar o progresso do setor anterior antes de carregar o novo
+            if (setorAtivoAnteriorDesk && setorAtivoAnteriorDesk !== val) {
+                snapshotSetorParaRascunho(setorAtivoAnteriorDesk);
+                salvarProgressoDesktop(true); // Envio em segundo plano
+            }
+
             if (val) {
-                carregarEstruturaDoSetor(val);
+                setorAtivoAnteriorDesk = val;
+                await carregarEstruturaDoSetor(val);
+                // 2. Restaurar o rascunho do novo setor (preservando todo o preenchimento)
+                restaurarRascunhoDoSetor(val);
             } else {
+                setorAtivoAnteriorDesk = null;
                 document.getElementById('etapasCascata').style.display = 'none';
             }
         });
@@ -1026,9 +1294,13 @@ function setupFormSubmit() {
             ocorrencias: ocorrenciasExtra
         };
 
-        const submitBtn = document.getElementById('btnEnviarRelatorio');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Enviando e auditando expediente...';
+        const submitBtn = document.getElementById('btnSalvarFiscalizacaoFinal') || document.getElementById('btnEnviarRelatorio');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = '💾 SALVANDO E AUDITANDO EXPEDIENTE NO CCO...';
+        }
+
+        atualizarStatusRascunho('sincronizando');
 
         try {
             const resposta = await apiPost('/formulario/enviar', payload);
@@ -1037,6 +1309,13 @@ function setupFormSubmit() {
             relatorioIdAtivoDesk = null;
             const bannerDesk = document.getElementById('bannerEmAndamentoDesk');
             if (bannerDesk) bannerDesk.style.display = 'none';
+
+            // Limpar o rascunho local do setor que foi concluído com sucesso
+            delete rascunhoPorSetorDesk[setorId];
+            localStorage.setItem('cco_rascunho_setores_desk', JSON.stringify(rascunhoPorSetorDesk));
+            localStorage.removeItem('cco_active_client_uuid_desk');
+
+            atualizarStatusRascunho('salvo', `✓ Fiscalização Nº ${resposta.id} registrada com sucesso no CCO.`);
 
             textoWhatsAppGerado = resposta.texto_whatsapp || '';
             document.getElementById('whatsappPreview').textContent = textoWhatsAppGerado;
@@ -1047,8 +1326,11 @@ function setupFormSubmit() {
 
         } catch (err) {
             alert('Falha ao enviar relatório do expediente: ' + err.message);
-            submitBtn.disabled = false;
-            submitBtn.textContent = '✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE';
+            atualizarStatusRascunho('erro');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '💾 SALVAR FISCALIZAÇÃO';
+            }
         }
     });
 }
@@ -1319,24 +1601,21 @@ function setupConferenciaDesktop() {
 
 // 6. SALVAMENTO PROGRESSIVO E RECUPERAÇÃO DO EXPEDIENTE (DESKTOP)
 function setupSalvarProgressoDesktop() {
-    const handler = async (btn) => {
-        const txt = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = '💾 SALVANDO NO SISTEMA CCO...';
-        try {
-            await salvarProgressoDesktop(false);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = txt;
-        }
-    };
+    const form = document.getElementById('formPlantao');
+    if (form) {
+        // Disparar salvamento automático de rascunho em segundo plano ao alterar qualquer campo
+        form.addEventListener('input', dispararAutoSaveDesk);
+        form.addEventListener('change', dispararAutoSaveDesk);
+    }
 
-    document.getElementById('btnSalvarProgressoDesk')?.addEventListener('click', function() {
-        handler(this);
+    // Sincronizar ao restabelecer a conexão de internet
+    window.addEventListener('online', () => {
+        atualizarStatusRascunho('sincronizando');
+        dispararAutoSaveDesk();
     });
 
-    document.getElementById('btnSalvarProgressoDeskTop')?.addEventListener('click', function() {
-        handler(this);
+    window.addEventListener('offline', () => {
+        atualizarStatusRascunho('offline');
     });
 
     document.getElementById('data_servico')?.addEventListener('change', () => {
@@ -1494,9 +1773,15 @@ async function salvarProgressoDesktop(silencioso = false) {
         });
     }
 
+    let activeClientUuidDesk = localStorage.getItem('cco_active_client_uuid_desk');
+    if (!activeClientUuidDesk) {
+        activeClientUuidDesk = 'desk_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('cco_active_client_uuid_desk', activeClientUuidDesk);
+    }
+
     const payload = {
         relatorio_id: relatorioIdAtivoDesk,
-        client_uuid: 'desk_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+        client_uuid: activeClientUuidDesk,
         setor_id: parseInt(setorId),
         supervisor_id: supervisorId ? parseInt(supervisorId) : null,
         viatura_id: (viaturaVal && viaturaVal !== 'OUTROS') ? parseInt(viaturaVal) : null,

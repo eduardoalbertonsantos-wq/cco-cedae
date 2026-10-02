@@ -361,8 +361,13 @@ let layerPostos = null;
 let markersFiscaisMap = {};
 
 // Função global para focar fiscal no mapa (acessível em todo o escopo da janela)
-window.focarFiscalNoMapa = function(lat, lng, userId) {
+window.focarFiscalNoMapa = function(lat, lng, userId, nome, status) {
     try {
+        if (!lat || !lng || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
+            alert('📍 Localização ainda não recebida deste fiscal.\n\nFiscal: ' + (nome || 'Fiscal') + (status ? ' (' + status + ')' : '') + '\n\nO dispositivo ainda não transmitiu coordenadas válidas via satélite/GPS.');
+            return;
+        }
+
         const mapContainer = document.getElementById('mapaOperacionalCCO');
         if (mapContainer) {
             mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -372,17 +377,15 @@ window.focarFiscalNoMapa = function(lat, lng, userId) {
             mapaCCO.invalidateSize();
             const nLat = parseFloat(lat);
             const nLng = parseFloat(lng);
-            if (!isNaN(nLat) && !isNaN(nLng)) {
-                mapaCCO.flyTo([nLat, nLng], 16, {
-                    animate: true,
-                    duration: 1.2
-                });
+            mapaCCO.flyTo([nLat, nLng], 16, {
+                animate: true,
+                duration: 1.2
+            });
 
-                if (userId && markersFiscaisMap[userId]) {
-                    setTimeout(() => {
-                        markersFiscaisMap[userId].openPopup();
-                    }, 400);
-                }
+            if (userId && markersFiscaisMap[userId]) {
+                setTimeout(() => {
+                    markersFiscaisMap[userId].openPopup();
+                }, 400);
             }
         }
     } catch (err) {
@@ -587,9 +590,14 @@ async function carregarPosicoesMapa() {
             }
 
             // Gerar card para a lista de acompanhamento logo abaixo do mapa
-            const cardClick = hasCoords ? `onclick="window.focarFiscalNoMapa(${f.latitude}, ${f.longitude}, ${f.user_id})"` : '';
+            const latParam = hasCoords ? f.latitude : 'null';
+            const lngParam = hasCoords ? f.longitude : 'null';
+            const nomeEscaped = (f.nome || 'Fiscal').replace(/'/g, "\\'");
+            const statusEscaped = (f.status_badge || '').replace(/'/g, "\\'");
+            const cardClick = `onclick="window.focarFiscalNoMapa(${latParam}, ${lngParam}, ${f.user_id}, '${nomeEscaped}', '${statusEscaped}')"`;
+
             listaCardsHtml.push(`
-                <div ${cardClick} style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${f.setor_cor}; border-radius:0.5rem; padding:0.65rem 0.85rem; box-shadow:0 1px 3px rgba(0,0,0,0.04); ${hasCoords ? 'cursor:pointer;' : ''}">
+                <div ${cardClick} style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${f.setor_cor}; border-radius:0.5rem; padding:0.65rem 0.85rem; box-shadow:0 1px 3px rgba(0,0,0,0.04); cursor:pointer;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                         <strong style="color:#0f172a; font-size:0.88rem;">👤 ${f.nome}</strong>
                         <span style="font-size:0.75rem; font-weight:700; color:${f.status_cor};">${f.status_badge}</span>
@@ -600,11 +608,9 @@ async function carregarPosicoesMapa() {
                     </div>
                     <div style="font-size:0.75rem; color:#475569; margin-top:5px; display:flex; justify-content:space-between; align-items:center;">
                         <span>📡 Precisão: ${f.accuracy ? f.accuracy + 'm' : (hasCoords ? 'Padrão' : 'Sem GPS')}</span>
-                        ${hasCoords ? `
-                            <button type="button" onclick="event.stopPropagation(); window.focarFiscalNoMapa(${f.latitude}, ${f.longitude}, ${f.user_id});" style="background:#2563eb; color:#ffffff; font-weight:700; cursor:pointer; padding:3px 9px; font-size:0.75rem; border:none; border-radius:4px; display:inline-flex; align-items:center; gap:3px; box-shadow:0 1px 2px rgba(0,0,0,0.15);">
-                                Ver no Mapa 📍
-                            </button>
-                        ` : ''}
+                        <button type="button" onclick="event.stopPropagation(); window.focarFiscalNoMapa(${latParam}, ${lngParam}, ${f.user_id}, '${nomeEscaped}', '${statusEscaped}');" style="background:${hasCoords ? '#2563eb' : '#f1f5f9'}; color:${hasCoords ? '#ffffff' : '#64748b'}; font-weight:700; cursor:pointer; padding:3px 9px; font-size:0.75rem; border:${hasCoords ? 'none' : '1px solid #cbd5e1'}; border-radius:4px; display:inline-flex; align-items:center; gap:3px; box-shadow:0 1px 2px rgba(0,0,0,0.15);">
+                            Ver no Mapa 📍
+                        </button>
                     </div>
                 </div>
             `);

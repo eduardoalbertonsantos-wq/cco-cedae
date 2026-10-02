@@ -126,6 +126,15 @@
     <!-- Formulário em Cascata -->
     <form id="formPlantao">
       
+      <!-- BARRA DE STATUS DO SALVAMENTO AUTOMÁTICO DE RASCUNHO -->
+      <div id="statusRascunhoBar" style="position:sticky; top:12px; z-index:999; background:#0f172a; color:#f8fafc; border:1px solid #334155; border-radius:8px; padding:10px 16px; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; font-weight:700; box-shadow:0 4px 14px rgba(0,0,0,0.18);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="indicadorStatusIcon" style="font-size:1.1rem;">🟢</span>
+          <span id="indicadorStatusTexto">Rascunho ativo &bull; salvamento automático em segundo plano habilitado</span>
+        </div>
+        <span id="indicadorStatusHora" style="font-size:0.75rem; color:#94a3b8; font-weight:600;">Tempo real</span>
+      </div>
+
       <!-- ETAPA 1: SETOR -->
       <div class="form-section">
         <h2 class="form-section-title">ETAPA 1 &mdash; SELEÇÃO DO SETOR OPERACIONAL</h2>
@@ -135,7 +144,7 @@
             <option value="">Selecione o Setor do seu expediente...</option>
             <!-- Carregado via JS dinamicamente -->
           </select>
-          <small class="form-hint" style="color: #64748b; margin-top: 0.25rem; display: block;">Ao selecionar o setor, as viaturas, fiscais e postos serão filtrados automaticamente.</small>
+          <small class="form-hint" style="color: #64748b; margin-top: 0.25rem; display: block;">Ao selecionar o setor, as viaturas, fiscais e postos serão filtrados automaticamente. O progresso de cada setor é preservado automaticamente.</small>
         </div>
       </div>
 
@@ -207,12 +216,6 @@
               <input type="text" class="form-input" readonly id="km_rodado" value="0.0 km" style="background-color: #f1f5f9; font-weight: 800; color: var(--cco-blue);">
             </div>
           </div>
-
-          <div style="margin-top: 0.75rem;">
-            <button type="button" id="btnSalvarProgressoDeskTop" class="btn" style="background:#f59e0b; color:#040911; font-weight:800; border:none; padding:10px 18px; border-radius:6px; font-size:0.95rem; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 2px 8px rgba(245,158,11,0.25);">
-              💾 SALVAR INÍCIO / PROGRESSO DO EXPEDIENTE
-            </button>
-          </div>
         </div>
 
         <!-- ETAPA 6: POSTOS FISCALIZADOS -->
@@ -267,14 +270,11 @@
           </label>
           
           <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem;">
-            <button type="button" id="btnSalvarProgressoDesk" class="btn" style="width: 100%; padding: 1.1rem; font-size: 1.05rem; font-weight: 800; background: #f59e0b; border: none; border-radius: 0.5rem; color: #040911; cursor: pointer; box-shadow: 0 4px 12px rgba(245,158,11,0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
-              💾 SALVAR PROGRESSO DO EXPEDIENTE (MANTER EM PREENCHIMENTO)
-            </button>
-            <button type="button" id="btnConferirRelatorio" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 800; background: #2563eb; border: none; border-radius: 0.5rem; color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+            <button type="button" id="btnConferirRelatorio" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.05rem; font-weight: 800; background: #2563eb; border: none; border-radius: 0.5rem; color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
               📋 CONFERIR RELATÓRIO DO EXPEDIENTE
             </button>
-            <button type="submit" id="btnEnviarRelatorio" class="btn btn-success form-submit-btn" style="width: 100%; padding: 1.1rem; font-size: 1.15rem; font-weight: 800; background: var(--cco-green); border: none; border-radius: 0.5rem; color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(34,197,94,0.3);">
-              ✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE
+            <button type="submit" id="btnSalvarFiscalizacaoFinal" class="btn btn-success form-submit-btn" style="width: 100%; padding: 1.2rem; font-size: 1.15rem; font-weight: 900; background: var(--cco-green); border: none; border-radius: 0.5rem; color: #fff; cursor: pointer; box-shadow: 0 4px 14px rgba(34,197,94,0.35); display:flex; align-items:center; justify-content:center; gap:8px;">
+              💾 SALVAR FISCALIZAÇÃO
             </button>
           </div>
         </div>

@@ -532,6 +532,15 @@
         </div>
       </div>
 
+      <!-- BARRA DE STATUS DO SALVAMENTO AUTOMÁTICO DE RASCUNHO -->
+      <div id="statusRascunhoBarMob" style="position:sticky; top:54px; z-index:99; background:#091322; color:#f8fafc; border:1px solid #1e3a8a; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.35);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="indicadorStatusIconMob" style="font-size:1.1rem;">🟢</span>
+          <span id="indicadorStatusTextoMob">Rascunho ativo &bull; salvamento automático em segundo plano habilitado</span>
+        </div>
+        <span id="indicadorStatusHoraMob" style="font-size:0.75rem; color:#94a3b8; font-weight:600;">Tempo real</span>
+      </div>
+
       <!-- BANNER DE RELATÓRIO EM PREENCHIMENTO -->
       <div id="bannerEmAndamento" style="display:none; background:#78350f; color:#fef08a; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-weight:700; font-size:0.85rem; border:1px solid #facc15; align-items:center; gap:8px;">
         <span style="font-size:1.1rem;">🟡</span>
@@ -606,12 +615,6 @@
               </div>
             </div>
           </div>
-
-          <div style="margin-top:10px;">
-            <button type="button" id="btnSalvarProgressoTopo" class="btn-mob-secondary" style="background:#f59e0b; color:#040911; font-weight:900; border:none; padding:12px; font-size:0.95rem; border-radius:6px; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; box-shadow:0 2px 10px rgba(245,158,11,0.25);">
-              💾 SALVAR INÍCIO / PROGRESSO DO EXPEDIENTE
-            </button>
-          </div>
         </div>
 
         <!-- BLOCO 2: POSTOS FISCALIZADOS -->
@@ -667,14 +670,11 @@
           </label>
 
           <div style="display:flex; flex-direction:column; gap:10px;">
-            <button type="button" id="btnSalvarProgressoGeral" class="btn-mob-secondary" style="background:#f59e0b; color:#040911; font-weight:900; border:none; padding:12px; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:8px;">
-              💾 SALVAR PROGRESSO DO EXPEDIENTE (MANTER EM PREENCHIMENTO)
-            </button>
             <button type="button" id="btnAbrirConferencia" class="btn-mob-primary" style="background:linear-gradient(135deg, #0284c7 0%, #1e40af 100%);">
               📋 CONFERIR RELATÓRIO DO EXPEDIENTE
             </button>
-            <button type="submit" id="btnFinalizarExpediente" class="btn-mob-success">
-              ✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE
+            <button type="submit" id="btnFinalizarExpediente" class="btn-mob-success" style="font-weight:900; font-size:1.15rem; padding:16px; background:linear-gradient(135deg, #15803d 0%, #16a34a 100%); border:none; border-radius:6px; box-shadow:0 4px 14px rgba(34,197,94,0.35); display:flex; align-items:center; justify-content:center; gap:8px;">
+              💾 SALVAR FISCALIZAÇÃO
             </button>
           </div>
         </div>
@@ -1536,9 +1536,8 @@
               '</select>' +
               '<input type="text" class="input-mobile" id="motivo_outro_' + slot + '" placeholder="Descreva o motivo..." style="min-height:34px; font-size:12px;">' +
             '</div>' +
-            '<div style="display:flex; justify-content:space-between; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid #1e293b;">' +
-              '<button type="button" class="btn-card-ctrl" onclick="salvarPostoIndividual(' + slot + ', \'plantao\')">💾 Salvar</button>' +
-              '<button type="button" class="btn-card-ctrl" style="background:#0284c7; color:#fff;" onclick="avancarParaProximoPosto(' + slot + ', \'plantao\')">Avançar ➡</button>' +
+            '<div style="display:flex; justify-content:flex-end; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid #1e293b;">' +
+              '<button type="button" class="btn-card-ctrl" style="background:#0284c7; color:#fff;" onclick="avancarParaProximoPosto(' + slot + ', \'plantao\')">Próximo Posto ➡</button>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -1614,9 +1613,8 @@
               '</select>' +
               '<input type="text" class="input-mobile" id="reg_motivo_outro_' + slot + '" placeholder="Descreva o motivo..." style="min-height:34px; font-size:12px;">' +
             '</div>' +
-            '<div style="display:flex; justify-content:space-between; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid #1e293b;">' +
-              '<button type="button" class="btn-card-ctrl" onclick="salvarPostoIndividual(' + slot + ', \'regular\')">💾 Salvar</button>' +
-              '<button type="button" class="btn-card-ctrl" style="background:#0284c7; color:#fff;" onclick="avancarParaProximoPosto(' + slot + ', \'regular\')">Avançar ➡</button>' +
+            '<div style="display:flex; justify-content:flex-end; gap:6px; margin-top:8px; padding-top:6px; border-top:1px solid #1e293b;">' +
+              '<button type="button" class="btn-card-ctrl" style="background:#0284c7; color:#fff;" onclick="avancarParaProximoPosto(' + slot + ', \'regular\')">Próximo Posto ➡</button>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -1782,11 +1780,62 @@
         };
       }
 
+      function atualizarStatusRascunhoMob(status, msgAdicional = '') {
+        const iconEl = document.getElementById('indicadorStatusIconMob');
+        const textEl = document.getElementById('indicadorStatusTextoMob');
+        const horaEl = document.getElementById('indicadorStatusHoraMob');
+        if (!iconEl || !textEl || !horaEl) return;
+
+        const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        switch (status) {
+          case 'salvando':
+            iconEl.textContent = '🟡';
+            textEl.textContent = 'Salvando rascunho...';
+            horaEl.textContent = agora;
+            break;
+          case 'salvo':
+            iconEl.textContent = '🟢';
+            textEl.textContent = 'Rascunho salvo.';
+            horaEl.textContent = agora;
+            break;
+          case 'sincronizando':
+            iconEl.textContent = '🔵';
+            textEl.textContent = 'Sincronizando com o servidor...';
+            horaEl.textContent = agora;
+            break;
+          case 'offline':
+            iconEl.textContent = '🔴';
+            textEl.textContent = 'Erro ao salvar — dados mantidos localmente.';
+            horaEl.textContent = agora;
+            break;
+          case 'sem_conexao':
+            iconEl.textContent = '⚪';
+            textEl.textContent = 'Aguardando conexão.';
+            horaEl.textContent = 'Sem rede';
+            break;
+          default:
+            iconEl.textContent = '🟢';
+            textEl.textContent = msgAdicional || 'Rascunho pronto';
+            horaEl.textContent = agora;
+        }
+      }
+
+      let debounceAutoSaveTimerMob = null;
+      function dispararAutoSaveMob() {
+        if (debounceAutoSaveTimerMob) clearTimeout(debounceAutoSaveTimerMob);
+        atualizarStatusRascunhoMob('salvando');
+        debounceAutoSaveTimerMob = setTimeout(async () => {
+          await salvarProgressoNoServidor(true);
+        }, 1200);
+      }
+
       async function salvarProgressoNoServidor(silencioso = false) {
         const payload = montarPayloadExpediente();
 
         if (!navigator.onLine) {
           localStorage.setItem('cco_draft_supervisao', JSON.stringify(payload));
+          atualizarStatusRascunhoMob('sem_conexao');
           if (!silencioso) {
             alert('💾 Progresso salvo localmente no celular (dispositivo offline). Sincronizará quando a conexão retornar.');
           }
@@ -1794,6 +1843,7 @@
         }
 
         try {
+          atualizarStatusRascunhoMob('sincronizando');
           const res = await fetch(API_BASE + '/formulario/salvar', {
             method: 'POST',
             headers: {
@@ -1814,6 +1864,7 @@
 
           relatorioIdAtivo = data.id;
           localStorage.setItem('cco_draft_supervisao', JSON.stringify({ ...payload, relatorio_id: data.id }));
+          atualizarStatusRascunhoMob('salvo');
 
           const banner = document.getElementById('bannerEmAndamento');
           const bannerTexto = document.getElementById('bannerEmAndamentoTexto');
@@ -1833,6 +1884,7 @@
         } catch (err) {
           console.warn('Erro ao salvar progresso no servidor:', err);
           localStorage.setItem('cco_draft_supervisao', JSON.stringify(payload));
+          atualizarStatusRascunhoMob('offline');
           if (!silencioso) {
             alert('⚠️ Salvo localmente no aparelho:\n' + err.message);
           }
@@ -2354,8 +2406,23 @@
         executarEnvioFinal();
       });
 
-      // 9. SUBMISSÃO DEFINITIVA
-      document.getElementById('formSupervisaoApp').addEventListener('submit', (e) => {
+      // 9. SALVAMENTO AUTOMÁTICO EM SEGUNDO PLANO
+      const formSupervisaoApp = document.getElementById('formSupervisaoApp');
+      if (formSupervisaoApp) {
+        formSupervisaoApp.addEventListener('input', () => dispararAutoSaveMob());
+        formSupervisaoApp.addEventListener('change', () => dispararAutoSaveMob());
+      }
+
+      window.addEventListener('online', () => {
+        atualizarStatusRascunhoMob('sincronizando');
+        salvarProgressoNoServidor(true);
+      });
+      window.addEventListener('offline', () => {
+        atualizarStatusRascunhoMob('sem_conexao');
+      });
+
+      // 10. SUBMISSÃO DEFINITIVA
+      formSupervisaoApp?.addEventListener('submit', (e) => {
         e.preventDefault();
         executarEnvioFinal();
       });
