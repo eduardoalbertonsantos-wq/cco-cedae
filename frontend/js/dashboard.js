@@ -372,12 +372,31 @@ async function initMapaOperacional() {
                 zoomControl: true
             });
 
-            // CartoDB Voyager tiles (rápido, alta disponibilidade, sem bloqueio de políticas OSM)
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            // Mapa Real Google Maps (Ruas, Vias e Avenidas sem bloqueio)
+            const layerGoogleRuas = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 maxZoom: 20,
-                subdomains: 'abcd',
-                attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; &copy; OpenStreetMap &bull; CEDAE CCO Fiscalização'
-            }).addTo(mapaCCO);
+                attribution: '&copy; Google Maps &bull; CEDAE CCO Fiscalização'
+            });
+
+            const layerGoogleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                attribution: '&copy; Google Satélite &bull; CEDAE CCO Fiscalização'
+            });
+
+            const layerEsriRuas = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri World Street Map &bull; CEDAE CCO Fiscalização'
+            });
+
+            // Ativar Google Ruas como padrão oficial
+            layerGoogleRuas.addTo(mapaCCO);
+
+            // Controle de alternância de visualização para o usuário (Ruas / Satélite)
+            L.control.layers({
+                "🗺️ Google Ruas": layerGoogleRuas,
+                "🛰️ Google Satélite": layerGoogleSatelite,
+                "🏛️ Esri Vias": layerEsriRuas
+            }, null, { position: 'topright' }).addTo(mapaCCO);
 
             layerBases = L.layerGroup().addTo(mapaCCO);
             layerPostos = L.layerGroup().addTo(mapaCCO);

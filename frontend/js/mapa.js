@@ -15,10 +15,9 @@ function initMap() {
     // Center around RJ
     map = L.map('map').setView([-22.9068, -43.1729], 10);
     
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
         maxZoom: 20,
-        subdomains: 'abcd',
-        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; &copy; OpenStreetMap &bull; CEDAE CCO Fiscalização'
+        attribution: '&copy; Google Maps &bull; CEDAE CCO Fiscalização'
     }).addTo(map);
     
     markersLayer = L.layerGroup().addTo(map);

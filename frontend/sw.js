@@ -1,10 +1,10 @@
 /**
  * CCO — FISCALIZAÇÃO OPERACIONAL
- * Service Worker v3.5.0 (Mapa Operacional CartoDB & Presença em Tempo Real)
+ * Service Worker v3.6.0 (Mapa Real Google Maps & Satélite)
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-fiscalizacao-v3.5.0-mapa-cartodb';
+const CACHE_NAME = 'cco-fiscalizacao-v3.6.0-google-maps';
 const STATIC_ASSETS = [
   '/',
   '/app',
