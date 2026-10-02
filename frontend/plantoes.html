@@ -84,6 +84,7 @@
             <thead>
               <tr>
                 <th>ID</th>
+                <th>Status</th>
                 <th>Data</th>
                 <th>Turno</th>
                 <th>Setor</th>
@@ -96,7 +97,7 @@
               </tr>
             </thead>
             <tbody id="plantoesTableBody">
-              <tr><td colspan="10" style="text-align: center; color: #64748b; padding: 2rem;">Carregando relatórios de expediente...</td></tr>
+              <tr><td colspan="11" style="text-align: center; color: #64748b; padding: 2rem;">Carregando relatórios de expediente...</td></tr>
             </tbody>
           </table>
         </div>
@@ -169,6 +170,14 @@
     let textoWhatsAtual = '';
 
     document.addEventListener('DOMContentLoaded', async () => {
+      // Definir filtro inicial obrigatório como a data de HOJE (Horário de Brasília)
+      const hoje = new Date();
+      const ano = hoje.getFullYear();
+      const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+      const dia = String(hoje.getDate()).padStart(2, '0');
+      const hojeIso = `${ano}-${mes}-${dia}`;
+      document.getElementById('dateFilter').value = hojeIso;
+
       await carregarFiltroSetores();
       await carregarRelatorios();
 
@@ -225,23 +234,28 @@
       if (data) params.append('data_inicio', data);
 
       const tbody = document.getElementById('plantoesTableBody');
-      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem;">Carregando...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:2rem;">Carregando...</td></tr>';
 
       try {
         const relatorios = await apiGet(`/plantoes?${params.toString()}`);
         tbody.innerHTML = '';
 
         if (!relatorios || relatorios.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#64748b; padding:2rem;">Nenhum relatório encontrado para os filtros.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; color:#64748b; padding:2rem;">Nenhum relatório encontrado para os filtros.</td></tr>';
           return;
         }
 
         relatorios.forEach(r => {
           const sup = r.supervisor_nome || r.responsavel_nome || '-';
           const vtr = r.viatura_modelo || r.viatura_outros_texto || 'OUTROS';
+          const statusBadge = (r.status === 'em_aberto')
+            ? '<span class="badge" style="background:#fef08a; color:#854d0e; font-weight:800; border:1px solid #facc15; padding:3px 8px; border-radius:12px; font-size:0.75rem;">🟡 EM PREENCHIMENTO</span>'
+            : '<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:800; border:1px solid #86efac; padding:3px 8px; border-radius:12px; font-size:0.75rem;">🟢 ENVIADO</span>';
+
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>#${r.id}</td>
+            <td>${statusBadge}</td>
             <td><strong>${formatDate(r.data_servico)}</strong></td>
             <td><span class="badge badge-primary">${r.turno}</span></td>
             <td><strong>${r.setor_nome}</strong></td>

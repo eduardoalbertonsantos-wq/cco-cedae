@@ -4,7 +4,7 @@ const { getDb } = require('../database/db');
 const emailService = require('../services/email.service');
 const { getBrasiliaDateTime, formatDisplayDate, formatDisplayDateTime, formatDisplayTime } = require('../utils/date.utils');
 
-// 0. LISTAR SETORES ATIVOS (Público para o Formulário do Supervisor)
+// 0. LISTAR SETORES ATIVOS (Público para o Formulário do Fiscal)
 router.get('/setores', (req, res) => {
     try {
         const db = getDb();
@@ -17,7 +17,6 @@ router.get('/setores', (req, res) => {
 });
 
 // 1. CARREGAR ESTRUTURA EM CASCATA POR SETOR
-// Retorna apenas supervisores, viaturas e postos daquele setor específico
 router.get('/setor/:id', (req, res) => {
     try {
         const db = getDb();
@@ -26,8 +25,6 @@ router.get('/setor/:id', (req, res) => {
         
         const isPlantao = setor.nome.toUpperCase().includes('PLANT') || setor.sigla === 'PLANTAO';
         
-        // REGRA DE ISOLAMENTO RIGOROSO ENTRE SETORES (SEM QUALQUER EXCEÇÃO):
-        // CADA SETOR RETORNA EXCLUSIVAMENTE OS SEUS PRÓPRIOS SUPERVISORES E SUAS PRÓPRIAS VIATURAS
         const supervisores = db.prepare(
             "SELECT id, nome, matricula, telefone, funcao FROM supervisores WHERE setor_id = ? AND status = 'ativo' ORDER BY nome ASC"
         ).all(setor.id);
@@ -67,11 +64,120 @@ router.get('/setor/:id', (req, res) => {
     }
 });
 
-// 2. ENVIAR RELATÓRIO CONSOLIDADO DO EXPEDIENTE (1 envio por setor)
-const enviarRelatorioHandler = async (req, res) => {
+// 1.1. CONSULTAR RELATÓRIO EM ANDAMENTO (PARA CONTINUAÇÃO AUTOMÁTICA)
+router.get('/em-andamento', (req, res) => {
+    try {
+        const db = getDb();
+        const { setor_id, supervisor_id, data_servico, turno } = req.query;
+        if (!setor_id) return res.status(400).json({ error: 'setor_id é obrigatório' });
+
+        let sql = "SELECT * FROM relatorios WHERE setor_id = ? AND status = 'em_aberto'";
+        const params = [setor_id];
+
+        if (data_servico) {
+            sql += " AND data_servico = ?";
+            params.push(data_servico);
+        }
+        if (turno) {
+            sql += " AND turno = ?";
+            params.push(turno);
+        }
+        if (supervisor_id) {
+            sql += " AND (supervisor_id = ? OR supervisor_id IS NULL)";
+            params.push(supervisor_id);
+        }
+
+        sql += " ORDER BY id DESC LIMIT 1";
+        const relatorio = db.prepare(sql).get(...params);
+
+        if (!relatorio) {
+            return res.json({ tem_relatorio: false });
+        }
+
+        const postos = db.prepare(`
+            SELECT pr.*, COALESCE(pr.nome_posto_digitado, p.nome, 'Posto') as posto_nome
+            FROM postos_relatorio pr
+            LEFT JOIN postos p ON pr.posto_id = p.id
+            WHERE pr.relatorio_id = ?
+            ORDER BY pr.id ASC
+        `).all(relatorio.id);
+
+        const ocorrencias = db.prepare(`
+            SELECT * FROM ocorrencias WHERE relatorio_id = ? ORDER BY id ASC
+        `).all(relatorio.id);
+
+        res.json({
+            tem_relatorio: true,
+            relatorio,
+            postos,
+            ocorrencias
+        });
+    } catch (error) {
+        console.error('Erro ao buscar relatório em andamento:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// FUNÇÃO AUXILIAR: PROCESSAR E VALIDAR POSTOS
+function processarPostosDoPayload(db, postos_supervisionados, setor_id, ehFinal = false) {
+    const postosValidos = (postos_supervisionados || []).filter(p => {
+        const temIdentificacao = (p.posto_id) || (p.posto_nome && String(p.posto_nome).trim());
+        return temIdentificacao && (p.horario_supervisao || p.km_posto !== undefined || p.supervisionado !== undefined || p.status_supervisao);
+    });
+
+    if (ehFinal && postosValidos.length === 0) {
+        throw new Error('Ao menos um posto preenchido deve constar no relatório final.');
+    }
+
+    for (const p of postosValidos) {
+        let pId = p.posto_id ? parseInt(p.posto_id) : null;
+        let dbPosto = null;
+        if (pId) {
+            dbPosto = db.prepare("SELECT * FROM postos WHERE id = ? AND status = 'ativo'").get(pId);
+        } else if (p.posto_nome) {
+            dbPosto = db.prepare("SELECT * FROM postos WHERE UPPER(TRIM(nome)) = UPPER(TRIM(?)) AND status = 'ativo'").get(p.posto_nome.trim());
+        }
+
+        if (!dbPosto) {
+            if (parseInt(setor_id) === 4 && (p.posto_nome || p.nome)) {
+                dbPosto = {
+                    id: null,
+                    nome: (p.posto_nome || p.nome || 'Posto Manual').trim(),
+                    endereco: p.endereco || 'Informado pelo Fiscal',
+                    localidade: p.localidade || 'Rio de Janeiro',
+                    empresa: p.empresa || 'CEDAE',
+                    setor_id: 4
+                };
+            } else {
+                throw new Error(`Posto ${p.posto_nome || p.posto_id} não pertence à base oficial de postos.`);
+            }
+        }
+
+        // Validação de isolamento do setor (setor 4 = PLANTÃO tem acesso aos postos gerais)
+        if (dbPosto.id && parseInt(setor_id) !== 4) {
+            const autorizado = db.prepare(`
+                SELECT 1 FROM posto_setor_supervisao 
+                WHERE posto_id = ? AND setor_id = ? AND ativo = 1
+            `).get(dbPosto.id, parseInt(setor_id));
+
+            if (!autorizado) {
+                throw new Error(`Acesso negado: O posto "${dbPosto.nome}" não pertence ao setor selecionado.`);
+            }
+        }
+
+        p._dbPosto = dbPosto;
+    }
+
+    return postosValidos;
+}
+
+// 2. SALVAMENTO PARCIAL E PROGRESSIVO DO PROGRESSO (SALVAR)
+// Grava postos preenchidos sem finalizar o expediente (Status: 🟡 em_aberto)
+router.post('/salvar', async (req, res) => {
     try {
         const db = getDb();
         const {
+            relatorio_id: reqRelatorioId,
             client_uuid,
             setor_id,
             supervisor_id,
@@ -85,190 +191,111 @@ const enviarRelatorioHandler = async (req, res) => {
             providencias_gerais,
             pendencias_gerais,
             responsavel_nome,
-            postos_supervisionados: postos_supervisionados_raw, // Array de postos
-            ocorrencias // Array de ocorrencias opcionais
+            postos_supervisionados: postos_supervisionados_raw,
+            ocorrencias
         } = req.body;
-        
-        const postos_supervisionados = postos_supervisionados_raw || req.body.postos || [];
-        
-        // Verificação de Idempotência / Anti-Duplicidade via client_uuid
-        if (client_uuid) {
-            const existente = db.prepare('SELECT id, data_servico, created_at FROM relatorios WHERE client_uuid = ?').get(client_uuid);
-            if (existente) {
-                return res.status(200).json({
-                    success: true,
-                    id: existente.id,
-                    numero_relatorio: String(existente.id).padStart(5, '0'),
-                    data: formatDisplayDate(existente.data_servico),
-                    data_servico: existente.data_servico,
-                    horario: formatDisplayTime(existente.created_at),
-                    timestamp: existente.created_at,
-                    timezone: 'America/Sao_Paulo',
-                    message: '✅ FISCALIZAÇÃO JÁ SINCRONIZADA ANTERIORMENTE',
-                    ja_existia: true
-                });
-            }
-        }
 
-        // Validação de campos obrigatórios
         if (!setor_id || !data_servico || !turno) {
-            return res.status(400).json({ error: 'Setor, Data do Serviço e Turno são obrigatórios' });
+            return res.status(400).json({ error: 'Setor, Data do Serviço e Turno são obrigatórios para salvar o progresso.' });
         }
 
-        if (!supervisor_id && !responsavel_nome) {
-            return res.status(400).json({ error: 'Identificação do Fiscal ou Responsável é obrigatória' });
-        }
+        const postosValidos = processarPostosDoPayload(db, postos_supervisionados_raw || req.body.postos || [], setor_id, false);
 
-        // Regra de Isolamento: Se supervisor_id informado, deve pertencer obrigatoriamente ao setor_id
-        if (supervisor_id) {
-            const supValido = db.prepare("SELECT id, nome FROM supervisores WHERE id = ? AND setor_id = ? AND status = 'ativo'").get(supervisor_id, setor_id);
-            if (!supValido) {
-                return res.status(400).json({ error: 'O fiscal selecionado não pertence ao setor do expediente ou está inativo.' });
-            }
-        }
-
-        // Regra de Isolamento: Se viatura_id informada (e não OUTROS), deve pertencer obrigatoriamente ao setor_id
-        if (viatura_id && viatura_id !== 'OUTROS' && viatura_id !== 'null') {
-            const vtrValida = db.prepare("SELECT id FROM viaturas WHERE id = ? AND setor_id = ? AND status = 'ativo'").get(viatura_id, setor_id);
-            if (!vtrValida) {
-                return res.status(400).json({ error: 'A viatura selecionada não pertence ao setor do expediente ou está inativa.' });
-            }
-        }
-
-
-        // Filtrar apenas postos válidos preenchidos (postos vazios não são contabilizados)
-        const postosValidos = (postos_supervisionados || []).filter(p => {
-            const temIdentificacao = (p.posto_id) || (p.posto_nome && String(p.posto_nome).trim());
-            return temIdentificacao && (p.horario_supervisao || p.km_posto !== undefined || p.supervisionado !== undefined);
-        });
-
-        if (postosValidos.length === 0) {
-            return res.status(400).json({ error: 'Ao menos um posto preenchido deve constar no relatório' });
-        }
-
-        // Validação estrita de cada posto preenchido
-        for (const p of postosValidos) {
-            const rotulo = p.posto_nome ? `"${p.posto_nome}"` : `ID ${p.posto_id}`;
-            if (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') {
-                if (!p.motivo_nao_supervisao || !p.motivo_nao_supervisao.trim()) {
-                    return res.status(400).json({ error: `O posto ${rotulo} foi marcado como NÃO FISCALIZADO. É obrigatório informar o motivo.` });
-                }
-            } else {
-                // Posto fiscalizado: exigir Hora, KM e Situação
-                if (!p.horario_supervisao || !p.horario_supervisao.trim()) {
-                    return res.status(400).json({ error: `Informe a Hora da fiscalização para o posto ${rotulo}.` });
-                }
-                if (p.km_posto === undefined || p.km_posto === null || String(p.km_posto).trim() === '') {
-                    return res.status(400).json({ error: `Informe o KM no posto para o posto ${rotulo}.` });
-                }
-                // Se efetivo incompleto, exigir falta
-                if (p.efetivo_completo === false || p.efetivo_completo === 0 || p.efetivo_completo === 'NAO') {
-                    if (!p.falta_efetivo_qtd || !String(p.falta_efetivo_qtd).trim()) {
-                        return res.status(400).json({ error: `Para o posto ${rotulo}, o efetivo está incompleto. É obrigatório preencher o campo Falta.` });
-                    }
-                }
-                // Se ocorrência SIM, exigir descrição
-                if (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM') {
-                    if (!p.descricao_ocorrencia || !p.descricao_ocorrencia.trim()) {
-                        return res.status(400).json({ error: `Para o posto ${rotulo}, foi indicada ocorrência. É obrigatório descrever a ocorrência.` });
-                    }
-                }
-            }
-        }
-
-        // VALIDAÇÃO DE SEGURANÇA E ACESSO POR SETOR (BASE ÚNICA DE 59 POSTOS)
-        for (const p of postosValidos) {
-            let pId = p.posto_id ? parseInt(p.posto_id) : null;
-            let dbPosto = null;
-            if (pId) {
-                dbPosto = db.prepare("SELECT * FROM postos WHERE id = ? AND status = 'ativo'").get(pId);
-            } else if (p.posto_nome) {
-                dbPosto = db.prepare("SELECT * FROM postos WHERE UPPER(TRIM(nome)) = UPPER(TRIM(?)) AND status = 'ativo'").get(p.posto_nome.trim());
-            }
-
-            if (!dbPosto) {
-                return res.status(400).json({ error: 'ACESSO NEGADO: POSTO NÃO PERTENCE À BASE OFICIAL' });
-            }
-
-            // Regra de Isolamento e Segurança Multi-Setor:
-            // PLANTÃO (setor_id = 4) tem acesso aos 59 postos.
-            // TINGUÁ (1), GUANDU (2), LARANJAL (3) só podem enviar postos atribuídos em posto_setor_supervisao.
-            if (parseInt(setor_id) !== 4) {
-                const autorizado = db.prepare(`
-                    SELECT 1 FROM posto_setor_supervisao 
-                    WHERE posto_id = ? AND setor_id = ? AND ativo = 1
-                `).get(dbPosto.id, parseInt(setor_id));
-
-                if (!autorizado) {
-                    return res.status(403).json({
-                        error: `ACESSO NEGADO: O posto "${dbPosto.nome}" não pertence ao setor do usuário.`,
-                        status: 'ACESSO NEGADO'
-                    });
-                }
-            }
-
-            p._dbPosto = dbPosto;
-        }
-
-        // CONTROLE CONTRA DUPLICIDADE: SETOR + DATA + TURNO + SUPERVISOR
-        let dupCheckSql = "SELECT id, created_at FROM relatorios WHERE setor_id = ? AND data_servico = ? AND turno = ?";
-        const dupParams = [setor_id, data_servico, turno];
-        if (supervisor_id) {
-            dupCheckSql += " AND supervisor_id = ?";
-            dupParams.push(supervisor_id);
-        }
-        dupCheckSql += " LIMIT 1";
-
-        const relatorioExistente = db.prepare(dupCheckSql).get(...dupParams);
-        if (relatorioExistente) {
-            return res.status(409).json({
-                error: `Atenção: Já existe um relatório registrado para este Setor, Data, Turno e Fiscal (Relatório #${relatorioExistente.id} em ${relatorioExistente.created_at}). Para evitar duplicidade acidental, o novo envio foi bloqueado.`
-            });
-        }
-        
         const kmIni = parseFloat(km_inicial) || 0;
         const kmFim = parseFloat(km_final) || 0;
         const km_rodado = (kmFim >= kmIni && kmFim > 0) ? (kmFim - kmIni) : 0;
         const spNow = getBrasiliaDateTime();
-        
-        const runTransaction = db.transaction(() => {
-            // 1. Inserir Relatório Principal com Timestamp Oficial de Brasília
-            const stmtRel = db.prepare(`
-                INSERT INTO relatorios (
-                    setor_id, supervisor_id, viatura_id, viatura_outros_texto,
-                    data_servico, turno, km_inicial, km_final, km_rodado,
-                    responsavel_nome, observacoes_gerais, providencias_gerais, pendencias_gerais, status, client_uuid,
-                    created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'concluido', ?, ?)
-            `);
-            
-            const resultRel = stmtRel.run(
-                setor_id,
-                supervisor_id || null,
-                viatura_id || null,
-                viatura_outros_texto || null,
-                data_servico,
-                turno,
-                kmIni,
-                kmFim,
-                km_rodado,
-                responsavel_nome || null,
-                observacoes_gerais || '',
-                providencias_gerais || '',
-                pendencias_gerais || '',
-                client_uuid || null,
-                spNow.dataHora
-            );
-            
-            const relatorio_id = Number(resultRel.lastInsertRowid);
-            
-            const stmtOcorrencia = db.prepare(`
-                INSERT INTO ocorrencias (
-                    relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status
-                ) VALUES (?, ?, ?, ?, ?, ?)
-            `);
 
-            // 2. Inserir Postos Supervisionados da Base Única Oficial com Setor Principal do Posto
+        // 1. Procurar relatório em andamento existente (ou pelo ID informado)
+        let relatorioExistente = null;
+        if (reqRelatorioId) {
+            relatorioExistente = db.prepare("SELECT * FROM relatorios WHERE id = ?").get(reqRelatorioId);
+        } else if (client_uuid) {
+            relatorioExistente = db.prepare("SELECT * FROM relatorios WHERE client_uuid = ?").get(client_uuid);
+        }
+
+        if (!relatorioExistente) {
+            // Buscar por setor + data + turno com status 'em_aberto'
+            let buscaSql = "SELECT * FROM relatorios WHERE setor_id = ? AND data_servico = ? AND turno = ? AND status = 'em_aberto'";
+            const buscaParams = [setor_id, data_servico, turno];
+            if (supervisor_id) {
+                buscaSql += " AND (supervisor_id = ? OR supervisor_id IS NULL)";
+                buscaParams.push(supervisor_id);
+            }
+            buscaSql += " ORDER BY id DESC LIMIT 1";
+            relatorioExistente = db.prepare(buscaSql).get(...buscaParams);
+        }
+
+        // Se já existir relatório 'concluido' para esse expediente, não sobrescrever por salvamento parcial
+        if (relatorioExistente && relatorioExistente.status === 'concluido') {
+            return res.status(409).json({
+                error: `Este relatório (#${relatorioExistente.id}) já foi finalizado e enviado anteriormente.`,
+                id: relatorioExistente.id,
+                status: 'concluido'
+            });
+        }
+
+        const runTransaction = db.transaction(() => {
+            let activeRelId;
+
+            if (relatorioExistente) {
+                activeRelId = relatorioExistente.id;
+                db.prepare(`
+                    UPDATE relatorios SET
+                        supervisor_id = COALESCE(?, supervisor_id),
+                        viatura_id = ?,
+                        viatura_outros_texto = ?,
+                        km_inicial = ?,
+                        km_final = ?,
+                        km_rodado = ?,
+                        responsavel_nome = COALESCE(?, responsavel_nome),
+                        observacoes_gerais = ?,
+                        providencias_gerais = ?,
+                        pendencias_gerais = ?
+                    WHERE id = ?
+                `).run(
+                    supervisor_id || null,
+                    (viatura_id && viatura_id !== 'OUTROS' && viatura_id !== 'null') ? viatura_id : null,
+                    viatura_outros_texto || null,
+                    kmIni,
+                    kmFim,
+                    km_rodado,
+                    responsavel_nome || null,
+                    observacoes_gerais || '',
+                    providencias_gerais || '',
+                    pendencias_gerais || '',
+                    activeRelId
+                );
+            } else {
+                const insertRes = db.prepare(`
+                    INSERT INTO relatorios (
+                        setor_id, supervisor_id, viatura_id, viatura_outros_texto,
+                        data_servico, turno, km_inicial, km_final, km_rodado,
+                        responsavel_nome, observacoes_gerais, providencias_gerais, pendencias_gerais,
+                        status, client_uuid, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'em_aberto', ?, ?)
+                `).run(
+                    setor_id,
+                    supervisor_id || null,
+                    (viatura_id && viatura_id !== 'OUTROS' && viatura_id !== 'null') ? viatura_id : null,
+                    viatura_outros_texto || null,
+                    data_servico,
+                    turno,
+                    kmIni,
+                    kmFim,
+                    km_rodado,
+                    responsavel_nome || null,
+                    observacoes_gerais || '',
+                    providencias_gerais || '',
+                    pendencias_gerais || '',
+                    client_uuid || `rel_temp_${Date.now()}`,
+                    spNow.dataHora
+                );
+                activeRelId = Number(insertRes.lastInsertRowid);
+            }
+
+            // Gravar postos (deletar e re-inserir para garantir sincronização progressiva exata)
+            db.prepare('DELETE FROM postos_relatorio WHERE relatorio_id = ?').run(activeRelId);
             const stmtPosto = db.prepare(`
                 INSERT INTO postos_relatorio (
                     relatorio_id, posto_id, nome_posto_digitado, horario_supervisao, situacao_encontrada,
@@ -277,32 +304,25 @@ const enviarRelatorioHandler = async (req, res) => {
                     endereco, localidade, empresa, setor_id_posto, setor_nome_posto
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
-            
+
             for (const p of postosValidos) {
                 const dbPosto = p._dbPosto;
-                const pId = dbPosto.id;
-                const nomeOficial = dbPosto.nome;
-                const endPosto = dbPosto.endereco || null;
-                const locPosto = dbPosto.localidade || null;
-                const empPosto = dbPosto.empresa || null;
+                const isSup = (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') ? 0 : 1;
+                const statusSupervisaoFinal = isSup === 0 ? 'NAO_SUPERVISIONADO' : (p.status_supervisao || 'NORMAL');
+                const efetivoComp = (p.efetivo_completo === false || p.efetivo_completo === 0 || p.efetivo_completo === 'NAO') ? 0 : 1;
+                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM') ? 1 : 0;
+                const kmNum = (p.km_posto !== undefined && p.km_posto !== null && p.km_posto !== '') ? parseFloat(p.km_posto) : null;
 
-                // Buscar Setor Principal proprietário do posto
                 const sPostoId = dbPosto.setor_id || 4;
                 let sPostoNome = 'PLANTÃO';
                 if (sPostoId === 1) sPostoNome = 'TINGUÁ';
                 else if (sPostoId === 2) sPostoNome = 'GUANDU';
                 else if (sPostoId === 3) sPostoNome = 'LARANJAL';
 
-                const isSup = (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') ? 0 : 1;
-                const statusSupervisaoFinal = isSup === 0 ? 'NAO_SUPERVISIONADO' : (p.status_supervisao || 'NORMAL');
-                const efetivoComp = (p.efetivo_completo === false || p.efetivo_completo === 0 || p.efetivo_completo === 'NAO') ? 0 : 1;
-                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM') ? 1 : 0;
-                const kmNum = (p.km_posto !== undefined && p.km_posto !== null && p.km_posto !== '') ? parseFloat(p.km_posto) : null;
-                
                 stmtPosto.run(
-                    relatorio_id,
-                    pId,
-                    nomeOficial,
+                    activeRelId,
+                    dbPosto.id,
+                    dbPosto.nome,
                     p.horario_supervisao || '',
                     p.situacao_encontrada || '',
                     p.efetivo_presente !== undefined ? p.efetivo_presente : (efetivoComp ? 1 : 0),
@@ -315,30 +335,24 @@ const enviarRelatorioHandler = async (req, res) => {
                     temOcorr,
                     temOcorr === 1 ? (p.descricao_ocorrencia || '') : null,
                     p.observacao || '',
-                    endPosto,
-                    locPosto,
-                    empPosto,
+                    dbPosto.endereco || null,
+                    dbPosto.localidade || null,
+                    dbPosto.empresa || null,
                     sPostoId,
                     sPostoNome
                 );
-
-                if (temOcorr === 1 && p.descricao_ocorrencia) {
-                    stmtOcorrencia.run(
-                        relatorio_id,
-                        pId,
-                        'COM_OCORRENCIA',
-                        p.descricao_ocorrencia,
-                        'Informado no posto pelo fiscal',
-                        'resolvido'
-                    );
-                }
             }
-            
-            // 3. Inserir Ocorrências Gerais (se enviadas separadamente)
+
+            // Ocorrências
             if (ocorrencias && Array.isArray(ocorrencias) && ocorrencias.length > 0) {
+                db.prepare('DELETE FROM ocorrencias WHERE relatorio_id = ?').run(activeRelId);
+                const stmtOc = db.prepare(`
+                    INSERT INTO ocorrencias (relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                `);
                 for (const oc of ocorrencias) {
-                    stmtOcorrencia.run(
-                        relatorio_id,
+                    stmtOc.run(
+                        activeRelId,
                         oc.posto_id || null,
                         oc.tipo_ocorrencia || 'Geral',
                         oc.descricao || '',
@@ -347,12 +361,257 @@ const enviarRelatorioHandler = async (req, res) => {
                     );
                 }
             }
-            
-            return relatorio_id;
+
+            // Registrar Auditoria
+            try {
+                db.prepare(`
+                    INSERT INTO auditoria_log (tabela, registro_id, acao, dados_novos, ip)
+                    VALUES ('relatorios', ?, 'SALVAMENTO_PARCIAL', ?, ?)
+                `).run(
+                    activeRelId,
+                    JSON.stringify({ postos_salvos: postosValidos.length, hora: spNow.horaCurta }),
+                    req.ip || '127.0.0.1'
+                );
+            } catch(eAud) {}
+
+            return activeRelId;
         });
-        
+
+        const activeRelId = runTransaction();
+
+        res.json({
+            success: true,
+            id: activeRelId,
+            numero_relatorio: String(activeRelId).padStart(5, '0'),
+            status: 'em_aberto',
+            status_label: '🟡 EM PREENCHIMENTO',
+            postos_salvos: postosValidos.length,
+            horario_salvo: spNow.horaCurta,
+            timestamp_salvo: spNow.dataHora,
+            message: `✓ Progresso salvo no CCO (${postosValidos.length} postos gravados). Relatório mantido em preenchimento.`
+        });
+
+    } catch (error) {
+        console.error('Erro ao salvar progresso do relatório:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 3. ENVIAR RELATÓRIO CONSOLIDADO DO EXPEDIENTE (ENVIO FINAL: 🟢 concluido)
+router.post('/enviar', async (req, res) => {
+    try {
+        const db = getDb();
+        const {
+            relatorio_id: reqRelatorioId,
+            client_uuid,
+            setor_id,
+            supervisor_id,
+            viatura_id,
+            viatura_outros_texto,
+            data_servico,
+            turno,
+            km_inicial,
+            km_final,
+            observacoes_gerais,
+            providencias_gerais,
+            pendencias_gerais,
+            responsavel_nome,
+            postos_supervisionados: postos_supervisionados_raw,
+            ocorrencias
+        } = req.body;
+
+        if (!setor_id || !data_servico || !turno) {
+            return res.status(400).json({ error: 'Setor, Data do Serviço e Turno são obrigatórios' });
+        }
+
+        if (!supervisor_id && !responsavel_nome) {
+            return res.status(400).json({ error: 'Identificação do Fiscal ou Responsável é obrigatória' });
+        }
+
+        const postosValidos = processarPostosDoPayload(db, postos_supervisionados_raw || req.body.postos || [], setor_id, true);
+
+        const kmIni = parseFloat(km_inicial) || 0;
+        const kmFim = parseFloat(km_final) || 0;
+        const km_rodado = (kmFim >= kmIni && kmFim > 0) ? (kmFim - kmIni) : 0;
+        const spNow = getBrasiliaDateTime();
+
+        // Verificar se já existe relatório 'concluido' para evitar duplicidade acidental
+        let buscaDupSql = "SELECT id, created_at, status FROM relatorios WHERE setor_id = ? AND data_servico = ? AND turno = ?";
+        const buscaDupParams = [setor_id, data_servico, turno];
+        if (supervisor_id) {
+            buscaDupSql += " AND supervisor_id = ?";
+            buscaDupParams.push(supervisor_id);
+        }
+        const relatoriosSetor = db.prepare(buscaDupSql).all(...buscaDupParams);
+        const relJaConcluido = relatoriosSetor.find(r => r.status === 'concluido' && (!reqRelatorioId || r.id !== parseInt(reqRelatorioId)));
+
+        if (relJaConcluido) {
+            return res.status(409).json({
+                error: `Atenção: Já existe um relatório finalizado para este Setor, Data, Turno e Fiscal (Relatório #${relJaConcluido.id}). Para evitar duplicidade acidental, o envio foi bloqueado.`
+            });
+        }
+
+        // Buscar se existe relatório em aberto para atualizar para concluído
+        let activeRelId = reqRelatorioId ? parseInt(reqRelatorioId) : null;
+        if (!activeRelId) {
+            const relEmAberto = relatoriosSetor.find(r => r.status === 'em_aberto');
+            if (relEmAberto) activeRelId = relEmAberto.id;
+        }
+
+        const runTransaction = db.transaction(() => {
+            if (activeRelId) {
+                db.prepare(`
+                    UPDATE relatorios SET
+                        supervisor_id = COALESCE(?, supervisor_id),
+                        viatura_id = ?,
+                        viatura_outros_texto = ?,
+                        km_inicial = ?,
+                        km_final = ?,
+                        km_rodado = ?,
+                        responsavel_nome = COALESCE(?, responsavel_nome),
+                        observacoes_gerais = ?,
+                        providencias_gerais = ?,
+                        pendencias_gerais = ?,
+                        status = 'concluido'
+                    WHERE id = ?
+                `).run(
+                    supervisor_id || null,
+                    (viatura_id && viatura_id !== 'OUTROS' && viatura_id !== 'null') ? viatura_id : null,
+                    viatura_outros_texto || null,
+                    kmIni,
+                    kmFim,
+                    km_rodado,
+                    responsavel_nome || null,
+                    observacoes_gerais || '',
+                    providencias_gerais || '',
+                    pendencias_gerais || '',
+                    activeRelId
+                );
+            } else {
+                const insertRes = db.prepare(`
+                    INSERT INTO relatorios (
+                        setor_id, supervisor_id, viatura_id, viatura_outros_texto,
+                        data_servico, turno, km_inicial, km_final, km_rodado,
+                        responsavel_nome, observacoes_gerais, providencias_gerais, pendencias_gerais,
+                        status, client_uuid, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'concluido', ?, ?)
+                `).run(
+                    setor_id,
+                    supervisor_id || null,
+                    (viatura_id && viatura_id !== 'OUTROS' && viatura_id !== 'null') ? viatura_id : null,
+                    viatura_outros_texto || null,
+                    data_servico,
+                    turno,
+                    kmIni,
+                    kmFim,
+                    km_rodado,
+                    responsavel_nome || null,
+                    observacoes_gerais || '',
+                    providencias_gerais || '',
+                    pendencias_gerais || '',
+                    client_uuid || `rel_${Date.now()}`,
+                    spNow.dataHora
+                );
+                activeRelId = Number(insertRes.lastInsertRowid);
+            }
+
+            // Postos
+            db.prepare('DELETE FROM postos_relatorio WHERE relatorio_id = ?').run(activeRelId);
+            const stmtPosto = db.prepare(`
+                INSERT INTO postos_relatorio (
+                    relatorio_id, posto_id, nome_posto_digitado, horario_supervisao, situacao_encontrada,
+                    efetivo_presente, status_supervisao, supervisionado, motivo_nao_supervisao,
+                    km_posto, efetivo_completo, falta_efetivo_qtd, tem_ocorrencia, descricao_ocorrencia, observacao,
+                    endereco, localidade, empresa, setor_id_posto, setor_nome_posto
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+
+            const stmtOcorrencia = db.prepare(`
+                INSERT INTO ocorrencias (
+                    relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status
+                ) VALUES (?, ?, ?, ?, ?, ?)
+            `);
+
+            for (const p of postosValidos) {
+                const dbPosto = p._dbPosto;
+                const isSup = (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') ? 0 : 1;
+                const statusSupervisaoFinal = isSup === 0 ? 'NAO_SUPERVISIONADO' : (p.status_supervisao || 'NORMAL');
+                const efetivoComp = (p.efetivo_completo === false || p.efetivo_completo === 0 || p.efetivo_completo === 'NAO') ? 0 : 1;
+                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM') ? 1 : 0;
+                const kmNum = (p.km_posto !== undefined && p.km_posto !== null && p.km_posto !== '') ? parseFloat(p.km_posto) : null;
+
+                const sPostoId = dbPosto.setor_id || 4;
+                let sPostoNome = 'PLANTÃO';
+                if (sPostoId === 1) sPostoNome = 'TINGUÁ';
+                else if (sPostoId === 2) sPostoNome = 'GUANDU';
+                else if (sPostoId === 3) sPostoNome = 'LARANJAL';
+
+                stmtPosto.run(
+                    activeRelId,
+                    dbPosto.id,
+                    dbPosto.nome,
+                    p.horario_supervisao || '',
+                    p.situacao_encontrada || '',
+                    p.efetivo_presente !== undefined ? p.efetivo_presente : (efetivoComp ? 1 : 0),
+                    statusSupervisaoFinal,
+                    isSup,
+                    isSup === 0 ? (p.motivo_nao_supervisao || '') : null,
+                    kmNum,
+                    efetivoComp,
+                    efetivoComp === 0 ? (p.falta_efetivo_qtd || '') : null,
+                    temOcorr,
+                    temOcorr === 1 ? (p.descricao_ocorrencia || '') : null,
+                    p.observacao || '',
+                    dbPosto.endereco || null,
+                    dbPosto.localidade || null,
+                    dbPosto.empresa || null,
+                    sPostoId,
+                    sPostoNome
+                );
+
+                if (temOcorr === 1 && p.descricao_ocorrencia) {
+                    stmtOcorrencia.run(
+                        activeRelId,
+                        dbPosto.id,
+                        'COM_OCORRENCIA',
+                        p.descricao_ocorrencia,
+                        'Informado no posto pelo fiscal',
+                        'resolvido'
+                    );
+                }
+            }
+
+            // Ocorrências gerais
+            if (ocorrencias && Array.isArray(ocorrencias) && ocorrencias.length > 0) {
+                for (const oc of ocorrencias) {
+                    stmtOcorrencia.run(
+                        activeRelId,
+                        oc.posto_id || null,
+                        oc.tipo_ocorrencia || 'Geral',
+                        oc.descricao || '',
+                        oc.providencias_adotadas || '',
+                        oc.status || 'resolvido'
+                    );
+                }
+            }
+
+            // Registrar Auditoria
+            try {
+                db.prepare(`
+                    INSERT INTO auditoria_log (tabela, registro_id, acao, dados_novos, ip)
+                    VALUES ('relatorios', ?, 'ENVIO_FINAL', ?, ?)
+                `).run(
+                    activeRelId,
+                    JSON.stringify({ postos_enviados: postosValidos.length, hora: spNow.horaCurta }),
+                    req.ip || '127.0.0.1'
+                );
+            } catch(eAud) {}
+
+            return activeRelId;
+        });
+
         const newRelatorioId = runTransaction();
-        
+
         // 4. Montar Texto Padronizado para WhatsApp
         const dadosCompletos = db.prepare(`
             SELECT r.*, s.nome as setor_nome, sup.nome as supervisor_nome,
@@ -363,21 +622,21 @@ const enviarRelatorioHandler = async (req, res) => {
             LEFT JOIN viaturas v ON r.viatura_id = v.id
             WHERE r.id = ?
         `).get(newRelatorioId);
-        
+
         const postosSalvos = db.prepare(`
             SELECT pr.*, COALESCE(pr.nome_posto_digitado, p.nome, 'Posto') as posto_nome
             FROM postos_relatorio pr
             LEFT JOIN postos p ON pr.posto_id = p.id
             WHERE pr.relatorio_id = ?
         `).all(newRelatorioId);
-        
+
         const ocorrenciasSalvas = db.prepare(`
             SELECT oc.*, p.nome as posto_nome
             FROM ocorrencias oc
             LEFT JOIN postos p ON oc.posto_id = p.id
             WHERE oc.relatorio_id = ?
         `).all(newRelatorioId);
-        
+
         let textoWhatsApp = `*CEDAE — CCO CONTROLE OPERACIONAL*\n`;
         textoWhatsApp += `*RELATÓRIO DO EXPEDIENTE (#${newRelatorioId})*\n\n`;
         textoWhatsApp += `📍 *SETOR:* ${dadosCompletos.setor_nome}\n`;
@@ -401,7 +660,7 @@ const enviarRelatorioHandler = async (req, res) => {
         
         if (ocorrenciasSalvas.length > 0) {
             textoWhatsApp += `\n🚨 *OCORRÊNCIAS / PROVIDÊNCIAS:*\n`;
-            ocorrenciasSalvas.forEach((oc, i) => {
+            ocorrenciasSalvas.forEach((oc) => {
                 textoWhatsApp += `• [${oc.posto_nome || 'Geral'}] ${oc.descricao} (Providência: ${oc.providencias_adotadas || 'Registrada'})\n`;
             });
         }
@@ -432,6 +691,8 @@ const enviarRelatorioHandler = async (req, res) => {
             horario: spNow.horaCurta,
             timestamp_envio: spNow.dataHora,
             timezone: 'America/Sao_Paulo',
+            status: 'concluido',
+            status_label: '🟢 ENVIADO',
             message: '✅ FISCALIZAÇÃO ENVIADA COM SUCESSO',
             texto_whatsapp: textoWhatsApp
         });
@@ -440,12 +701,9 @@ const enviarRelatorioHandler = async (req, res) => {
         console.error('Erro ao processar relatório do expediente:', error);
         res.status(500).json({ error: error.message });
     }
-};
+});
 
-router.post('/enviar', enviarRelatorioHandler);
-router.post('/salvar', enviarRelatorioHandler);
-
-// 3. CONSULTAR RELATÓRIO DO EXPEDIENTE (Acesso para visualização do comprovante pelo supervisor)
+// 4. CONSULTAR RELATÓRIO DO EXPEDIENTE (Acesso para visualização do comprovante pelo fiscal)
 router.get('/relatorio/:id', (req, res) => {
     try {
         const db = getDb();
