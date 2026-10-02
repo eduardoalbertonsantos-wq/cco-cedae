@@ -507,10 +507,6 @@
             <span>Fiscal: <strong id="sup-nome-bold" style="color:#fff;">---</strong></span>
             <span class="sup-setor-pill" id="sup-setor-badge">SETOR</span>
           </div>
-          <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
-            <span id="gpsStatusBadge" class="gps-badge gps-badge-buscando">📍 GPS: INICIANDO...</span>
-            <span id="gpsStatusDetalhe" style="font-size:0.75rem; color:#94a3b8;"></span>
-          </div>
         </div>
         <div class="sup-counters-grid">
           <div class="sup-counter-item">
@@ -1009,194 +1005,6 @@
         }
       }
 
-      // ==================== GPS & GEOLOCALIZAÇÃO OPERACIONAL ====================
-      let gpsWatchId = null;
-      let ultimoEnvioGpsTimestamp = 0;
-      let ultimaCoordenadaEnviada = null;
-
-      function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
-        const R = 6371e3;
-        const phi1 = lat1 * Math.PI / 180;
-        const phi2 = lat2 * Math.PI / 180;
-        const deltaPhi = (lat2 - lat1) * Math.PI / 180;
-        const deltaLambda = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-                  Math.cos(phi1) * Math.cos(phi2) *
-                  Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-      }
-
-      function atualizarGpsStatus(tipo, detalhe = '') {
-        const badge = document.getElementById('gpsStatusBadge');
-        const det = document.getElementById('gpsStatusDetalhe');
-        if (!badge) return;
-
-        badge.className = 'gps-badge';
-        if (tipo === 'ativo') {
-          badge.className += ' gps-badge-ativo';
-          badge.innerHTML = '📍 GPS: ATIVO';
-        } else if (tipo === 'nao_autorizado') {
-          badge.className += ' gps-badge-nao-autorizado';
-          badge.innerHTML = '📍 GPS: NÃO AUTORIZADO';
-        } else if (tipo === 'erro') {
-          badge.className += ' gps-badge-erro';
-          badge.innerHTML = '📍 GPS: ERRO';
-        } else {
-          badge.className += ' gps-badge-buscando';
-          badge.innerHTML = '📍 GPS: BUSCANDO SINAL...';
-        }
-
-        if (det) {
-          det.textContent = detalhe ? `(${detalhe})` : '';
-        }
-      }
-
-      function iniciarRastreamentoGps() {
-        if (!('geolocation' in navigator)) {
-          console.warn('[GPS] Geolocalização não suportada neste dispositivo.');
-          atualizarGpsStatus('erro', 'Não suportado no aparelho');
-          return;
-        }
-
-        atualizarGpsStatus('buscando', 'Conectando satélites...');
-
-        // 1. Obter posição imediata (garante que a solicitação nativa do navegador apareça imediatamente)
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            atualizarGpsStatus('ativo', `±${Math.round(pos.coords.accuracy)}m`);
-            processarCoordenadaGps(pos.coords);
-          },
-          (err) => {
-            console.warn('[GPS] getCurrentPosition inicial:', err.code, err.message);
-            if (err.code === 1) { // PERMISSION_DENIED
-              atualizarGpsStatus('nao_autorizado', 'Permissão negada');
-              notificarGpsNaoAutorizado();
-            } else {
-              // Tenta com precisão padrão para resposta rápida (Wi-Fi/Rede celular)
-              navigator.geolocation.getCurrentPosition(
-                (pos2) => {
-                  atualizarGpsStatus('ativo', `±${Math.round(pos2.coords.accuracy)}m`);
-                  processarCoordenadaGps(pos2.coords);
-                },
-                (err2) => {
-                  if (err2.code === 1) {
-                    atualizarGpsStatus('nao_autorizado', 'Permissão negada');
-                    notificarGpsNaoAutorizado();
-                  } else {
-                    atualizarGpsStatus('erro', 'Aguardando sinal');
-                  }
-                },
-                { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 }
-              );
-            }
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
-        );
-
-        // 2. Acompanhamento contínuo em tempo real (watchPosition) para movimentações
-        if (gpsWatchId === null) {
-          try {
-            gpsWatchId = navigator.geolocation.watchPosition(
-              (pos) => {
-                atualizarGpsStatus('ativo', `±${Math.round(pos.coords.accuracy)}m`);
-                processarCoordenadaGps(pos.coords);
-              },
-              (err) => {
-                console.warn('[GPS] watchPosition:', err.code, err.message);
-                if (err.code === 1) {
-                  atualizarGpsStatus('nao_autorizado', 'Permissão negada');
-                  notificarGpsNaoAutorizado();
-                } else {
-                  atualizarGpsStatus('erro', 'Sinal fraco');
-                }
-              },
-              { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
-            );
-          } catch (e) {
-            console.warn('[GPS] Falha ao iniciar watchPosition:', e);
-          }
-        }
-      }
-
-      function processarCoordenadaGps(coords) {
-        const agora = Date.now();
-        if (ultimaCoordenadaEnviada && (agora - ultimoEnvioGpsTimestamp < 15000)) {
-          const dist = calcularDistanciaMetros(
-            ultimaCoordenadaEnviada.latitude, ultimaCoordenadaEnviada.longitude,
-            coords.latitude, coords.longitude
-          );
-          if (dist < 30) return;
-        }
-
-        ultimoEnvioGpsTimestamp = agora;
-        ultimaCoordenadaEnviada = { latitude: coords.latitude, longitude: coords.longitude };
-
-        const token = localStorage.getItem('cco_token');
-        if (!token) return;
-
-        const sId = (currentUser && currentUser.setor_id) ? currentUser.setor_id : 4;
-        const payload = {
-          latitude: coords.latitude,
-          longitude: coords.longitude,
-          accuracy: coords.accuracy,
-          gps_authorized: 1,
-          setor_id: sId,
-          device_info: navigator.userAgent ? navigator.userAgent.substring(0, 100) : 'Mobile'
-        };
-
-        fetch(API_BASE + '/mapa/localizacao', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify(payload)
-        }).catch(err => {
-          console.warn('[GPS] Falha silenciosa de envio:', err.message);
-        });
-      }
-
-      function notificarGpsNaoAutorizado() {
-        const token = localStorage.getItem('cco_token');
-        if (!token) return;
-        const sId = (currentUser && currentUser.setor_id) ? currentUser.setor_id : 4;
-        fetch(API_BASE + '/mapa/localizacao', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-          },
-          body: JSON.stringify({
-            gps_authorized: 0,
-            setor_id: sId,
-            device_info: navigator.userAgent ? navigator.userAgent.substring(0, 100) : 'Mobile'
-          })
-        }).catch(() => {});
-      }
-
-      function pararRastreamentoGps() {
-        if (gpsWatchId !== null && 'geolocation' in navigator) {
-          try {
-            navigator.geolocation.clearWatch(gpsWatchId);
-          } catch (e) {}
-          gpsWatchId = null;
-        }
-        const token = localStorage.getItem('cco_token');
-        if (token) {
-          fetch(API_BASE + '/mapa/localizacao/offline', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + token
-            }
-          }).catch(() => {});
-        }
-      }
-
-      window.addEventListener('beforeunload', () => {
-        pararRastreamentoGps();
-      });
-
       function restaurarSessao() {
         const token = localStorage.getItem('cco_token');
         const userJson = localStorage.getItem('cco_user');
@@ -1211,7 +1019,6 @@
       }
 
       function encerrarSessao() {
-        pararRastreamentoGps();
         localStorage.removeItem('cco_token');
         localStorage.removeItem('cco_user');
         currentUser = null;
@@ -1276,9 +1083,6 @@
         document.getElementById('sup-setor-badge').textContent = currentUser.setor_nome || 'SETOR';
         document.getElementById('inputResponsavel').value = currentUser.nome || '';
         document.getElementById('inputDataServico').value = getHojeBrasiliaISO();
-
-        // Disparar GPS imediatamente para o celular solicitar a permissão nativa sem atraso
-        iniciarRastreamentoGps();
 
         await carregarEstruturaSetor();
         await checarERecuperarRelatorioEmAndamento();
