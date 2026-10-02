@@ -65,7 +65,13 @@ async function apiRequest(endpoint, options = {}) {
         try {
             data = text ? JSON.parse(text) : {};
         } catch (jsonErr) {
-            data = { error: text || response.statusText };
+            if (response.status === 502 || response.status === 503 || response.status === 504) {
+                data = { error: '⏳ O servidor CCO está reiniciando ou aplicando atualização no momento. Aguarde alguns instantes e tente novamente.' };
+            } else if (text && text.trim().startsWith('<')) {
+                data = { error: `Servidor temporariamente indisponível (${response.status} ${response.statusText || ''}). Tente novamente em instantes.` };
+            } else {
+                data = { error: text || response.statusText };
+            }
         }
 
         if (!response.ok) {
