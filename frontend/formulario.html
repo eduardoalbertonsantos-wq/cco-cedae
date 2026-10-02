@@ -138,13 +138,19 @@
       <!-- ETAPA 1: SETOR -->
       <div class="form-section">
         <h2 class="form-section-title">ETAPA 1 &mdash; SELEÇÃO DO SETOR OPERACIONAL</h2>
+        <div style="margin-bottom:0.75rem;">
+          <span style="font-size:0.8rem; font-weight:700; color:#475569; display:block; margin-bottom:6px;">Navegação Rápida entre Setores:</span>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;" id="botoesSelecaoRapidaSetores">
+            <!-- Pílulas de setores carregadas via JS -->
+          </div>
+        </div>
         <div class="form-group">
           <label class="form-label" for="selectSetor">Setor Operacional *</label>
           <select class="form-select" id="selectSetor" required style="font-weight: 700; font-size: 1.05rem;">
             <option value="">Selecione o Setor do seu expediente...</option>
             <!-- Carregado via JS dinamicamente -->
           </select>
-          <small class="form-hint" style="color: #64748b; margin-top: 0.25rem; display: block;">Ao selecionar o setor, as viaturas, fiscais e postos serão filtrados automaticamente. O progresso de cada setor é preservado automaticamente.</small>
+          <small class="form-hint" style="color: #64748b; margin-top: 0.25rem; display: block;">Ao alternar entre setores, todos os dados preenchidos são salvos como rascunho e restaurados automaticamente ao retornar.</small>
         </div>
       </div>
 
@@ -274,7 +280,7 @@
               📋 CONFERIR RELATÓRIO DO EXPEDIENTE
             </button>
             <button type="submit" id="btnSalvarFiscalizacaoFinal" class="btn btn-success form-submit-btn" style="width: 100%; padding: 1.2rem; font-size: 1.15rem; font-weight: 900; background: var(--cco-green); border: none; border-radius: 0.5rem; color: #fff; cursor: pointer; box-shadow: 0 4px 14px rgba(34,197,94,0.35); display:flex; align-items:center; justify-content:center; gap:8px;">
-              💾 SALVAR FISCALIZAÇÃO
+              💾 SALVAR FISCALIZAÇÃO COMPLETA
             </button>
           </div>
         </div>

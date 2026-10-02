@@ -179,9 +179,9 @@ router.get('/posicoes', authenticateToken, (req, res) => {
             const minutos = Math.floor(seg / 60);
 
             const setorConf = SETORES_CONFIG[loc.setor_id] || { cor: '#3b82f6', emoji: '📍', nome: loc.setor || 'PLANTÃO' };
-            const temCoordenadaReal = (loc.latitude !== null && loc.longitude !== null);
-            const effectiveLat = temCoordenadaReal ? loc.latitude : (setorConf.base ? setorConf.base.lat : null);
-            const effectiveLng = temCoordenadaReal ? loc.longitude : (setorConf.base ? setorConf.base.lng : null);
+            const temCoordenadaReal = (loc.latitude !== null && loc.longitude !== null && loc.gps_authorized === 1);
+            const effectiveLat = temCoordenadaReal ? loc.latitude : null;
+            const effectiveLng = temCoordenadaReal ? loc.longitude : null;
 
             let status = 'offline';
             let statusLabel = 'Offline';

@@ -674,7 +674,7 @@
               📋 CONFERIR RELATÓRIO DO EXPEDIENTE
             </button>
             <button type="submit" id="btnFinalizarExpediente" class="btn-mob-success" style="font-weight:900; font-size:1.15rem; padding:16px; background:linear-gradient(135deg, #15803d 0%, #16a34a 100%); border:none; border-radius:6px; box-shadow:0 4px 14px rgba(34,197,94,0.35); display:flex; align-items:center; justify-content:center; gap:8px;">
-              💾 SALVAR FISCALIZAÇÃO
+              💾 SALVAR FISCALIZAÇÃO COMPLETA
             </button>
           </div>
         </div>
@@ -2511,7 +2511,7 @@
           // Fila offline
           localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
           btnSubmit.disabled = false;
-          btnSubmit.textContent = '✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE';
+          btnSubmit.textContent = '💾 SALVAR FISCALIZAÇÃO COMPLETA';
           exibirSucessoOffline(payload);
           return;
         }
@@ -2581,7 +2581,7 @@
           }
         } finally {
           btnSubmit.disabled = false;
-          btnSubmit.textContent = '✓ FINALIZAR E ENVIAR RELATÓRIO DO EXPEDIENTE';
+          btnSubmit.textContent = '💾 SALVAR FISCALIZAÇÃO COMPLETA';
         }
       }
 

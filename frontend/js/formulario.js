@@ -343,18 +343,57 @@ async function carregarSetoresIniciais() {
             selectSetor.innerHTML += `<option value="${s.id}">${s.nome} (${s.sigla || 'CEDAE'})</option>`;
         });
 
+        // Renderizar botões rápidos de navegação entre setores
+        const botoesContainer = document.getElementById('botoesSelecaoRapidaSetores');
+        if (botoesContainer && setores && setores.length > 0) {
+            botoesContainer.innerHTML = '';
+            setores.forEach(s => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-setor-pill';
+                btn.id = `btn_setor_pill_${s.id}`;
+                btn.style.cssText = 'padding:6px 14px; border:1px solid #cbd5e1; border-radius:20px; background:#f8fafc; color:#334155; font-weight:700; font-size:0.85rem; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s; box-shadow:0 1px 2px rgba(0,0,0,0.06);';
+                btn.innerHTML = `<span>🏢</span> ${s.nome}`;
+                btn.onclick = () => {
+                    if (selectSetor.value !== String(s.id)) {
+                        selectSetor.value = s.id;
+                        selectSetor.dispatchEvent(new Event('change'));
+                    }
+                };
+                botoesContainer.appendChild(btn);
+            });
+        }
+
+        function atualizarEstiloPills(ativoId) {
+            document.querySelectorAll('.btn-setor-pill').forEach(b => {
+                if (b.id === `btn_setor_pill_${ativoId}`) {
+                    b.style.background = '#2563eb';
+                    b.style.color = '#ffffff';
+                    b.style.borderColor = '#2563eb';
+                    b.style.boxShadow = '0 2px 6px rgba(37,99,235,0.35)';
+                } else {
+                    b.style.background = '#f8fafc';
+                    b.style.color = '#334155';
+                    b.style.borderColor = '#cbd5e1';
+                    b.style.boxShadow = '0 1px 2px rgba(0,0,0,0.06)';
+                }
+            });
+        }
+
         // Verificar se veio setor na URL (?setor=1) ou salvo no rascunho local
         const urlParams = new URLSearchParams(window.location.search);
         const setorUrl = urlParams.get('setor') || localStorage.getItem('cco_ultimo_setor_desk');
         if (setorUrl) {
             selectSetor.value = setorUrl;
             setorAtivoAnteriorDesk = setorUrl;
+            atualizarEstiloPills(setorUrl);
             await carregarEstruturaDoSetor(setorUrl);
             restaurarRascunhoDoSetor(setorUrl);
         }
 
         selectSetor.addEventListener('change', async (e) => {
             const val = e.target.value;
+            atualizarEstiloPills(val);
 
             // 1. Salvar o progresso do setor anterior antes de carregar o novo
             if (setorAtivoAnteriorDesk && setorAtivoAnteriorDesk !== val) {
@@ -1329,7 +1368,7 @@ function setupFormSubmit() {
             atualizarStatusRascunho('erro');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '💾 SALVAR FISCALIZAÇÃO';
+                submitBtn.textContent = '💾 SALVAR FISCALIZAÇÃO COMPLETA';
             }
         }
     });

@@ -364,7 +364,7 @@ let markersFiscaisMap = {};
 window.focarFiscalNoMapa = function(lat, lng, userId, nome, status) {
     try {
         if (!lat || !lng || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
-            alert('📍 Localização ainda não recebida deste fiscal.\n\nFiscal: ' + (nome || 'Fiscal') + (status ? ' (' + status + ')' : '') + '\n\nO dispositivo ainda não transmitiu coordenadas válidas via satélite/GPS.');
+            alert('📍 LOCALIZAÇÃO INDISPONÍVEL — AGUARDANDO GPS\n\nFiscal: ' + (nome || 'Fiscal') + (status ? ' (' + status + ')' : '') + '\n\nO dispositivo do fiscal está conectado ao sistema, mas ainda não transmitiu coordenadas de GPS válidas.');
             return;
         }
 
@@ -564,7 +564,7 @@ async function carregarPosicoesMapa() {
 
                 const marker = L.marker([f.latitude, f.longitude], { icon: fiscalIcon });
                 marker.bindPopup(`
-                    <div style="font-family:system-ui,sans-serif; min-width:210px; padding:2px;">
+                    <div style="font-family:system-ui,sans-serif; min-width:220px; padding:2px;">
                         <div style="font-weight:800; font-size:0.95rem; color:#0f172a; margin-bottom:6px; border-bottom:2px solid ${f.setor_cor}; padding-bottom:3px; display:flex; align-items:center; gap:5px;">
                             <span>👤</span> ${f.nome}
                         </div>
@@ -572,13 +572,16 @@ async function carregarPosicoesMapa() {
                             <strong>Setor:</strong> <span style="font-weight:700; color:${f.setor_cor};">${f.setor}</span>
                         </div>
                         <div style="font-size:0.85rem; margin-bottom:3px; color:#334155;">
-                            <strong>Status:</strong> <span style="font-weight:700; color:${f.status_cor};">${f.status_badge}</span>
+                            <strong>Status da Conexão:</strong> <span style="font-weight:700; color:${f.status_cor};">${f.status_badge}</span>
                         </div>
                         <div style="font-size:0.85rem; margin-bottom:3px; color:#334155;">
-                            <strong>Última atualização:</strong> ${f.hora_formatada} (${f.minutos_atras} min atrás)
+                            <strong>Coordenadas:</strong> Lat ${parseFloat(f.latitude).toFixed(5)}, Lng ${parseFloat(f.longitude).toFixed(5)}
+                        </div>
+                        <div style="font-size:0.85rem; margin-bottom:3px; color:#334155;">
+                            <strong>Precisão do GPS:</strong> ${f.accuracy ? f.accuracy + ' metros' : 'Padrão'}
                         </div>
                         <div style="font-size:0.85rem; color:#334155;">
-                            <strong>Precisão:</strong> ${f.tem_gps_real ? (f.accuracy ? f.accuracy + ' metros (GPS Real)' : 'GPS em Tempo Real') : '📡 Conectando satélites (Base do Setor)'}
+                            <strong>Última atualização:</strong> ${f.hora_formatada} (${f.minutos_atras} min atrás)
                         </div>
                     </div>
                 `);
@@ -596,18 +599,25 @@ async function carregarPosicoesMapa() {
             const statusEscaped = (f.status_badge || '').replace(/'/g, "\\'");
             const cardClick = `onclick="window.focarFiscalNoMapa(${latParam}, ${lngParam}, ${f.user_id}, '${nomeEscaped}', '${statusEscaped}')"`;
 
+            const coordsText = hasCoords 
+                ? `Lat: ${parseFloat(f.latitude).toFixed(4)}, Lng: ${parseFloat(f.longitude).toFixed(4)}`
+                : '<span style="color:#eab308; font-weight:700;">📍 AGUARDANDO GPS</span>';
+
             listaCardsHtml.push(`
                 <div ${cardClick} style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${f.setor_cor}; border-radius:0.5rem; padding:0.65rem 0.85rem; box-shadow:0 1px 3px rgba(0,0,0,0.04); cursor:pointer;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                         <strong style="color:#0f172a; font-size:0.88rem;">👤 ${f.nome}</strong>
                         <span style="font-size:0.75rem; font-weight:700; color:${f.status_cor};">${f.status_badge}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:#64748b;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:#64748b; margin-bottom:3px;">
                         <span><strong style="color:${f.setor_cor};">${f.setor}</strong></span>
-                        <span>🕒 ${f.hora_formatada} (${f.minutos_atras} min)</span>
+                        <span>🕒 Atualizado: ${f.hora_formatada} (${f.minutos_atras} min)</span>
                     </div>
-                    <div style="font-size:0.75rem; color:#475569; margin-top:5px; display:flex; justify-content:space-between; align-items:center;">
-                        <span>📡 Precisão: ${f.accuracy ? f.accuracy + 'm' : (hasCoords ? 'Padrão' : 'Sem GPS')}</span>
+                    <div style="font-size:0.75rem; color:#475569; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+                        <span>${coordsText}</span>
+                        <span>Precisão: ${f.accuracy ? f.accuracy + 'm' : (hasCoords ? 'Padrão' : 'Sem sinal')}</span>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; margin-top:5px; border-top:1px solid #f1f5f9; padding-top:4px;">
                         <button type="button" onclick="event.stopPropagation(); window.focarFiscalNoMapa(${latParam}, ${lngParam}, ${f.user_id}, '${nomeEscaped}', '${statusEscaped}');" style="background:${hasCoords ? '#2563eb' : '#f1f5f9'}; color:${hasCoords ? '#ffffff' : '#64748b'}; font-weight:700; cursor:pointer; padding:3px 9px; font-size:0.75rem; border:${hasCoords ? 'none' : '1px solid #cbd5e1'}; border-radius:4px; display:inline-flex; align-items:center; gap:3px; box-shadow:0 1px 2px rgba(0,0,0,0.15);">
                             Ver no Mapa 📍
                         </button>
