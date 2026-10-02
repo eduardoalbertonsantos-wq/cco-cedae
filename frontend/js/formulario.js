@@ -34,14 +34,30 @@ function atualizarStatusRascunho(status, msgAdicional) {
             if (elIcon) elIcon.textContent = '🔵';
             elTexto.textContent = 'Sincronizando com o servidor...';
             break;
+        case 'sem_conexao':
+            if (elIcon) elIcon.textContent = '🟡';
+            elTexto.textContent = 'SEM CONEXÃO — DADOS PRESERVADOS';
+            if (elHora) elHora.textContent = 'Offline';
+            break;
+        case 'conexao_restabelecida':
+            if (elIcon) elIcon.textContent = '🟢';
+            elTexto.textContent = 'CONEXÃO RESTABELECIDA';
+            if (elHora) elHora.textContent = `Online às ${agora}`;
+            break;
+        case 'erro_sincronizacao':
+            if (elIcon) elIcon.textContent = '❌';
+            elTexto.textContent = 'NÃO FOI POSSÍVEL SINCRONIZAR — Dados preservados no rascunho';
+            if (elHora) elHora.textContent = `Tentativa às ${agora}`;
+            break;
         case 'erro':
             if (elIcon) elIcon.textContent = '🔴';
-            elTexto.textContent = 'Erro ao salvar — dados mantidos localmente.';
+            elTexto.textContent = msgAdicional || 'Erro ao salvar — dados mantidos localmente.';
             if (elHora) elHora.textContent = `Tentativa às ${agora}`;
             break;
         case 'offline':
-            if (elIcon) elIcon.textContent = '⚪';
-            elTexto.textContent = 'Aguardando conexão (dados salvos localmente).';
+            if (elIcon) elIcon.textContent = '🟡';
+            elTexto.textContent = 'SEM CONEXÃO — DADOS PRESERVADOS';
+            if (elHora) elHora.textContent = 'Offline';
             break;
     }
 }
@@ -271,6 +287,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupWhatsAppHandlers();
     setupConferenciaDesktop();
     setupSalvarProgressoDesktop();
+
+    window.addEventListener('online', () => {
+        atualizarStatusRascunho('conexao_restabelecida');
+        dispararAutoSaveDesk();
+    });
+    window.addEventListener('offline', () => {
+        atualizarStatusRascunho('sem_conexao');
+    });
 });
 
 // 0. CONFIGURAÇÃO DO APLICATIVO PROGRESSIVO (PWA - MOBILE)
@@ -1336,7 +1360,7 @@ function setupFormSubmit() {
         const submitBtn = document.getElementById('btnSalvarFiscalizacaoFinal') || document.getElementById('btnEnviarRelatorio');
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = '💾 SALVANDO E AUDITANDO EXPEDIENTE NO CCO...';
+            submitBtn.textContent = '⏳ SALVANDO...';
         }
 
         atualizarStatusRascunho('sincronizando');
@@ -1344,6 +1368,10 @@ function setupFormSubmit() {
         try {
             const resposta = await apiPost('/formulario/enviar', payload);
             
+            if (submitBtn) {
+                submitBtn.textContent = '✅ FISCALIZAÇÃO SALVA COM SUCESSO';
+            }
+
             ultimoRelatorioId = resposta.id;
             relatorioIdAtivoDesk = null;
             const bannerDesk = document.getElementById('bannerEmAndamentoDesk');
@@ -1354,7 +1382,7 @@ function setupFormSubmit() {
             localStorage.setItem('cco_rascunho_setores_desk', JSON.stringify(rascunhoPorSetorDesk));
             localStorage.removeItem('cco_active_client_uuid_desk');
 
-            atualizarStatusRascunho('salvo', `✓ Fiscalização Nº ${resposta.id} registrada com sucesso no CCO.`);
+            atualizarStatusRascunho('salvo', `✅ Fiscalização Nº ${resposta.id} salva com sucesso.`);
 
             textoWhatsAppGerado = resposta.texto_whatsapp || '';
             document.getElementById('whatsappPreview').textContent = textoWhatsAppGerado;
@@ -1364,12 +1392,13 @@ function setupFormSubmit() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
         } catch (err) {
-            alert('Falha ao enviar relatório do expediente: ' + err.message);
-            atualizarStatusRascunho('erro');
+            console.error('Erro ao enviar fiscalização:', err);
+            atualizarStatusRascunho('erro_sincronizacao');
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '💾 SALVAR FISCALIZAÇÃO COMPLETA';
+                submitBtn.textContent = '❌ TENTAR NOVAMENTE';
             }
+            alert('❌ NÃO FOI POSSÍVEL SALVAR — Os dados permanecem preenchidos. Verifique a conexão e tente novamente.\n\nDetalhe técnico: ' + (err.message || 'Erro de comunicação'));
         }
     });
 }

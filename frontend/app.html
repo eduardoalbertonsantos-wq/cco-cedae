@@ -674,7 +674,7 @@
               📋 CONFERIR RELATÓRIO DO EXPEDIENTE
             </button>
             <button type="submit" id="btnFinalizarExpediente" class="btn-mob-success" style="font-weight:900; font-size:1.15rem; padding:16px; background:linear-gradient(135deg, #15803d 0%, #16a34a 100%); border:none; border-radius:6px; box-shadow:0 4px 14px rgba(34,197,94,0.35); display:flex; align-items:center; justify-content:center; gap:8px;">
-              💾 SALVAR FISCALIZAÇÃO COMPLETA
+              💾 SALVAR FISCALIZAÇÃO
             </button>
           </div>
         </div>
@@ -686,7 +686,7 @@
     <section id="view-sucesso" class="view-card" style="display:none; text-align:center; padding:24px 16px;">
       <div style="font-size:3rem; color:#4ade80; margin-bottom:8px;">✓</div>
       <h2 style="color:#4ade80; margin:0 0 6px 0; font-size:1.3rem; font-weight:900;">
-        RELATÓRIO REGISTRADO NO CCO COM SUCESSO!
+        ✅ FISCALIZAÇÃO SALVA COM SUCESSO
       </h2>
       <p style="color:#cbd5e1; font-size:0.9rem; margin:0 0 16px 0;" id="sucesso-info-texto">
         Os dados foram consolidados no banco central e estão imediatamente disponíveis para a equipe CCO.
@@ -2505,13 +2505,15 @@
 
         const btnSubmit = document.getElementById('btnFinalizarExpediente');
         btnSubmit.disabled = true;
-        btnSubmit.textContent = 'Enviando e auditando expediente...';
+        btnSubmit.textContent = '⏳ SALVANDO...';
+        atualizarStatusRascunhoMob('sincronizando');
 
         if (!navigator.onLine) {
           // Fila offline
           localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
           btnSubmit.disabled = false;
-          btnSubmit.textContent = '💾 SALVAR FISCALIZAÇÃO COMPLETA';
+          btnSubmit.textContent = '💾 SALVAR FISCALIZAÇÃO';
+          atualizarStatusRascunhoMob('sem_conexao');
           exibirSucessoOffline(payload);
           return;
         }
@@ -2537,12 +2539,16 @@
           }
 
           if (!res.ok) {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = '❌ TENTAR NOVAMENTE';
+            atualizarStatusRascunhoMob('erro_sincronizacao');
+
             if (res.status === 409) {
               alert('⚠️ RELATÓRIO JÁ REGISTRADO:\n' + (data.error || 'Já existe um relatório registrado para este fiscal, setor, data e turno. Evitando envio duplicado.'));
               return;
             }
             if (res.status === 400) {
-              alert('⚠️ CAMPO OBRIGATÓRIO / ATENÇÃO:\n' + (data.error || 'Verifique o preenchimento de todos os postos.'));
+              alert('❌ NÃO FOI POSSÍVEL SALVAR — Os dados permanecem preenchidos. Verifique a conexão e tente novamente.\n\nMotivo: ' + (data.error || 'Verifique o preenchimento de todos os postos.'));
               return;
             }
             if (res.status === 403) {
@@ -2554,10 +2560,11 @@
               encerrarSessao();
               return;
             }
-            alert('❌ ERRO NO PROCESSAMENTO:\n' + (data.error || 'Ocorreu um erro no servidor do CCO.'));
+            alert('❌ NÃO FOI POSSÍVEL SALVAR — Os dados permanecem preenchidos. Verifique a conexão e tente novamente.\n\nDetalhe técnico: ' + (data.error || 'Erro no servidor do CCO'));
             return;
           }
 
+          btnSubmit.textContent = '✅ FISCALIZAÇÃO SALVA COM SUCESSO';
           localStorage.removeItem('cco_offline_relatorio');
           localStorage.removeItem('cco_draft_supervisao');
           relatorioIdAtivo = null;
@@ -2569,19 +2576,15 @@
           exibirSucessoOnline(data, payload);
         } catch (networkErr) {
           console.warn('Erro de rede ao enviar relatório:', networkErr);
+          atualizarStatusRascunhoMob('erro_sincronizacao');
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = '❌ TENTAR NOVAMENTE';
           if (!navigator.onLine) {
             localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
             exibirSucessoOffline(payload);
           } else {
-            const salvar = confirm('⚠️ NÃO FOI POSSÍVEL CONECTAR AO SERVIDOR DO CCO.\n\nDeseja salvar este relatório na memória do celular para sincronizar quando a conexão for restabelecida?');
-            if (salvar) {
-              localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
-              exibirSucessoOffline(payload);
-            }
+            alert('❌ NÃO FOI POSSÍVEL SALVAR — Os dados permanecem preenchidos. Verifique a conexão e tente novamente.\n\nDetalhes de conexão: ' + (networkErr.message || 'Falha de rede'));
           }
-        } finally {
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = '💾 SALVAR FISCALIZAÇÃO COMPLETA';
         }
       }
 
