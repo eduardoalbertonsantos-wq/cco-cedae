@@ -1,5 +1,6 @@
 let postosDoSetor = [];
 let textoWhatsAppGerado = '';
+let relatorioIdAtivoDesk = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Definir data operacional de Brasília como padrão
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupFormSubmit();
     setupWhatsAppHandlers();
     setupConferenciaDesktop();
+    setupSalvarProgressoDesktop();
 });
 
 // 0. CONFIGURAÇÃO DO APLICATIVO PROGRESSIVO (PWA - MOBILE)
@@ -423,6 +425,8 @@ async function carregarEstruturaDoSetor(setorId) {
                 </div>
             `;
         }
+
+        await checarERecuperarRelatorioEmAndamentoDesk();
 
     } catch (e) {
         alert('Erro ao carregar fiscais e postos do setor: ' + e.message);
@@ -1013,6 +1017,7 @@ function setupFormSubmit() {
             turno: turno,
             km_inicial: kmIni,
             km_final: kmFim,
+            relatorio_id: relatorioIdAtivoDesk,
             responsavel_nome: responsavelNome,
             observacoes_gerais: ocorrenciasGeraisTexto,
             providencias_gerais: document.getElementById('providencias_gerais')?.value || '',
@@ -1029,6 +1034,10 @@ function setupFormSubmit() {
             const resposta = await apiPost('/formulario/enviar', payload);
             
             ultimoRelatorioId = resposta.id;
+            relatorioIdAtivoDesk = null;
+            const bannerDesk = document.getElementById('bannerEmAndamentoDesk');
+            if (bannerDesk) bannerDesk.style.display = 'none';
+
             textoWhatsAppGerado = resposta.texto_whatsapp || '';
             document.getElementById('whatsappPreview').textContent = textoWhatsAppGerado;
             
@@ -1306,4 +1315,431 @@ function setupConferenciaDesktop() {
             document.getElementById('btnEnviarRelatorio')?.click();
         }
     });
+}
+
+// 6. SALVAMENTO PROGRESSIVO E RECUPERAÇÃO DO EXPEDIENTE (DESKTOP)
+function setupSalvarProgressoDesktop() {
+    const handler = async (btn) => {
+        const txt = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = '💾 SALVANDO NO SISTEMA CCO...';
+        try {
+            await salvarProgressoDesktop(false);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = txt;
+        }
+    };
+
+    document.getElementById('btnSalvarProgressoDesk')?.addEventListener('click', function() {
+        handler(this);
+    });
+
+    document.getElementById('btnSalvarProgressoDeskTop')?.addEventListener('click', function() {
+        handler(this);
+    });
+
+    document.getElementById('data_servico')?.addEventListener('change', () => {
+        checarERecuperarRelatorioEmAndamentoDesk();
+    });
+
+    document.getElementById('selectTurno')?.addEventListener('change', () => {
+        checarERecuperarRelatorioEmAndamentoDesk();
+    });
+
+    document.getElementById('selectSupervisor')?.addEventListener('change', () => {
+        checarERecuperarRelatorioEmAndamentoDesk();
+    });
+}
+
+async function salvarProgressoDesktop(silencioso = false) {
+    const setorId = document.getElementById('selectSetor')?.value;
+    if (!setorId) {
+        if (!silencioso) alert('Por favor, selecione primeiro o setor operacional.');
+        return false;
+    }
+
+    const dataServico = document.getElementById('data_servico')?.value;
+    const turno = document.getElementById('selectTurno')?.value;
+    if (!dataServico || !turno) {
+        if (!silencioso) alert('Por favor, informe a Data do Serviço e o Turno.');
+        return false;
+    }
+
+    const supervisorId = document.getElementById('selectSupervisor')?.value;
+    const viaturaVal = document.getElementById('selectViatura')?.value;
+    const responsavelNome = document.getElementById('responsavel_nome')?.value || '';
+    const kmIni = parseFloat(document.getElementById('km_inicial')?.value) || 0;
+    const kmFim = parseFloat(document.getElementById('km_final')?.value) || 0;
+
+    const isPlantao = document.querySelectorAll('.plantao-posto-card').length > 0;
+    const postosSupervisionados = [];
+    const ocorrenciasExtra = [];
+
+    if (isPlantao) {
+        for (let i = 1; i <= 12; i++) {
+            const sel = document.getElementById(`plantao_posto_select_${i}`);
+            const selVal = sel?.value || '';
+            if (!selVal) continue;
+
+            let pId = null;
+            let nomePosto = '';
+            let endPosto = '';
+            let locPosto = '';
+            let empPosto = '';
+
+            if (selVal === 'MANUAL') {
+                const inpManual = document.getElementById(`posto_nome_manual_${i}`);
+                nomePosto = inpManual?.value?.trim() || '';
+                if (!nomePosto) continue;
+                endPosto = 'Cadastrado manualmente via Fiscalização do Plantão';
+                locPosto = 'Rio de Janeiro';
+                empPosto = 'CEDAE';
+            } else {
+                pId = parseInt(selVal);
+                const opt = sel.selectedOptions[0];
+                nomePosto = decodeURIComponent(opt?.dataset.nome || '');
+                endPosto = decodeURIComponent(opt?.dataset.endereco || '');
+                locPosto = decodeURIComponent(opt?.dataset.localidade || '');
+                empPosto = decodeURIComponent(opt?.dataset.empresa || '');
+            }
+
+            const hora = document.getElementById(`plantao_hora_${i}`)?.value || '';
+            const kmVal = document.getElementById(`plantao_km_${i}`)?.value;
+            const situacao = document.getElementById(`plantao_situacao_${i}`)?.value || 'NORMAL';
+            const efetivoRad = document.querySelector(`input[name="efetivo_slot_${i}"]:checked`)?.value || 'SIM';
+            const faltaTxt = document.getElementById(`plantao_falta_${i}`)?.value?.trim() || '';
+            const ocorrenciaRad = document.querySelector(`input[name="ocorrencia_slot_${i}"]:checked`)?.value || 'NAO';
+            const ocorrenciaTxt = document.getElementById(`plantao_ocorrencia_desc_${i}`)?.value?.trim() || '';
+
+            const isSupervisionado = (situacao !== 'NAO_SUPERVISIONADO');
+            let motivoNaoSup = null;
+            if (!isSupervisionado) {
+                const motivoSel = document.getElementById(`plantao_motivo_${i}`)?.value || '';
+                const motivoOutro = document.getElementById(`plantao_motivo_outro_${i}`)?.value?.trim() || '';
+                motivoNaoSup = motivoSel === 'Outro' ? motivoOutro : (motivoSel || motivoOutro);
+            }
+
+            postosSupervisionados.push({
+                slot: i,
+                posto_id: pId,
+                posto_nome: nomePosto,
+                endereco: endPosto,
+                localidade: locPosto,
+                empresa: empPosto,
+                supervisionado: isSupervisionado ? 1 : 0,
+                status_supervisao: (ocorrenciaRad === 'SIM' && situacao !== 'NAO_SUPERVISIONADO') ? 'COM_OCORRENCIA' : situacao,
+                motivo_nao_supervisao: motivoNaoSup,
+                horario_supervisao: isSupervisionado ? hora : '',
+                km_posto: (isSupervisionado && kmVal !== '' && kmVal !== undefined && kmVal !== null) ? parseFloat(kmVal) : null,
+                efetivo_completo: efetivoRad === 'SIM' ? 1 : 0,
+                falta_efetivo_qtd: efetivoRad === 'NAO' ? faltaTxt : null,
+                tem_ocorrencia: ocorrenciaRad === 'SIM' ? 1 : 0,
+                descricao_ocorrencia: ocorrenciaRad === 'SIM' ? ocorrenciaTxt : null,
+                observacao: ocorrenciaRad === 'SIM' ? ocorrenciaTxt : (efetivoRad === 'NAO' ? ('Falta: ' + faltaTxt) : '')
+            });
+        }
+    } else {
+        const cards = document.querySelectorAll('.regular-posto-card');
+        cards.forEach(card => {
+            const slot = card.dataset.slot;
+            const sel = document.getElementById(`reg_posto_select_${slot}`);
+            const pIdVal = sel?.value;
+            if (!pIdVal) return;
+
+            const pId = parseInt(pIdVal);
+            const nomePosto = sel.selectedOptions[0]?.textContent || `Posto #${pId}`;
+            const hora = document.getElementById(`reg_hora_${slot}`)?.value || '';
+            const kmVal = document.getElementById(`reg_km_${slot}`)?.value;
+            const situacao = document.getElementById(`reg_situacao_${slot}`)?.value || 'NORMAL';
+            const efetivoRad = document.querySelector(`input[name="reg_efetivo_slot_${slot}"]:checked`)?.value || 'SIM';
+            const faltaTxt = document.getElementById(`reg_falta_${slot}`)?.value?.trim() || '';
+            const ocorrenciaRad = document.querySelector(`input[name="reg_ocorrencia_slot_${slot}"]:checked`)?.value || 'NAO';
+            const ocorrenciaTxt = document.getElementById(`reg_ocorrencia_desc_${slot}`)?.value?.trim() || '';
+
+            const isSupervisionado = (situacao !== 'NAO_SUPERVISIONADO');
+            let motivoNaoSup = null;
+            if (!isSupervisionado) {
+                const motivoSel = document.getElementById(`reg_motivo_${slot}`)?.value || '';
+                const motivoOutro = document.getElementById(`reg_motivo_outro_${slot}`)?.value?.trim() || '';
+                motivoNaoSup = motivoSel === 'Outro' ? motivoOutro : (motivoSel || motivoOutro);
+            }
+
+            postosSupervisionados.push({
+                slot: parseInt(slot),
+                posto_id: pId,
+                posto_nome: nomePosto,
+                supervisionado: isSupervisionado ? 1 : 0,
+                status_supervisao: (ocorrenciaRad === 'SIM' && situacao !== 'NAO_SUPERVISIONADO') ? 'COM_OCORRENCIA' : situacao,
+                motivo_nao_supervisao: motivoNaoSup,
+                horario_supervisao: isSupervisionado ? hora : '',
+                km_posto: (isSupervisionado && kmVal !== '' && kmVal !== undefined && kmVal !== null) ? parseFloat(kmVal) : null,
+                efetivo_completo: efetivoRad === 'SIM' ? 1 : 0,
+                falta_efetivo_qtd: efetivoRad === 'NAO' ? faltaTxt : null,
+                tem_ocorrencia: ocorrenciaRad === 'SIM' ? 1 : 0,
+                descricao_ocorrencia: ocorrenciaRad === 'SIM' ? ocorrenciaTxt : null,
+                observacao: ocorrenciaRad === 'SIM' ? ocorrenciaTxt : (efetivoRad === 'NAO' ? ('Falta: ' + faltaTxt) : '')
+            });
+        });
+    }
+
+    const ocorrenciasGeraisTexto = document.getElementById('ocorrencias_gerais')?.value || '';
+    if (ocorrenciasGeraisTexto.trim()) {
+        ocorrenciasExtra.push({
+            posto_id: null,
+            tipo_ocorrencia: 'Geral',
+            descricao: ocorrenciasGeraisTexto,
+            providencias_adotadas: document.getElementById('providencias_gerais')?.value || 'Registrado',
+            status: 'resolvido'
+        });
+    }
+
+    const payload = {
+        relatorio_id: relatorioIdAtivoDesk,
+        client_uuid: 'desk_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+        setor_id: parseInt(setorId),
+        supervisor_id: supervisorId ? parseInt(supervisorId) : null,
+        viatura_id: (viaturaVal && viaturaVal !== 'OUTROS') ? parseInt(viaturaVal) : null,
+        viatura_outros_texto: viaturaVal === 'OUTROS' ? document.getElementById('viaturaOutrosTexto')?.value : '',
+        data_servico: dataServico,
+        turno: turno,
+        km_inicial: kmIni,
+        km_final: kmFim,
+        responsavel_nome: responsavelNome,
+        observacoes_gerais: ocorrenciasGeraisTexto,
+        providencias_gerais: document.getElementById('providencias_gerais')?.value || '',
+        pendencias_gerais: document.getElementById('pendencias_gerais')?.value || '',
+        postos_supervisionados: postosSupervisionados,
+        ocorrencias: ocorrenciasExtra
+    };
+
+    try {
+        const resposta = await apiPost('/formulario/salvar', payload);
+        relatorioIdAtivoDesk = resposta.id;
+
+        const banner = document.getElementById('bannerEmAndamentoDesk');
+        const bannerTexto = document.getElementById('bannerEmAndamentoTextoDesk');
+        if (banner && bannerTexto) {
+            banner.style.display = 'flex';
+            bannerTexto.innerHTML = `🟡 <strong>RELATÓRIO EM PREENCHIMENTO (Nº ${resposta.id}):</strong> ${postosSupervisionados.length} posto(s) gravado(s) no CCO.`;
+        }
+
+        if (!silencioso) {
+            const detalhe = postosSupervisionados.length > 0 
+                ? `${postosSupervisionados.length} posto(s) registrado(s)` 
+                : 'Início do expediente (dados gerais) gravado';
+            alert(`✓ PROGRESSO SALVO COM SUCESSO NO CCO!\n\nRelatório nº ${resposta.id} mantido em preenchimento (Status: 🟡 EM PREENCHIMENTO).\n${detalhe}.\n\nVocê pode continuar preenchendo os postos a qualquer momento.`);
+        }
+        return true;
+    } catch (err) {
+        console.warn('Erro ao salvar progresso desktop:', err);
+        if (!silencioso) {
+            alert('Falha ao salvar progresso no CCO: ' + err.message);
+        }
+        return false;
+    }
+}
+
+async function checarERecuperarRelatorioEmAndamentoDesk() {
+    const setorId = document.getElementById('selectSetor')?.value;
+    const dataServico = document.getElementById('data_servico')?.value;
+    const turno = document.getElementById('selectTurno')?.value;
+    const supId = document.getElementById('selectSupervisor')?.value;
+
+    const banner = document.getElementById('bannerEmAndamentoDesk');
+    const bannerTexto = document.getElementById('bannerEmAndamentoTextoDesk');
+
+    if (!setorId || !dataServico || !turno) {
+        if (banner) banner.style.display = 'none';
+        return;
+    }
+
+    try {
+        let url = `/formulario/em-andamento?setor_id=${setorId}&data_servico=${dataServico}&turno=${turno}`;
+        if (supId) url += `&supervisor_id=${supId}`;
+
+        const data = await apiGet(url);
+        if (data && data.tem_relatorio && data.relatorio) {
+            const r = data.relatorio;
+            relatorioIdAtivoDesk = r.id;
+
+            if (r.viatura_id) {
+                const vSel = document.getElementById('selectViatura');
+                if (vSel) {
+                    vSel.value = r.viatura_id;
+                    vSel.dispatchEvent(new Event('change'));
+                }
+            } else if (r.viatura_outros_texto) {
+                const vSel = document.getElementById('selectViatura');
+                if (vSel) {
+                    vSel.value = 'OUTROS';
+                    vSel.dispatchEvent(new Event('change'));
+                    const inpOutros = document.getElementById('viaturaOutrosTexto');
+                    if (inpOutros) inpOutros.value = r.viatura_outros_texto;
+                }
+            }
+
+            if (r.km_inicial !== null && r.km_inicial !== undefined) {
+                document.getElementById('km_inicial').value = r.km_inicial;
+            }
+            if (r.km_final !== null && r.km_final !== undefined && r.km_final > 0) {
+                document.getElementById('km_final').value = r.km_final;
+            }
+            if (r.responsavel_nome) {
+                document.getElementById('responsavel_nome').value = r.responsavel_nome;
+            }
+            if (r.observacoes_gerais) {
+                document.getElementById('ocorrencias_gerais').value = r.observacoes_gerais;
+            }
+            if (r.providencias_gerais) {
+                document.getElementById('providencias_gerais').value = r.providencias_gerais;
+            }
+            if (r.pendencias_gerais) {
+                document.getElementById('pendencias_gerais').value = r.pendencias_gerais;
+            }
+
+            if (data.postos && data.postos.length > 0) {
+                preencherCardsDesktopComDados(data.postos);
+            }
+
+            document.getElementById('km_inicial')?.dispatchEvent(new Event('input'));
+
+            if (banner && bannerTexto) {
+                banner.style.display = 'flex';
+                bannerTexto.innerHTML = `🟡 <strong>RELATÓRIO EM PREENCHIMENTO (Nº ${r.id}) RECUPERADO:</strong> ${data.postos ? data.postos.length : 0} postos carregados. Continue preenchendo os postos pendentes.`;
+            }
+        } else {
+            relatorioIdAtivoDesk = null;
+            if (banner) banner.style.display = 'none';
+        }
+    } catch (err) {
+        console.warn('Erro ao checar relatório em andamento desk:', err);
+    }
+}
+
+function preencherCardsDesktopComDados(postosSalvos) {
+    if (!postosSalvos || !Array.isArray(postosSalvos)) return;
+    const isPlantao = document.querySelectorAll('.plantao-posto-card').length > 0;
+
+    if (isPlantao) {
+        postosSalvos.forEach((p, idx) => {
+            const slot = p.slot || (idx + 1);
+            if (slot > 12) return;
+            const sel = document.getElementById(`plantao_posto_select_${slot}`);
+            if (!sel) return;
+
+            if (p.posto_id) {
+                sel.value = p.posto_id;
+            } else if (p.nome_posto_digitado || p.posto_nome) {
+                sel.value = 'MANUAL';
+                const inpManual = document.getElementById(`posto_nome_manual_${slot}`);
+                if (inpManual) inpManual.value = p.nome_posto_digitado || p.posto_nome || '';
+            }
+            sel.dispatchEvent(new Event('change'));
+
+            const hora = document.getElementById(`plantao_hora_${slot}`);
+            if (hora && p.horario_supervisao) hora.value = p.horario_supervisao;
+
+            const km = document.getElementById(`plantao_km_${slot}`);
+            if (km && p.km_posto !== null && p.km_posto !== undefined) km.value = p.km_posto;
+
+            const sit = document.getElementById(`plantao_situacao_${slot}`);
+            if (sit && p.status_supervisao) {
+                sit.value = p.status_supervisao;
+                sit.dispatchEvent(new Event('change'));
+            }
+
+            const efComp = (p.efetivo_completo === 1 || p.efetivo_completo === '1' || p.efetivo_completo === true);
+            const radEf = document.querySelector(`input[name="efetivo_slot_${slot}"][value="${efComp ? 'SIM' : 'NAO'}"]`);
+            if (radEf) {
+                radEf.checked = true;
+                radEf.dispatchEvent(new Event('change'));
+            }
+            const falta = document.getElementById(`plantao_falta_${slot}`);
+            if (falta && p.falta_efetivo_qtd) falta.value = p.falta_efetivo_qtd;
+
+            const temOc = (p.tem_ocorrencia === 1 || p.tem_ocorrencia === '1' || p.tem_ocorrencia === true || p.status_supervisao === 'COM_OCORRENCIA');
+            const radOc = document.querySelector(`input[name="ocorrencia_slot_${slot}"][value="${temOc ? 'SIM' : 'NAO'}"]`);
+            if (radOc) {
+                radOc.checked = true;
+                radOc.dispatchEvent(new Event('change'));
+            }
+            const descOc = document.getElementById(`plantao_ocorrencia_desc_${slot}`);
+            if (descOc && (p.descricao_ocorrencia || p.observacao)) descOc.value = p.descricao_ocorrencia || p.observacao;
+
+            if (p.motivo_nao_supervisao) {
+                const motSel = document.getElementById(`plantao_motivo_${slot}`);
+                const motOutro = document.getElementById(`plantao_motivo_outro_${slot}`);
+                if (motSel) {
+                    motSel.value = p.motivo_nao_supervisao;
+                    if (!motSel.value) {
+                        motSel.value = 'Outro';
+                        if (motOutro) motOutro.value = p.motivo_nao_supervisao;
+                    }
+                }
+            }
+        });
+    } else {
+        postosSalvos.forEach((p, idx) => {
+            let targetSlot = p.slot;
+            if (!targetSlot) {
+                for (let s = 1; s <= postosDoSetor.length; s++) {
+                    const sel = document.getElementById(`reg_posto_select_${s}`);
+                    if (sel && parseInt(sel.value) === parseInt(p.posto_id)) {
+                        targetSlot = s;
+                        break;
+                    }
+                }
+            }
+            if (!targetSlot) targetSlot = idx + 1;
+
+            const sel = document.getElementById(`reg_posto_select_${targetSlot}`);
+            if (sel) {
+                sel.value = p.posto_id;
+                sel.dispatchEvent(new Event('change'));
+            }
+
+            const hora = document.getElementById(`reg_hora_${targetSlot}`);
+            if (hora && p.horario_supervisao) hora.value = p.horario_supervisao;
+
+            const km = document.getElementById(`reg_km_${targetSlot}`);
+            if (km && p.km_posto !== null && p.km_posto !== undefined) km.value = p.km_posto;
+
+            const sit = document.getElementById(`reg_situacao_${targetSlot}`);
+            if (sit && p.status_supervisao) {
+                sit.value = p.status_supervisao;
+                sit.dispatchEvent(new Event('change'));
+            }
+
+            const efComp = (p.efetivo_completo === 1 || p.efetivo_completo === '1' || p.efetivo_completo === true);
+            const radEf = document.querySelector(`input[name="reg_efetivo_slot_${targetSlot}"][value="${efComp ? 'SIM' : 'NAO'}"]`);
+            if (radEf) {
+                radEf.checked = true;
+                radEf.dispatchEvent(new Event('change'));
+            }
+            const falta = document.getElementById(`reg_falta_${targetSlot}`);
+            if (falta && p.falta_efetivo_qtd) falta.value = p.falta_efetivo_qtd;
+
+            const temOc = (p.tem_ocorrencia === 1 || p.tem_ocorrencia === '1' || p.tem_ocorrencia === true || p.status_supervisao === 'COM_OCORRENCIA');
+            const radOc = document.querySelector(`input[name="reg_ocorrencia_slot_${targetSlot}"][value="${temOc ? 'SIM' : 'NAO'}"]`);
+            if (radOc) {
+                radOc.checked = true;
+                radOc.dispatchEvent(new Event('change'));
+            }
+            const descOc = document.getElementById(`reg_ocorrencia_desc_${targetSlot}`);
+            if (descOc && (p.descricao_ocorrencia || p.observacao)) descOc.value = p.descricao_ocorrencia || p.observacao;
+
+            if (p.motivo_nao_supervisao) {
+                const motSel = document.getElementById(`reg_motivo_${targetSlot}`);
+                const motOutro = document.getElementById(`reg_motivo_outro_${targetSlot}`);
+                if (motSel) {
+                    motSel.value = p.motivo_nao_supervisao;
+                    if (!motSel.value) {
+                        motSel.value = 'Outro';
+                        if (motOutro) motOutro.value = p.motivo_nao_supervisao;
+                    }
+                }
+            }
+        });
+    }
 }

@@ -69,6 +69,12 @@
       <p>RELATÓRIO CONSOLIDADO DO EXPEDIENTE</p>
     </div>
 
+    <!-- Banner de Relatório em Preenchimento Recuperado -->
+    <div id="bannerEmAndamentoDesk" style="display:none; background:#78350f; color:#fef08a; padding:12px 16px; border-radius:8px; margin-bottom:16px; font-weight:700; font-size:0.9rem; border:1px solid #facc15; align-items:center; gap:10px;">
+      <span style="font-size:1.3rem;">🟡</span>
+      <span id="bannerEmAndamentoTextoDesk">Relatório em preenchimento recuperado do CCO. Continue preenchendo os postos pendentes.</span>
+    </div>
+
     <!-- Banner de Instalação Mobile PWA -->
     <div id="pwaBanner" class="pwa-banner" style="display: none;">
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;">
@@ -201,6 +207,12 @@
               <input type="text" class="form-input" readonly id="km_rodado" value="0.0 km" style="background-color: #f1f5f9; font-weight: 800; color: var(--cco-blue);">
             </div>
           </div>
+
+          <div style="margin-top: 0.75rem;">
+            <button type="button" id="btnSalvarProgressoDeskTop" class="btn" style="background:#f59e0b; color:#040911; font-weight:800; border:none; padding:10px 18px; border-radius:6px; font-size:0.95rem; cursor:pointer; display:inline-flex; align-items:center; gap:8px; box-shadow:0 2px 8px rgba(245,158,11,0.25);">
+              💾 SALVAR INÍCIO / PROGRESSO DO EXPEDIENTE
+            </button>
+          </div>
         </div>
 
         <!-- ETAPA 6: POSTOS FISCALIZADOS -->
@@ -255,6 +267,9 @@
           </label>
           
           <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" id="btnSalvarProgressoDesk" class="btn" style="width: 100%; padding: 1.1rem; font-size: 1.05rem; font-weight: 800; background: #f59e0b; border: none; border-radius: 0.5rem; color: #040911; cursor: pointer; box-shadow: 0 4px 12px rgba(245,158,11,0.3); display: flex; align-items: center; justify-content: center; gap: 8px;">
+              💾 SALVAR PROGRESSO DO EXPEDIENTE (MANTER EM PREENCHIMENTO)
+            </button>
             <button type="button" id="btnConferirRelatorio" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 800; background: #2563eb; border: none; border-radius: 0.5rem; color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
               📋 CONFERIR RELATÓRIO DO EXPEDIENTE
             </button>
@@ -379,9 +394,9 @@
     </div>
   </div>
 
-  <script src="js/utils.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/formulario.js"></script>
-  <script src="js/pwa.js" defer></script>
+  <script src="js/utils.js?v=3.2.0"></script>
+  <script src="js/api.js?v=3.2.0"></script>
+  <script src="js/formulario.js?v=3.2.0"></script>
+  <script src="js/pwa.js?v=3.2.0" defer></script>
 </body>
 </html>

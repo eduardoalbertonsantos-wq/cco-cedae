@@ -566,6 +566,12 @@
               </div>
             </div>
           </div>
+
+          <div style="margin-top:10px;">
+            <button type="button" id="btnSalvarProgressoTopo" class="btn-mob-secondary" style="background:#f59e0b; color:#040911; font-weight:900; border:none; padding:12px; font-size:0.95rem; border-radius:6px; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; box-shadow:0 2px 10px rgba(245,158,11,0.25);">
+              💾 SALVAR INÍCIO / PROGRESSO DO EXPEDIENTE
+            </button>
+          </div>
         </div>
 
         <!-- BLOCO 2: POSTOS FISCALIZADOS -->
@@ -1143,8 +1149,7 @@
           alert('✓ Lista de postos e viaturas atualizada em tempo real com o servidor CCO.');
         });
 
-        document.getElementById('btnSalvarProgressoGeral')?.addEventListener('click', async () => {
-          const btn = document.getElementById('btnSalvarProgressoGeral');
+        const handlerSalvarProgresso = async (btn) => {
           const txtAntigo = btn.textContent;
           btn.disabled = true;
           btn.textContent = '💾 SALVANDO NO SISTEMA CCO...';
@@ -1154,6 +1159,14 @@
             btn.disabled = false;
             btn.textContent = txtAntigo;
           }
+        };
+
+        document.getElementById('btnSalvarProgressoTopo')?.addEventListener('click', function() {
+          handlerSalvarProgresso(this);
+        });
+
+        document.getElementById('btnSalvarProgressoGeral')?.addEventListener('click', function() {
+          handlerSalvarProgresso(this);
         });
 
         document.getElementById('inputDataServico')?.addEventListener('change', () => {
@@ -1527,13 +1540,6 @@
       async function salvarProgressoNoServidor(silencioso = false) {
         const payload = montarPayloadExpediente();
 
-        if (payload.postos_supervisionados.length === 0) {
-          if (!silencioso) {
-            alert('Por favor, selecione e preencha ao menos um posto antes de salvar o progresso.');
-          }
-          return false;
-        }
-
         if (!navigator.onLine) {
           localStorage.setItem('cco_draft_supervisao', JSON.stringify(payload));
           if (!silencioso) {
@@ -1572,14 +1578,18 @@
           }
 
           if (!silencioso) {
-            alert('✓ PROGRESSO SALVO COM SUCESSO!\n\nRelatório nº ' + data.id + ' mantido em preenchimento (Status: EM ABERTO).\nVocê pode fechar o aplicativo ou continuar preenchendo os postos a qualquer momento.');
+            const qtdPostos = payload.postos_supervisionados.length;
+            const detalhe = qtdPostos > 0 
+              ? `${qtdPostos} posto(s) registrado(s)` 
+              : 'Início do expediente (dados gerais) gravado';
+            alert(`✓ PROGRESSO SALVO COM SUCESSO NO CCO!\n\nRelatório nº ${data.id} mantido em preenchimento (Status: 🟡 EM PREENCHIMENTO).\n${detalhe}.\n\nVocê pode fechar o aplicativo ou continuar preenchendo os postos a qualquer momento.`);
           }
           return true;
         } catch (err) {
           console.warn('Erro ao salvar progresso no servidor:', err);
           localStorage.setItem('cco_draft_supervisao', JSON.stringify(payload));
           if (!silencioso) {
-            alert('⚠️ Salvo no aparelho (sem comunicação momentânea com CCO):\n' + err.message);
+            alert('⚠️ Salvo localmente no aparelho:\n' + err.message);
           }
           return false;
         }

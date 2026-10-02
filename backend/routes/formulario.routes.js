@@ -226,13 +226,9 @@ router.post('/salvar', async (req, res) => {
             relatorioExistente = db.prepare(buscaSql).get(...buscaParams);
         }
 
-        // Se já existir relatório 'concluido' para esse expediente, não sobrescrever por salvamento parcial
+        // Se o relatório encontrado já estiver 'concluido', preserva o concluído intacto e cria um novo rascunho em aberto
         if (relatorioExistente && relatorioExistente.status === 'concluido') {
-            return res.status(409).json({
-                error: `Este relatório (#${relatorioExistente.id}) já foi finalizado e enviado anteriormente.`,
-                id: relatorioExistente.id,
-                status: 'concluido'
-            });
+            relatorioExistente = null;
         }
 
         const runTransaction = db.transaction(() => {
