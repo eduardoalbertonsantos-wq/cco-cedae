@@ -358,6 +358,37 @@ let mapaCCO = null;
 let layerFiscais = null;
 let layerBases = null;
 let layerPostos = null;
+let markersFiscaisMap = {};
+
+// Função global para focar fiscal no mapa (acessível em todo o escopo da janela)
+window.focarFiscalNoMapa = function(lat, lng, userId) {
+    try {
+        const mapContainer = document.getElementById('mapaOperacionalCCO');
+        if (mapContainer) {
+            mapContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        if (mapaCCO) {
+            mapaCCO.invalidateSize();
+            const nLat = parseFloat(lat);
+            const nLng = parseFloat(lng);
+            if (!isNaN(nLat) && !isNaN(nLng)) {
+                mapaCCO.flyTo([nLat, nLng], 16, {
+                    animate: true,
+                    duration: 1.2
+                });
+
+                if (userId && markersFiscaisMap[userId]) {
+                    setTimeout(() => {
+                        markersFiscaisMap[userId].openPopup();
+                    }, 400);
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Erro ao focar fiscal no mapa:', err);
+    }
+};
 
 async function initMapaOperacional() {
     const mapContainer = document.getElementById('mapaOperacionalCCO');
@@ -372,35 +403,51 @@ async function initMapaOperacional() {
                 zoomControl: true
             });
 
-            // Mapa Real Google Maps (Ruas, Vias e Avenidas sem bloqueio)
-            const layerGoogleRuas = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                maxZoom: 20,
-                attribution: '&copy; Google Maps &bull; CEDAE CCO Fiscalização'
+            // 1. OpenStreetMap (Mapa Real de Ruas, Vias e Avenidas - CORS Livre, Alta Confiabilidade)
+            const layerOsmRuas = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                subdomains: ['a', 'b', 'c'],
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &bull; CEDAE CCO Fiscalização'
             });
 
-            const layerGoogleSatelite = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            // 2. CartoDB Voyager (Ruas, Bairros e Rodovias Nítidas)
+            const layerCartoVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 20,
-                attribution: '&copy; Google Satélite &bull; CEDAE CCO Fiscalização'
+                subdomains: 'abcd',
+                attribution: '&copy; CARTO &copy; OpenStreetMap &bull; CEDAE CCO'
             });
 
+            // 3. Esri Satélite Real (Imagens Aéreas de Alta Resolução)
+            const layerEsriSatelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '&copy; Esri Satélite &bull; CEDAE CCO Fiscalização'
+            });
+
+            // 4. Esri World Street Map (Vias e Rodovias)
             const layerEsriRuas = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
                 maxZoom: 19,
-                attribution: '&copy; Esri World Street Map &bull; CEDAE CCO Fiscalização'
+                attribution: '&copy; Esri World Street Map &bull; CEDAE CCO'
             });
 
-            // Ativar Google Ruas como padrão oficial
-            layerGoogleRuas.addTo(mapaCCO);
+            // Ativar OpenStreetMap como camada padrão oficial
+            layerOsmRuas.addTo(mapaCCO);
 
-            // Controle de alternância de visualização para o usuário (Ruas / Satélite)
+            // Controle de alternância de visualização para o usuário (Ruas / Satélite / Urbano)
             L.control.layers({
-                "🗺️ Google Ruas": layerGoogleRuas,
-                "🛰️ Google Satélite": layerGoogleSatelite,
-                "🏛️ Esri Vias": layerEsriRuas
+                "🗺️ Ruas Detalhadas (OSM)": layerOsmRuas,
+                "🏙️ Mapa Urbano (CartoDB)": layerCartoVoyager,
+                "🛰️ Satélite Real (Esri)": layerEsriSatelite,
+                "🛣️ Vias & Rodovias (Esri)": layerEsriRuas
             }, null, { position: 'topright' }).addTo(mapaCCO);
 
             layerBases = L.layerGroup().addTo(mapaCCO);
             layerPostos = L.layerGroup().addTo(mapaCCO);
             layerFiscais = L.layerGroup().addTo(mapaCCO);
+
+            // Forçar Leaflet a dimensionar e renderizar todas as tiles imediatamente sem corte
+            setTimeout(() => { if (mapaCCO) mapaCCO.invalidateSize(); }, 250);
+            setTimeout(() => { if (mapaCCO) mapaCCO.invalidateSize(); }, 800);
+            window.addEventListener('resize', () => { if (mapaCCO) mapaCCO.invalidateSize(); });
 
             document.getElementById('btnRecarregarMapa')?.addEventListener('click', async () => {
                 const btn = document.getElementById('btnRecarregarMapa');
@@ -439,10 +486,11 @@ async function carregarPosicoesMapa() {
         if (document.getElementById('badgeTotalOffline')) document.getElementById('badgeTotalOffline').textContent = resumo.offline || 0;
         if (document.getElementById('badgeTotalGpsNegado')) document.getElementById('badgeTotalGpsNegado').textContent = resumo.gps_nao_autorizado || 0;
 
-        // Limpar camadas
+        // Limpar camadas e registro de marcadores
         layerBases.clearLayers();
         layerPostos.clearLayers();
         layerFiscais.clearLayers();
+        markersFiscaisMap = {};
 
         // 1. Plotar Bases dos 4 Setores (🏢 Setor)
         (res.bases_setores || []).forEach(b => {
@@ -532,11 +580,16 @@ async function carregarPosicoesMapa() {
                     </div>
                 `);
                 layerFiscais.addLayer(marker);
+
+                if (f.user_id) {
+                    markersFiscaisMap[f.user_id] = marker;
+                }
             }
 
             // Gerar card para a lista de acompanhamento logo abaixo do mapa
+            const cardClick = hasCoords ? `onclick="window.focarFiscalNoMapa(${f.latitude}, ${f.longitude}, ${f.user_id})"` : '';
             listaCardsHtml.push(`
-                <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${f.setor_cor}; border-radius:0.5rem; padding:0.6rem 0.85rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                <div ${cardClick} style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${f.setor_cor}; border-radius:0.5rem; padding:0.65rem 0.85rem; box-shadow:0 1px 3px rgba(0,0,0,0.04); ${hasCoords ? 'cursor:pointer;' : ''}">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
                         <strong style="color:#0f172a; font-size:0.88rem;">👤 ${f.nome}</strong>
                         <span style="font-size:0.75rem; font-weight:700; color:${f.status_cor};">${f.status_badge}</span>
@@ -545,9 +598,13 @@ async function carregarPosicoesMapa() {
                         <span><strong style="color:${f.setor_cor};">${f.setor}</strong></span>
                         <span>🕒 ${f.hora_formatada} (${f.minutos_atras} min)</span>
                     </div>
-                    <div style="font-size:0.75rem; color:#475569; margin-top:2px; display:flex; justify-content:space-between;">
+                    <div style="font-size:0.75rem; color:#475569; margin-top:5px; display:flex; justify-content:space-between; align-items:center;">
                         <span>📡 Precisão: ${f.accuracy ? f.accuracy + 'm' : (hasCoords ? 'Padrão' : 'Sem GPS')}</span>
-                        ${hasCoords ? `<button type="button" onclick="focarFiscalNoMapa(${f.latitude}, ${f.longitude})" style="background:none; border:none; color:#2563eb; font-weight:700; cursor:pointer; padding:0; font-size:0.75rem;">Ver no Mapa 📍</button>` : ''}
+                        ${hasCoords ? `
+                            <button type="button" onclick="event.stopPropagation(); window.focarFiscalNoMapa(${f.latitude}, ${f.longitude}, ${f.user_id});" style="background:#2563eb; color:#ffffff; font-weight:700; cursor:pointer; padding:3px 9px; font-size:0.75rem; border:none; border-radius:4px; display:inline-flex; align-items:center; gap:3px; box-shadow:0 1px 2px rgba(0,0,0,0.15);">
+                                Ver no Mapa 📍
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `);
@@ -572,9 +629,4 @@ async function carregarPosicoesMapa() {
     }
 }
 
-window.focarFiscalNoMapa = function(lat, lng) {
-    if (mapaCCO && lat && lng) {
-        mapaCCO.setView([lat, lng], 14, { animate: true });
-    }
-};
 

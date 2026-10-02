@@ -1,10 +1,10 @@
 /**
  * CCO — FISCALIZAÇÃO OPERACIONAL
- * Service Worker v3.6.0 (Mapa Real Google Maps & Satélite)
+ * Service Worker v3.7.0 (Mapa Real Definitivo - OSM & Esri Satélite)
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-fiscalizacao-v3.6.0-google-maps';
+const CACHE_NAME = 'cco-fiscalizacao-v3.7.0-mapa-definitivo';
 const STATIC_ASSETS = [
   '/',
   '/app',
