@@ -1,4 +1,4 @@
-﻿let chartSituacao = null;
+let chartSituacao = null;
 let chartSetores = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -11,8 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await atualizarDashboard();
     setupDashboardListeners();
     
-    // AtualizaÃ§Ã£o em tempo real do painel a cada 30 segundos
+    // Atualização em tempo real do painel a cada 30 segundos
     setInterval(atualizarDashboard, 30 * 1000);
+    // Atualização em tempo real do mapa a cada 15 segundos
 });
 
 async function carregarFiltrosDashboard() {
@@ -24,7 +25,7 @@ async function carregarFiltrosDashboard() {
             setores.forEach(s => {
                 selectSetor.innerHTML += `<option value="${s.id}">${s.nome}</option>`;
             });
-            selectSetor.innerHTML += '<option value="sem_setor">âš ï¸ SEM SETOR (Aguardando ClassificaÃ§Ã£o)</option>';
+            selectSetor.innerHTML += '<option value="sem_setor">⚠️ SEM SETOR (Aguardando Classificação)</option>';
         }
     } catch (e) {
         console.error('Erro ao carregar filtros:', e);
@@ -53,10 +54,10 @@ function setupDashboardListeners() {
     document.getElementById('btnRefreshDashboard')?.addEventListener('click', async () => {
         showToast('Atualizando dados...', 'info');
         await atualizarDashboard();
-        showToast('âœ“ Dados atualizados com sucesso.', 'success');
+        showToast('✓ Dados atualizados com sucesso.', 'success');
     });
 
-    // Listeners dos botÃµes de filtro semanal
+    // Listeners dos botões de filtro semanal
     document.querySelectorAll('#filtroBotoesSemanal .btn-filter-semanal').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('#filtroBotoesSemanal .btn-filter-semanal').forEach(b => {
@@ -128,24 +129,24 @@ async function atualizarDashboard() {
         listaPostosSemanal = stats.postos_acompanhamento_semanal || [];
         renderizarAcompanhamentoSemanal(listaPostosSemanal, filtroSemanalAtivo);
 
-        // Atualizar Ãšltimo RelatÃ³rio Enviado
+        // Atualizar Último Relatório Enviado
         const ult = stats.ultimo_relatorio;
         const ultTexto = document.getElementById('ultimoRelatorioTexto');
         const ultData = document.getElementById('ultimoRelatorioData');
         if (ult && ultTexto) {
             const sup = ult.supervisor_nome || ult.responsavel_nome || 'N/A';
             const vtr = ult.viatura_modelo || ult.viatura_outros_texto || 'VTR';
-            ultTexto.textContent = `${ult.setor_nome} â€” Turno ${ult.turno} | Fiscal: ${sup} | Vtr: ${vtr} (${ult.viatura_placa || 'N/A'})`;
-            if (ultData) ultData.textContent = `ðŸ“… ${formatDate(ult.data_servico)} (#${ult.id})`;
+            ultTexto.textContent = `${ult.setor_nome} — Turno ${ult.turno} | Fiscal: ${sup} | Vtr: ${vtr} (${ult.viatura_placa || 'N/A'})`;
+            if (ultData) ultData.textContent = `📅 ${formatDate(ult.data_servico)} (#${ult.id})`;
         } else if (ultTexto) {
-            ultTexto.textContent = 'Nenhum relatÃ³rio recente encontrado';
+            ultTexto.textContent = 'Nenhum relatório recente encontrado';
             if (ultData) ultData.textContent = '-';
         }
 
-        // 2. Renderizar Painel EspecÃ­fico por Setor
+        // 2. Renderizar Painel Específico por Setor
         renderizarPainelPorSetor(stats.status_setores);
 
-        // 3. Renderizar GrÃ¡ficos
+        // 3. Renderizar Gráficos
         renderizarGraficos(stats);
 
     } catch (e) {
@@ -173,7 +174,7 @@ function renderizarAcompanhamentoSemanal(lista, filtro) {
     }
 
     if (filtrados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#16a34a; font-weight:700;">âœ… Nenhum posto pendente para este filtro! Todos os postos estÃ£o em conformidade.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:1.5rem; color:#16a34a; font-weight:700;">✅ Nenhum posto pendente para este filtro! Todos os postos estão em conformidade.</td></tr>`;
         return;
     }
 
@@ -183,22 +184,22 @@ function renderizarAcompanhamentoSemanal(lista, filtro) {
         let textoDias = `${p.dias_sem_vistoria} dias`;
 
         if (p.status_vistoria === 'CRITICO') {
-            badgeStatus = '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:700; border:1px solid #fca5a5;">ðŸ”´ CRÃTICO</span>';
+            badgeStatus = '<span class="badge" style="background:#fee2e2; color:#b91c1c; font-weight:700; border:1px solid #fca5a5;">🔴 CRÍTICO</span>';
             corDias = '#dc2626';
             if (p.dias_sem_vistoria === null) {
-                textoDias = '<span style="color:#dc2626; font-weight:800;">ðŸš¨ NUNCA VISTORIADO</span>';
+                textoDias = '<span style="color:#dc2626; font-weight:800;">🚨 NUNCA VISTORIADO</span>';
             }
         } else if (p.status_vistoria === 'ATENCAO') {
-            badgeStatus = '<span class="badge" style="background:#fef3c7; color:#b45309; font-weight:700; border:1px solid #fcd34d;">ðŸŸ  ATENÃ‡ÃƒO</span>';
+            badgeStatus = '<span class="badge" style="background:#fef3c7; color:#b45309; font-weight:700; border:1px solid #fcd34d;">🟠 ATENÇÃO</span>';
             corDias = '#d97706';
         } else {
-            badgeStatus = '<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700; border:1px solid #86efac;">ðŸŸ¢ EM DIA</span>';
+            badgeStatus = '<span class="badge" style="background:#dcfce7; color:#15803d; font-weight:700; border:1px solid #86efac;">🟢 EM DIA</span>';
             corDias = '#16a34a';
         }
 
         const dataVistoriaTexto = p.ultima_data_vistoria 
-            ? `${formatDate(p.ultima_data_vistoria)} ${p.ultimo_horario ? `<br><small style="color:#64748b;">Ã s ${p.ultimo_horario}</small>` : ''}`
-            : '<span style="color:#94a3b8; font-style:italic;">Sem histÃ³rico</span>';
+            ? `${formatDate(p.ultima_data_vistoria)} ${p.ultimo_horario ? `<br><small style="color:#64748b;">às ${p.ultimo_horario}</small>` : ''}`
+            : '<span style="color:#94a3b8; font-style:italic;">Sem histórico</span>';
 
         return `
             <tr style="border-bottom:1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
@@ -216,7 +217,7 @@ function renderizarAcompanhamentoSemanal(lista, filtro) {
                     ${dataVistoriaTexto}
                 </td>
                 <td style="padding:0.75rem; font-size:0.85rem; color:#334155;">
-                    ðŸ‘® ${p.ultimo_supervisor}
+                    👮 ${p.ultimo_supervisor}
                 </td>
                 <td style="padding:0.75rem; text-align:center;">
                     ${badgeStatus}
@@ -232,7 +233,7 @@ function atualizarCard(id, valor, idFallback) {
     if (el) el.textContent = valor !== undefined ? valor : 0;
 }
 
-// Renderiza os blocos dos setores: CCO TINGUÃ, CCO GUANDU, CCO LARANJAL, PLANTÃƒO
+// Renderiza os blocos dos setores: CCO TINGUÁ, CCO GUANDU, CCO LARANJAL, PLANTÃO
 function renderizarPainelPorSetor(setores) {
     const container = document.getElementById('setorGridContainer');
     if (!container || !setores) return;
@@ -243,10 +244,10 @@ function renderizarPainelPorSetor(setores) {
         let borderColor = '#22c55e';
         
         if (s.status_operacional === 'PENDENCIA') {
-            statusBadge = '<span class="badge badge-yellow">PENDÃŠNCIA</span>';
+            statusBadge = '<span class="badge badge-yellow">PENDÊNCIA</span>';
             borderColor = '#eab308';
         } else if (s.status_operacional === 'SEM_REGISTRO') {
-            statusBadge = '<span class="badge" style="background:#cbd5e1; color:#334155;">SEM PLANTÃƒO HOJE</span>';
+            statusBadge = '<span class="badge" style="background:#cbd5e1; color:#334155;">SEM PLANTÃO HOJE</span>';
             borderColor = '#cbd5e1';
         }
 
@@ -260,31 +261,31 @@ function renderizarPainelPorSetor(setores) {
             </div>
             
             <div class="setor-box-meta">
-                <strong>ðŸ‘® Fiscal de ServiÃ§o:</strong> ${s.supervisor_atual || 'NÃ£o designado'}
+                <strong>👮 Fiscal de Serviço:</strong> ${s.supervisor_atual || 'Não designado'}
             </div>
             <div class="setor-box-meta">
-                <strong>ðŸš— Viatura Utilizada:</strong> ${s.viatura_atual || 'Nenhuma'}
+                <strong>🚗 Viatura Utilizada:</strong> ${s.viatura_atual || 'Nenhuma'}
             </div>
             <div class="setor-box-meta">
-                <strong>ðŸ“… Ãšltimo Expediente:</strong> ${s.ultimo_relatorio_data ? formatDate(s.ultimo_relatorio_data) : 'Nenhum'} ${s.ultimo_relatorio_turno ? `(${s.ultimo_relatorio_turno})` : ''}
+                <strong>📅 Último Expediente:</strong> ${s.ultimo_relatorio_data ? formatDate(s.ultimo_relatorio_data) : 'Nenhum'} ${s.ultimo_relatorio_turno ? `(${s.ultimo_relatorio_turno})` : ''}
             </div>
             
             <div class="setor-box-badges">
                 ${s.id === 4 || (s.nome && s.nome.includes('PLANT')) ? `
-                    <span class="badge badge-primary" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a;">ðŸ“ Postos PrÃ³prios: ${s.postos_cadastrados || 30}</span>
-                    <span class="badge" style="background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd;">ðŸŒ FiscalizaÃ§Ã£o Operacional: 61 Postos</span>
+                    <span class="badge badge-primary" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a;">📍 Postos Próprios: ${s.postos_cadastrados || 30}</span>
+                    <span class="badge" style="background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd;">🌐 Fiscalização Operacional: 61 Postos</span>
                 ` : `
-                    <span class="badge badge-primary">ðŸ“ Quantidade de Postos: ${s.postos_cadastrados}</span>
+                    <span class="badge badge-primary">📍 Quantidade de Postos: ${s.postos_cadastrados}</span>
                 `}
-                <span class="badge badge-green">ðŸŸ¢ ${s.postos_supervisionados} Fiscalizados</span>
-                ${s.postos_nao_supervisionados > 0 ? `<span class="badge badge-red">ðŸ”´ ${s.postos_nao_supervisionados} NÃ£o Atendidos</span>` : ''}
-                ${s.ocorrencias > 0 ? `<span class="badge badge-red">ðŸš¨ ${s.ocorrencias} OcorrÃªncias</span>` : ''}
-                ${s.pendencias > 0 ? `<span class="badge badge-yellow">âš ï¸ ${s.pendencias} PendÃªncias</span>` : ''}
+                <span class="badge badge-green">🟢 ${s.postos_supervisionados} Fiscalizados</span>
+                ${s.postos_nao_supervisionados > 0 ? `<span class="badge badge-red">🔴 ${s.postos_nao_supervisionados} Não Atendidos</span>` : ''}
+                ${s.ocorrencias > 0 ? `<span class="badge badge-red">🚨 ${s.ocorrencias} Ocorrências</span>` : ''}
+                ${s.pendencias > 0 ? `<span class="badge badge-yellow">⚠️ ${s.pendencias} Pendências</span>` : ''}
             </div>
 
             <div style="margin-top: 1rem; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap:wrap; gap:0.5rem;">
-                <a href="organizacao-postos.html" style="font-size:0.8rem; font-weight:700; color:var(--cco-blue); text-decoration:none;">ðŸ—‚ï¸ Ver Lista dos Postos &rarr;</a>
-                <a href="plantoes.html?setor=${s.id}" style="font-size:0.8rem; font-weight:600; color:#64748b; text-decoration:none;">HistÃ³rico de PlantÃµes</a>
+                <a href="organizacao-postos.html" style="font-size:0.8rem; font-weight:700; color:var(--cco-blue); text-decoration:none;">🗂️ Ver Lista dos Postos &rarr;</a>
+                <a href="plantoes.html?setor=${s.id}" style="font-size:0.8rem; font-weight:600; color:#64748b; text-decoration:none;">Histórico de Plantões</a>
             </div>
         `;
         container.appendChild(box);
@@ -293,7 +294,7 @@ function renderizarPainelPorSetor(setores) {
 
 function renderizarGraficos(stats) {
     if (typeof Chart === 'undefined') return;
-    // 1. GrÃ¡fico de SituaÃ§Ã£o dos Postos (Doughnut)
+    // 1. Gráfico de Situação dos Postos (Doughnut)
     const ctxSit = document.getElementById('chart-situacao-postos')?.getContext('2d');
     if (ctxSit) {
         if (chartSituacao) chartSituacao.destroy();
@@ -320,7 +321,7 @@ function renderizarGraficos(stats) {
         });
     }
 
-    // 2. GrÃ¡fico de Postos por Setor (Bar)
+    // 2. Gráfico de Postos por Setor (Bar)
     const ctxSet = document.getElementById('chart-postos-setores')?.getContext('2d');
     if (ctxSet) {
         if (chartSetores) chartSetores.destroy();
@@ -349,3 +350,4 @@ function renderizarGraficos(stats) {
         });
     }
 }
+
