@@ -56,6 +56,24 @@ router.post('/login', (req, res) => {
             { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
         );
 
+        // Registrar presença inicial do usuário logado na tabela de monitoramento operacional
+        try {
+            db.prepare(`
+                INSERT INTO fiscal_locations (
+                    user_id, nome_usuario, setor, setor_id,
+                    is_online, gps_authorized, updated_at
+                ) VALUES (?, ?, ?, ?, 1, 1, CURRENT_TIMESTAMP)
+                ON CONFLICT(user_id) DO UPDATE SET
+                    nome_usuario = excluded.nome_usuario,
+                    setor = excluded.setor,
+                    setor_id = excluded.setor_id,
+                    is_online = 1,
+                    updated_at = CURRENT_TIMESTAMP
+            `).run(user.id, user.nome, setorNome, user.setor_id || 4);
+        } catch (e) {
+            console.warn('Registro em fiscal_locations no login:', e.message);
+        }
+
         const usuario = {
             id: user.id,
             nome: user.nome,

@@ -178,6 +178,11 @@ router.get('/posicoes', authenticateToken, (req, res) => {
             const seg = loc.seg_passados || 0;
             const minutos = Math.floor(seg / 60);
 
+            const setorConf = SETORES_CONFIG[loc.setor_id] || { cor: '#3b82f6', emoji: '📍', nome: loc.setor || 'PLANTÃO' };
+            const temCoordenadaReal = (loc.latitude !== null && loc.longitude !== null);
+            const effectiveLat = temCoordenadaReal ? loc.latitude : (setorConf.base ? setorConf.base.lat : null);
+            const effectiveLng = temCoordenadaReal ? loc.longitude : (setorConf.base ? setorConf.base.lng : null);
+
             let status = 'offline';
             let statusLabel = 'Offline';
             let statusBadge = '🔴 OFFLINE';
@@ -195,6 +200,12 @@ router.get('/posicoes', authenticateToken, (req, res) => {
                 statusBadge = '🔴 OFFLINE';
                 statusCor = '#dc2626';
                 totalOffline++;
+            } else if (!temCoordenadaReal) {
+                status = 'buscando';
+                statusLabel = 'Conectando satélites GPS...';
+                statusBadge = '🟡 BUSCANDO SINAL';
+                statusCor = '#eab308';
+                totalOnline++;
             } else if (minutos <= 5) {
                 status = 'online';
                 statusLabel = 'Online';
@@ -215,8 +226,6 @@ router.get('/posicoes', authenticateToken, (req, res) => {
                 totalOffline++;
             }
 
-            const setorConf = SETORES_CONFIG[loc.setor_id] || { cor: '#3b82f6', emoji: '📍', nome: loc.setor || 'PLANTÃO' };
-
             // Formatar horário da última atualização (fuso de Brasília)
             let horaFormatada = '-';
             const dtRef = loc.updated_at_brasilia || loc.updated_at;
@@ -233,8 +242,9 @@ router.get('/posicoes', authenticateToken, (req, res) => {
                 setor_id: loc.setor_id,
                 setor_cor: setorConf.cor,
                 setor_emoji: setorConf.emoji,
-                latitude: loc.latitude,
-                longitude: loc.longitude,
+                latitude: effectiveLat,
+                longitude: effectiveLng,
+                tem_gps_real: temCoordenadaReal,
                 accuracy: loc.accuracy ? Math.round(loc.accuracy) : null,
                 is_online: loc.is_online,
                 gps_authorized: loc.gps_authorized,

@@ -372,10 +372,11 @@ async function initMapaOperacional() {
                 zoomControl: true
             });
 
-            // OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap &bull; CEDAE CCO Fiscalização'
+            // CartoDB Voyager tiles (rápido, alta disponibilidade, sem bloqueio de políticas OSM)
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                subdomains: 'abcd',
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a> &bull; &copy; OpenStreetMap &bull; CEDAE CCO Fiscalização'
             }).addTo(mapaCCO);
 
             layerBases = L.layerGroup().addTo(mapaCCO);
@@ -507,7 +508,7 @@ async function carregarPosicoesMapa() {
                             <strong>Última atualização:</strong> ${f.hora_formatada} (${f.minutos_atras} min atrás)
                         </div>
                         <div style="font-size:0.85rem; color:#334155;">
-                            <strong>Precisão:</strong> ${f.accuracy ? f.accuracy + ' metros' : 'Aproximada'}
+                            <strong>Precisão:</strong> ${f.tem_gps_real ? (f.accuracy ? f.accuracy + ' metros (GPS Real)' : 'GPS em Tempo Real') : '📡 Conectando satélites (Base do Setor)'}
                         </div>
                     </div>
                 `);
