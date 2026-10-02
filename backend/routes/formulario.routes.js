@@ -68,27 +68,31 @@ router.get('/setor/:id', (req, res) => {
 router.get('/em-andamento', (req, res) => {
     try {
         const db = getDb();
-        const { setor_id, supervisor_id, data_servico, turno } = req.query;
-        if (!setor_id) return res.status(400).json({ error: 'setor_id é obrigatório' });
+        const { setor_id, supervisor_id, data_servico, turno, relatorio_id } = req.query;
 
-        let sql = "SELECT * FROM relatorios WHERE setor_id = ? AND status = 'em_aberto'";
-        const params = [setor_id];
-
-        if (data_servico) {
-            sql += " AND data_servico = ?";
-            params.push(data_servico);
-        }
-        if (turno) {
-            sql += " AND turno = ?";
-            params.push(turno);
-        }
-        if (supervisor_id) {
-            sql += " AND (supervisor_id = ? OR supervisor_id IS NULL)";
-            params.push(supervisor_id);
+        let relatorio = null;
+        if (relatorio_id) {
+            relatorio = db.prepare("SELECT * FROM relatorios WHERE id = ? AND status = 'em_aberto'").get(parseInt(relatorio_id));
         }
 
-        sql += " ORDER BY id DESC LIMIT 1";
-        const relatorio = db.prepare(sql).get(...params);
+        if (!relatorio) {
+            if (!setor_id) return res.status(400).json({ error: 'setor_id é obrigatório' });
+
+            let sql = "SELECT * FROM relatorios WHERE setor_id = ? AND status = 'em_aberto'";
+            const params = [parseInt(setor_id)];
+
+            if (data_servico) {
+                sql += " AND data_servico = ?";
+                params.push(data_servico);
+            }
+            if (turno) {
+                sql += " AND turno = ?";
+                params.push(turno);
+            }
+
+            sql += " ORDER BY id DESC LIMIT 1";
+            relatorio = db.prepare(sql).get(...params);
+        }
 
         if (!relatorio) {
             return res.json({ tem_relatorio: false });
@@ -139,29 +143,17 @@ function processarPostosDoPayload(db, postos_supervisionados, setor_id, ehFinal 
         }
 
         if (!dbPosto) {
-            if (parseInt(setor_id) === 4 && (p.posto_nome || p.nome)) {
+            if (p.posto_nome || p.nome) {
                 dbPosto = {
                     id: null,
-                    nome: (p.posto_nome || p.nome || 'Posto Manual').trim(),
+                    nome: (p.posto_nome || p.nome || 'Posto Informado').trim(),
                     endereco: p.endereco || 'Informado pelo Fiscal',
                     localidade: p.localidade || 'Rio de Janeiro',
                     empresa: p.empresa || 'CEDAE',
-                    setor_id: 4
+                    setor_id: parseInt(setor_id) || 4
                 };
             } else {
-                throw new Error(`Posto ${p.posto_nome || p.posto_id} não pertence à base oficial de postos.`);
-            }
-        }
-
-        // Validação de isolamento do setor (setor 4 = PLANTÃO tem acesso aos postos gerais)
-        if (dbPosto.id && parseInt(setor_id) !== 4) {
-            const autorizado = db.prepare(`
-                SELECT 1 FROM posto_setor_supervisao 
-                WHERE posto_id = ? AND setor_id = ? AND ativo = 1
-            `).get(dbPosto.id, parseInt(setor_id));
-
-            if (!autorizado) {
-                throw new Error(`Acesso negado: O posto "${dbPosto.nome}" não pertence ao setor selecionado.`);
+                throw new Error(`Posto ${p.posto_nome || p.posto_id} não identificado.`);
             }
         }
 
@@ -432,11 +424,14 @@ router.post('/enviar', async (req, res) => {
         const spNow = getBrasiliaDateTime();
 
         // Verificar se já existe relatório 'concluido' para evitar duplicidade acidental
-        let buscaDupSql = "SELECT id, created_at, status FROM relatorios WHERE setor_id = ? AND data_servico = ? AND turno = ?";
+        let buscaDupSql = "SELECT id, created_at, status, supervisor_id, responsavel_nome FROM relatorios WHERE setor_id = ? AND data_servico = ? AND turno = ?";
         const buscaDupParams = [setor_id, data_servico, turno];
         if (supervisor_id) {
             buscaDupSql += " AND supervisor_id = ?";
             buscaDupParams.push(supervisor_id);
+        } else if (responsavel_nome) {
+            buscaDupSql += " AND responsavel_nome = ?";
+            buscaDupParams.push(responsavel_nome);
         }
         const relatoriosSetor = db.prepare(buscaDupSql).all(...buscaDupParams);
         const relJaConcluido = relatoriosSetor.find(r => r.status === 'concluido' && (!reqRelatorioId || r.id !== parseInt(reqRelatorioId)));

@@ -1,10 +1,10 @@
 /**
  * CCO — FISCALIZAÇÃO OPERACIONAL
- * Service Worker v3.3.0 (GPS dos Fiscais & Mapa Operacional)
+ * Service Worker v3.4.0 (Correção GPS dos Fiscais & Salvamento de Fiscalização)
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-fiscalizacao-v3.3.0-gps-mapa';
+const CACHE_NAME = 'cco-fiscalizacao-v3.4.0-gps-fix';
 const STATIC_ASSETS = [
   '/',
   '/app',

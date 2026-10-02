@@ -276,6 +276,40 @@
     .badge-sit-pendencia { background: #713f12; color: #fef08a; }
     .badge-sit-nao-sup { background: #334155; color: #e2e8f0; }
 
+    /* Indicador Visual Oficial de Status GPS */
+    .gps-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      transition: all 0.25s ease;
+    }
+    .gps-badge-ativo {
+      background: #064e3b;
+      color: #34d399;
+      border: 1px solid #059669;
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.25);
+    }
+    .gps-badge-nao-autorizado {
+      background: #450a0a;
+      color: #f87171;
+      border: 1px solid #dc2626;
+    }
+    .gps-badge-erro {
+      background: #451a03;
+      color: #fb923c;
+      border: 1px solid #d97706;
+    }
+    .gps-badge-buscando {
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1px solid #475569;
+    }
+
     /* Modais */
     .modal-backdrop-mob {
       display: none;
@@ -469,8 +503,14 @@
       <!-- Faixa de Identificação do Fiscal e Setor -->
       <div class="supervisor-badge-bar">
         <div class="sup-saudacao">
-          <span>Fiscal: <strong id="sup-nome-bold" style="color:#fff;">---</strong></span>
-          <span class="sup-setor-pill" id="sup-setor-badge">SETOR</span>
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span>Fiscal: <strong id="sup-nome-bold" style="color:#fff;">---</strong></span>
+            <span class="sup-setor-pill" id="sup-setor-badge">SETOR</span>
+          </div>
+          <div style="margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span id="gpsStatusBadge" class="gps-badge gps-badge-buscando">📍 GPS: INICIANDO...</span>
+            <span id="gpsStatusDetalhe" style="font-size:0.75rem; color:#94a3b8;"></span>
+          </div>
         </div>
         <div class="sup-counters-grid">
           <div class="sup-counter-item">
@@ -986,69 +1026,106 @@
         return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
       }
 
-      function iniciarRastreamentoGps() {
-        if (!('geolocation' in navigator)) {
-          console.warn('[GPS] Geolocalização não suportada neste dispositivo.');
-          return;
+      function atualizarGpsStatus(tipo, detalhe = '') {
+        const badge = document.getElementById('gpsStatusBadge');
+        const det = document.getElementById('gpsStatusDetalhe');
+        if (!badge) return;
+
+        badge.className = 'gps-badge';
+        if (tipo === 'ativo') {
+          badge.className += ' gps-badge-ativo';
+          badge.innerHTML = '📍 GPS: ATIVO';
+        } else if (tipo === 'nao_autorizado') {
+          badge.className += ' gps-badge-nao-autorizado';
+          badge.innerHTML = '📍 GPS: NÃO AUTORIZADO';
+        } else if (tipo === 'erro') {
+          badge.className += ' gps-badge-erro';
+          badge.innerHTML = '📍 GPS: ERRO';
+        } else {
+          badge.className += ' gps-badge-buscando';
+          badge.innerHTML = '📍 GPS: BUSCANDO SINAL...';
         }
 
-        const modalGps = document.getElementById('modalPermissaoGps');
-        const visto = localStorage.getItem('cco_gps_solicitado');
-
-        if (!visto && modalGps) {
-          modalGps.classList.add('active');
-          modalGps.style.display = 'flex';
-
-          document.getElementById('btnAceitarGps')?.addEventListener('click', () => {
-            localStorage.setItem('cco_gps_solicitado', '1');
-            modalGps.classList.remove('active');
-            modalGps.style.display = 'none';
-            ativarWatchGps();
-          }, { once: true });
-
-          document.getElementById('btnRecusarGps')?.addEventListener('click', () => {
-            localStorage.setItem('cco_gps_solicitado', '1');
-            modalGps.classList.remove('active');
-            modalGps.style.display = 'none';
-            notificarGpsNaoAutorizado();
-          }, { once: true });
-        } else {
-          ativarWatchGps();
+        if (det) {
+          det.textContent = detalhe ? `(${detalhe})` : '';
         }
       }
 
-      function ativarWatchGps() {
-        if (gpsWatchId !== null) return;
-        try {
-          gpsWatchId = navigator.geolocation.watchPosition(
-            (pos) => {
-              processarCoordenadaGps(pos.coords);
-            },
-            (err) => {
-              console.warn('[GPS] Status:', err.code, err.message);
-              if (err.code === 1) { // PERMISSION_DENIED
-                notificarGpsNaoAutorizado();
-              }
-            },
-            {
-              enableHighAccuracy: true,
-              timeout: 25000,
-              maximumAge: 10000
+      function iniciarRastreamentoGps() {
+        if (!('geolocation' in navigator)) {
+          console.warn('[GPS] Geolocalização não suportada neste dispositivo.');
+          atualizarGpsStatus('erro', 'Não suportado no aparelho');
+          return;
+        }
+
+        atualizarGpsStatus('buscando', 'Conectando satélites...');
+
+        // 1. Obter posição imediata (garante que a solicitação nativa do navegador apareça imediatamente)
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            atualizarGpsStatus('ativo', `±${Math.round(pos.coords.accuracy)}m`);
+            processarCoordenadaGps(pos.coords);
+          },
+          (err) => {
+            console.warn('[GPS] getCurrentPosition inicial:', err.code, err.message);
+            if (err.code === 1) { // PERMISSION_DENIED
+              atualizarGpsStatus('nao_autorizado', 'Permissão negada');
+              notificarGpsNaoAutorizado();
+            } else {
+              // Tenta com precisão padrão para resposta rápida (Wi-Fi/Rede celular)
+              navigator.geolocation.getCurrentPosition(
+                (pos2) => {
+                  atualizarGpsStatus('ativo', `±${Math.round(pos2.coords.accuracy)}m`);
+                  processarCoordenadaGps(pos2.coords);
+                },
+                (err2) => {
+                  if (err2.code === 1) {
+                    atualizarGpsStatus('nao_autorizado', 'Permissão negada');
+                    notificarGpsNaoAutorizado();
+                  } else {
+                    atualizarGpsStatus('erro', 'Aguardando sinal');
+                  }
+                },
+                { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 }
+              );
             }
-          );
-        } catch (e) {
-          console.warn('[GPS] Falha ao iniciar watchPosition:', e);
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+        );
+
+        // 2. Acompanhamento contínuo em tempo real (watchPosition) para movimentações
+        if (gpsWatchId === null) {
+          try {
+            gpsWatchId = navigator.geolocation.watchPosition(
+              (pos) => {
+                atualizarGpsStatus('ativo', `±${Math.round(pos.coords.accuracy)}m`);
+                processarCoordenadaGps(pos.coords);
+              },
+              (err) => {
+                console.warn('[GPS] watchPosition:', err.code, err.message);
+                if (err.code === 1) {
+                  atualizarGpsStatus('nao_autorizado', 'Permissão negada');
+                  notificarGpsNaoAutorizado();
+                } else {
+                  atualizarGpsStatus('erro', 'Sinal fraco');
+                }
+              },
+              { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
+            );
+          } catch (e) {
+            console.warn('[GPS] Falha ao iniciar watchPosition:', e);
+          }
         }
       }
 
       function processarCoordenadaGps(coords) {
         const agora = Date.now();
-        if (ultimaCoordenadaEnviada && (agora - ultimoEnvioGpsTimestamp < 20000)) {
+        if (ultimaCoordenadaEnviada && (agora - ultimoEnvioGpsTimestamp < 15000)) {
           const dist = calcularDistanciaMetros(
             ultimaCoordenadaEnviada.latitude, ultimaCoordenadaEnviada.longitude,
             coords.latitude, coords.longitude
           );
-          if (dist < 50) return;
+          if (dist < 30) return;
         }
 
         ultimoEnvioGpsTimestamp = agora;
@@ -1057,12 +1134,13 @@
         const token = localStorage.getItem('cco_token');
         if (!token) return;
 
+        const sId = (currentUser && currentUser.setor_id) ? currentUser.setor_id : 4;
         const payload = {
           latitude: coords.latitude,
           longitude: coords.longitude,
           accuracy: coords.accuracy,
           gps_authorized: 1,
-          setor_id: currentUser ? currentUser.setor_id : currentSetorId,
+          setor_id: sId,
           device_info: navigator.userAgent ? navigator.userAgent.substring(0, 100) : 'Mobile'
         };
 
@@ -1081,6 +1159,7 @@
       function notificarGpsNaoAutorizado() {
         const token = localStorage.getItem('cco_token');
         if (!token) return;
+        const sId = (currentUser && currentUser.setor_id) ? currentUser.setor_id : 4;
         fetch(API_BASE + '/mapa/localizacao', {
           method: 'POST',
           headers: {
@@ -1089,7 +1168,7 @@
           },
           body: JSON.stringify({
             gps_authorized: 0,
-            setor_id: currentUser ? currentUser.setor_id : currentSetorId,
+            setor_id: sId,
             device_info: navigator.userAgent ? navigator.userAgent.substring(0, 100) : 'Mobile'
           })
         }).catch(() => {});
@@ -1198,9 +1277,11 @@
         document.getElementById('inputResponsavel').value = currentUser.nome || '';
         document.getElementById('inputDataServico').value = getHojeBrasiliaISO();
 
+        // Disparar GPS imediatamente para o celular solicitar a permissão nativa sem atraso
+        iniciarRastreamentoGps();
+
         await carregarEstruturaSetor();
         await checarERecuperarRelatorioEmAndamento();
-        iniciarRastreamentoGps();
       }
 
       // 3. CARREGAR ESTRUTURA DO SETOR (SUPERVISORES, VIATURAS E POSTOS)
@@ -1685,7 +1766,7 @@
           relatorio_id: relatorioIdAtivo,
           client_uuid: 'sup_mob_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
           setor_id: currentUser ? (currentUser.setor_id || 4) : 4,
-          supervisor_id: supIdVal ? parseInt(supIdVal) : (currentUser ? currentUser.id : null),
+          supervisor_id: (supIdVal && supIdVal !== '') ? parseInt(supIdVal) : null,
           viatura_id: (vtrVal && vtrVal !== 'OUTROS' && vtrVal !== 'null') ? parseInt(vtrVal) : null,
           viatura_outros_texto: vtrVal === 'OUTROS' ? vtrOutros : '',
           data_servico: document.getElementById('inputDataServico').value,
@@ -1783,14 +1864,20 @@
         const sId = currentUser ? (currentUser.setor_id || 4) : 4;
         const dataServico = document.getElementById('inputDataServico')?.value || getHojeBrasiliaISO();
         const turno = document.getElementById('selectTurno')?.value || 'DIURNO';
-        const supId = document.getElementById('selectSupervisorAtivo')?.value || (currentUser ? currentUser.id : null);
 
+        let draftLocal = null;
+        try {
+          const draftJson = localStorage.getItem('cco_draft_supervisao');
+          if (draftJson) draftLocal = JSON.parse(draftJson);
+        } catch (e) {}
+
+        const relId = relatorioIdAtivo || (draftLocal ? draftLocal.relatorio_id : null);
         const banner = document.getElementById('bannerEmAndamento');
         const bannerTexto = document.getElementById('bannerEmAndamentoTexto');
 
         try {
           let url = API_BASE + '/formulario/em-andamento?setor_id=' + sId + '&data_servico=' + dataServico + '&turno=' + turno;
-          if (supId) url += '&supervisor_id=' + supId;
+          if (relId) url += '&relatorio_id=' + relId;
 
           const res = await fetch(url, {
             headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('cco_token') || '') }
@@ -1801,6 +1888,28 @@
           if (data.tem_relatorio && data.relatorio) {
             const r = data.relatorio;
             relatorioIdAtivo = r.id;
+
+            if (r.supervisor_id) {
+              const supSel = document.getElementById('selectSupervisorAtivo');
+              if (supSel) {
+                supSel.value = r.supervisor_id;
+              }
+            }
+
+            if (r.responsavel_nome) {
+              const respInp = document.getElementById('inputResponsavel');
+              if (respInp) respInp.value = r.responsavel_nome;
+            }
+
+            if (r.data_servico) {
+              const dtInp = document.getElementById('inputDataServico');
+              if (dtInp) dtInp.value = r.data_servico;
+            }
+
+            if (r.turno) {
+              const turSel = document.getElementById('selectTurno');
+              if (turSel) turSel.value = r.turno;
+            }
 
             if (r.viatura_id) {
               const vSel = document.getElementById('selectViatura');
@@ -1845,6 +1954,20 @@
               banner.style.display = 'flex';
               bannerTexto.innerHTML = '🟡 <strong>RELATÓRIO EM PREENCHIMENTO (Nº ' + r.id + ') RECUPERADO:</strong> ' + (data.postos ? data.postos.length : 0) + ' postos carregados. Continue preenchendo os postos pendentes.';
             }
+          } else if (draftLocal && draftLocal.postos_supervisionados && draftLocal.postos_supervisionados.length > 0) {
+            if (draftLocal.relatorio_id) relatorioIdAtivo = draftLocal.relatorio_id;
+            if (draftLocal.supervisor_id) {
+              const supSel = document.getElementById('selectSupervisorAtivo');
+              if (supSel) supSel.value = draftLocal.supervisor_id;
+            }
+            if (draftLocal.responsavel_nome) {
+              const respInp = document.getElementById('inputResponsavel');
+              if (respInp) respInp.value = draftLocal.responsavel_nome;
+            }
+            if (draftLocal.km_inicial !== undefined) document.getElementById('kmInicial').value = draftLocal.km_inicial;
+            if (draftLocal.km_final !== undefined && draftLocal.km_final > 0) document.getElementById('kmFinal').value = draftLocal.km_final;
+            preencherCardsComDadosSalvos(draftLocal.postos_supervisionados);
+            atualizarContadores();
           } else {
             relatorioIdAtivo = null;
             if (banner) banner.style.display = 'none';
@@ -1924,6 +2047,15 @@
               for (let s = 1; s <= postosDoSetor.length; s++) {
                 const sel = document.getElementById('reg_sel_posto_' + s);
                 if (sel && parseInt(sel.value) === parseInt(p.posto_id)) {
+                  targetSlot = s;
+                  break;
+                }
+              }
+            }
+            if (!targetSlot) {
+              for (let s = 1; s <= postosDoSetor.length; s++) {
+                const sel = document.getElementById('reg_sel_posto_' + s);
+                if (sel && (!sel.value || sel.value === '')) {
                   targetSlot = s;
                   break;
                 }
@@ -2288,8 +2420,8 @@
         const payload = {
           relatorio_id: relatorioIdAtivo,
           client_uuid: 'sup_mob_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
-          setor_id: currentUser.setor_id || 4,
-          supervisor_id: supIdVal ? parseInt(supIdVal) : (currentUser.id || null),
+          setor_id: currentUser ? (currentUser.setor_id || 4) : 4,
+          supervisor_id: (supIdVal && supIdVal !== '') ? parseInt(supIdVal) : null,
           viatura_id: (vtrVal && vtrVal !== 'OUTROS') ? parseInt(vtrVal) : null,
           viatura_outros_texto: vtrVal === 'OUTROS' ? vtrOutros : '',
           data_servico: document.getElementById('inputDataServico').value,
