@@ -26,10 +26,59 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     .page-container {
-      max-width: 1440px;
+      max-width: 1480px;
       margin: 1.5rem auto;
       padding: 0 1.25rem;
     }
+    
+    /* Indicadores Executivos */
+    .indicators-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .ind-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-left: 4px solid #cbd5e1;
+      transition: transform 0.15s ease;
+    }
+    .ind-card:hover {
+      transform: translateY(-2px);
+    }
+    .ind-card.c-relatorios { border-left-color: #2563eb; }
+    .ind-card.c-postos { border-left-color: #0284c7; }
+    .ind-card.c-regulares { border-left-color: #16a34a; }
+    .ind-card.c-irregulares { border-left-color: #dc2626; }
+    .ind-card.c-ocorrencias { border-left-color: #ea580c; }
+    .ind-card.c-efetivo { border-left-color: #4f46e5; }
+    .ind-card.c-faltas { border-left-color: #9333ea; }
+    
+    .ind-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .ind-value {
+      font-size: 1.75rem;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1;
+    }
+
+    /* Card Principal */
     .card {
       background: #ffffff;
       border: 1px solid #e2e8f0;
@@ -38,44 +87,18 @@
       margin-bottom: 1.5rem;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    .tab-nav {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid #e2e8f0;
-      margin-bottom: 1.25rem;
-      overflow-x: auto;
-    }
-    .tab-btn {
-      padding: 0.75rem 1.25rem;
-      font-size: 0.9rem;
-      font-weight: 800;
-      color: #64748b;
-      background: transparent;
-      border: none;
-      border-bottom: 3px solid transparent;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      white-space: nowrap;
-    }
-    .tab-btn:hover {
-      color: #003366;
-    }
-    .tab-btn.active {
-      color: #003366;
-      border-bottom-color: #003366;
-    }
+
+    /* Barra de Filtros */
     .filter-bar {
-      display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.85rem;
       align-items: flex-end;
-      margin-bottom: 1.25rem;
       background: #f8fafc;
-      padding: 1rem;
+      padding: 1.15rem;
       border-radius: 0.5rem;
       border: 1px solid #e2e8f0;
+      margin-bottom: 1.25rem;
     }
     .filter-item {
       display: flex;
@@ -85,70 +108,139 @@
     .filter-item label {
       font-size: 0.75rem;
       font-weight: 800;
-      color: #475569;
+      color: #334155;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
     .filter-control {
-      padding: 0.45rem 0.75rem;
+      padding: 0.5rem 0.75rem;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
       font-size: 0.85rem;
       background: #fff;
       font-weight: 600;
       outline: none;
+      min-height: 38px;
+    }
+    .filter-control:focus {
+      border-color: #003366;
+      box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.15);
+    }
+    .filter-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      grid-column: 1 / -1;
+      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed #cbd5e1;
+    }
+    .btn-act {
+      padding: 0.55rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background 0.15s ease;
+    }
+    .btn-filtrar { background: #003366; color: #fff; }
+    .btn-filtrar:hover { background: #002244; }
+    .btn-limpar { background: #e2e8f0; color: #334155; }
+    .btn-limpar:hover { background: #cbd5e1; }
+    .btn-csv { background: #059669; color: #fff; margin-left: auto; }
+    .btn-csv:hover { background: #047857; }
+    .btn-print { background: #475569; color: #fff; }
+    .btn-print:hover { background: #334155; }
+
+    /* Tabela de Dados */
+    .data-table-container {
+      overflow-x: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
     }
     .data-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.85rem;
+      min-width: 1100px;
     }
     .data-table th {
       background: #f8fafc;
-      color: #475569;
+      color: #334155;
       text-align: left;
       padding: 0.75rem 0.65rem;
       border-bottom: 2px solid #cbd5e1;
       font-weight: 800;
       text-transform: uppercase;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       letter-spacing: 0.05em;
+      white-space: nowrap;
     }
     .data-table td {
-      padding: 0.65rem;
+      padding: 0.75rem 0.65rem;
       border-bottom: 1px solid #e2e8f0;
       vertical-align: middle;
     }
+    .data-table tr:hover td {
+      background: #f8fafc;
+    }
+    
+    /* Badges */
     .badge-situacao-ok {
       background: #dcfce7;
       color: #15803d;
-      padding: 0.25rem 0.5rem;
+      padding: 0.25rem 0.55rem;
       border-radius: 4px;
       font-weight: 800;
       font-size: 0.75rem;
+      display: inline-block;
     }
     .badge-situacao-warn {
       background: #fee2e2;
       color: #b91c1c;
-      padding: 0.25rem 0.5rem;
+      padding: 0.25rem 0.55rem;
       border-radius: 4px;
       font-weight: 800;
       font-size: 0.75rem;
+      display: inline-block;
     }
     .badge-situacao-ocorrencia {
       background: #ffedd5;
       color: #c2410c;
-      padding: 0.25rem 0.5rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 4px;
+      font-weight: 800;
+      font-size: 0.75rem;
+      display: inline-block;
+    }
+    .badge-setor {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 0.2rem 0.45rem;
       border-radius: 4px;
       font-weight: 800;
       font-size: 0.75rem;
     }
+
+    @media (max-width: 768px) {
+      .top-navbar { padding: 0.75rem 1rem; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+      .filter-bar { grid-template-columns: 1fr; }
+      .btn-csv { margin-left: 0; }
+      .page-container { padding: 0 0.5rem; }
+    }
+
     @media print {
-      .top-navbar, .tab-nav, .filter-bar, .no-print {
+      .top-navbar, .filter-bar, .filter-actions, .no-print {
         display: none !important;
       }
       body { background: #fff !important; }
       .card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+      .ind-card { border: 1px solid #ccc !important; }
     }
   </style>
 </head>
@@ -157,79 +249,177 @@
   <!-- Barra Superior -->
   <div class="top-navbar">
     <div style="display:flex; align-items:center; gap:1rem;">
-      <a href="dashboard.html" style="font-size:1.1rem; font-weight:800; color:#fff; text-decoration:none;">
+      <a href="dashboard.html" style="font-size:1.15rem; font-weight:800; color:#fff; text-decoration:none;">
         <span style="color:#00d2ff; font-weight:900;">CEDAE</span> &bull; CCO
       </a>
       <span style="color:#93c5fd; font-weight:700;">| RELATÓRIOS EXECUTIVOS</span>
     </div>
-    <div style="display:flex; gap:0.75rem;">
-      <a href="dashboard.html" class="no-print" style="background:rgba(255,255,255,0.15); color:#fff; text-decoration:none; padding:0.4rem 0.8rem; border-radius:4px; font-size:0.85rem;">
-        Voltar ao Painel
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+      <span id="labelUsuarioNome" style="font-size:0.85rem; color:#e2e8f0; font-weight:600;">Administrador CCO</span>
+      <a href="dashboard.html" class="no-print" style="background:rgba(255,255,255,0.15); color:#fff; text-decoration:none; padding:0.4rem 0.85rem; border-radius:4px; font-size:0.85rem; font-weight:700;">
+        ⬅️ Voltar ao Painel
       </a>
     </div>
   </div>
 
   <div class="page-container">
 
-    <!-- Card Principal com Abas -->
-    <div class="card">
-      <div class="tab-nav">
-        <button class="tab-btn active" onclick="trocarAba('supervisao')">📋 1. Fiscalização Operacional</button>
-        <button class="tab-btn" onclick="trocarAba('ocorrencias')">⚠️ 2. Ocorrências</button>
-        <button class="tab-btn" onclick="trocarAba('por-posto')">📍 3. Por Posto (Base 59)</button>
-        <button class="tab-btn" onclick="trocarAba('por-setor')">🏢 4. Por Setor</button>
-        <button class="tab-btn" onclick="trocarAba('por-supervisor')">👮 5. Por Fiscal</button>
+    <!-- Indicadores Executivos no Topo -->
+    <div class="indicators-grid" id="containerIndicadores">
+      <div class="ind-card c-relatorios">
+        <div class="ind-label">📊 Total de Relatórios</div>
+        <div class="ind-value" id="cardTotalRelatorios">0</div>
       </div>
+      <div class="ind-card c-postos">
+        <div class="ind-label">📍 Postos Fiscalizados</div>
+        <div class="ind-value" id="cardTotalPostos">0</div>
+      </div>
+      <div class="ind-card c-regulares">
+        <div class="ind-label">✅ Postos Regulares</div>
+        <div class="ind-value" id="cardPostosRegulares">0</div>
+      </div>
+      <div class="ind-card c-irregulares">
+        <div class="ind-label">⚠️ Irregularidades</div>
+        <div class="ind-value" id="cardPostosIrregulares">0</div>
+      </div>
+      <div class="ind-card c-ocorrencias">
+        <div class="ind-label">🚨 Total de Ocorrências</div>
+        <div class="ind-value" id="cardTotalOcorrencias">0</div>
+      </div>
+      <div class="ind-card c-efetivo">
+        <div class="ind-label">👥 Efetivo Informado</div>
+        <div class="ind-value" id="cardTotalEfetivo">0</div>
+      </div>
+      <div class="ind-card c-faltas">
+        <div class="ind-label">❌ Total de Faltas</div>
+        <div class="ind-value" id="cardTotalFaltas">0</div>
+      </div>
+    </div>
 
-      <!-- Barra de Filtros Universal -->
+    <!-- Card Principal com Filtros e Tabela -->
+    <div class="card">
+      
+      <!-- Barra de Filtros Combinados -->
       <div class="filter-bar">
+        
+        <!-- Período -->
         <div class="filter-item">
-          <label>Data Início</label>
+          <label>📅 Período</label>
+          <select id="filtroPeriodo" class="filter-control" onchange="alternarFiltroPeriodo()">
+            <option value="todos" selected>Todos os Registros</option>
+            <option value="hoje">Hoje</option>
+            <option value="ontem">Ontem</option>
+            <option value="personalizado">Período Personalizado</option>
+          </select>
+        </div>
+
+        <!-- Data Inicial (condicional) -->
+        <div class="filter-item" id="divDataInicio" style="display:none;">
+          <label>Data Inicial</label>
           <input type="date" id="filtroDataInicio" class="filter-control">
         </div>
-        <div class="filter-item">
-          <label>Data Fim</label>
+
+        <!-- Data Final (condicional) -->
+        <div class="filter-item" id="divDataFim" style="display:none;">
+          <label>Data Final</label>
           <input type="date" id="filtroDataFim" class="filter-control">
         </div>
-        <div class="filter-item" id="divFiltroSetor">
-          <label>Setor</label>
+
+        <!-- Setor -->
+        <div class="filter-item">
+          <label>🏢 Setor</label>
           <select id="filtroSetor" class="filter-control">
             <option value="">Todos os Setores</option>
           </select>
         </div>
-        <div class="filter-item" id="divFiltroSituacao">
-          <label>Situação</label>
-          <select id="filtroSituacao" class="filter-control">
-            <option value="">Todas</option>
-            <option value="supervisionado">Fiscalizados</option>
-            <option value="nao_supervisionado">Não Fiscalizados</option>
-            <option value="ocorrencia">Com Ocorrência</option>
+
+        <!-- Fiscal -->
+        <div class="filter-item">
+          <label>👤 Fiscal</label>
+          <select id="filtroFiscal" class="filter-control">
+            <option value="">Todos os Fiscais</option>
           </select>
         </div>
-        <div style="display:flex; gap:0.5rem; margin-left:auto;">
-          <button onclick="carregarRelatorioAtual()" class="filter-control" style="background:#003366; color:#fff; cursor:pointer; font-weight:800;">
+
+        <!-- Posto -->
+        <div class="filter-item">
+          <label>📍 Posto</label>
+          <select id="filtroPosto" class="filter-control">
+            <option value="">Todos os Postos</option>
+          </select>
+        </div>
+
+        <!-- Situação -->
+        <div class="filter-item">
+          <label>🚨 Situação</label>
+          <select id="filtroSituacao" class="filter-control">
+            <option value="">Todas as Situações</option>
+            <option value="normal">Normal</option>
+            <option value="irregular">Irregular</option>
+            <option value="outra">Outra Situação</option>
+          </select>
+        </div>
+
+        <!-- Ocorrência -->
+        <div class="filter-item">
+          <label>⚠️ Ocorrência</label>
+          <select id="filtroOcorrencia" class="filter-control">
+            <option value="">Todas</option>
+            <option value="com_ocorrencia">Com Ocorrência</option>
+            <option value="sem_ocorrencia">Sem Ocorrência</option>
+          </select>
+        </div>
+
+        <!-- Ações dos Filtros -->
+        <div class="filter-actions">
+          <button onclick="carregarRelatorios()" class="btn-act btn-filtrar">
             🔍 Filtrar
           </button>
-          <button onclick="exportarCSVAtual()" class="filter-control" style="background:#059669; color:#fff; cursor:pointer; font-weight:800;">
+          <button onclick="limparFiltros()" class="btn-act btn-limpar">
+            🔄 Limpar Filtros
+          </button>
+          <button onclick="exportarCSV()" class="btn-act btn-csv no-print">
             📥 Exportar CSV
           </button>
-          <button onclick="window.print()" class="filter-control" style="background:#475569; color:#fff; cursor:pointer; font-weight:800;">
+          <button onclick="window.print()" class="btn-act btn-print no-print">
             🖨️ Imprimir
           </button>
         </div>
+
       </div>
 
-      <!-- Informações do Relatório -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; font-size:0.85rem; color:#64748b; font-weight:700;">
-        <span id="labelTituloRelatorio">Relatório Selecionado</span>
-        <span id="labelTotalRegistros">Carregando...</span>
+      <!-- Barra de Status e Contagem -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; font-size:0.875rem; color:#64748b; font-weight:700;">
+        <span id="labelStatusTabela">📋 Registros de Fiscalização Operacional</span>
+        <span id="labelTotalRegistros">Carregando dados...</span>
       </div>
 
-      <!-- Tabela Dinâmica -->
-      <div style="overflow-x:auto;">
+      <!-- Tabela de Resultados -->
+      <div class="data-table-container">
         <table class="data-table" id="tabelaRelatorio">
-          <thead id="tabelaHead"></thead>
-          <tbody id="tabelaBody"></tbody>
+          <thead>
+            <tr>
+              <th style="width:75px;"># RELATÓRIO</th>
+              <th>DATA / TURNO</th>
+              <th>HORA</th>
+              <th>SETOR</th>
+              <th>FISCAL</th>
+              <th>POSTO</th>
+              <th>SITUAÇÃO</th>
+              <th>EFETIVO</th>
+              <th>FALTAS</th>
+              <th>OCORRÊNCIA</th>
+              <th>OBSERVAÇÃO / DETALHES</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaBody">
+            <tr>
+              <td colspan="11" style="text-align:center; padding:3rem; color:#64748b;">
+                <div style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">Carregando relatórios executivos...</div>
+                <div style="font-size:0.85rem;">Consultando base de dados do CCO CEDAE</div>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
 
@@ -237,247 +427,243 @@
 
   </div>
 
+  <script src="js/api.js"></script>
   <script>
-    let abaAtual = 'supervisao';
     let dadosCache = [];
 
-    document.addEventListener('DOMContentLoaded', () => {
-      carregarSetoresFiltro();
-      definirDatasPadrao();
-      carregarRelatorioAtual();
+    document.addEventListener('DOMContentLoaded', async () => {
+      // 1. Verificação de Autenticação
+      if (!isAuthenticated()) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      // Exibir nome do usuário no topo
+      const user = getUser();
+      if (user && user.nome) {
+        document.getElementById('labelUsuarioNome').textContent = `${user.nome} (${(user.perfil || 'USUÁRIO').toUpperCase()})`;
+      }
+
+      // 2. Carregar opções dinâmicas dos filtros (Setores, Fiscais e Postos reais)
+      await carregarOpcoesFiltros();
+
+      // 3. Carregar dados com filtro inicial ("Todos os Registros" para carregar histórico de 01/10/2026)
+      await carregarRelatorios();
     });
 
-    function definirDatasPadrao() {
-      const now = new Date();
-      const ano = now.getFullYear();
-      const mes = String(now.getMonth() + 1).padStart(2, '0');
-      const dia = String(now.getDate()).padStart(2, '0');
-      // Padrão: início do mês atual até hoje
-      document.getElementById('filtroDataInicio').value = `${ano}-${mes}-01`;
-      document.getElementById('filtroDataFim').value = `${ano}-${mes}-${dia}`;
-    }
+    function alternarFiltroPeriodo() {
+      const periodo = document.getElementById('filtroPeriodo').value;
+      const isCustom = (periodo === 'personalizado');
+      document.getElementById('divDataInicio').style.display = isCustom ? 'flex' : 'none';
+      document.getElementById('divDataFim').style.display = isCustom ? 'flex' : 'none';
 
-    async function carregarSetoresFiltro() {
-      try {
-        const res = await fetch('/api/v1/setores');
-        const setores = await res.json();
-        const lista = Array.isArray(setores) ? setores : (setores.data || []);
-        const sel = document.getElementById('filtroSetor');
-        sel.innerHTML = '<option value="">Todos os Setores</option>' +
-          lista.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
-      } catch (err) {
-        console.error('Erro ao carregar setores:', err);
+      if (isCustom && !document.getElementById('filtroDataInicio').value) {
+        const now = new Date();
+        const ano = now.getFullYear();
+        const mes = String(now.getMonth() + 1).padStart(2, '0');
+        const dia = String(now.getDate()).padStart(2, '0');
+        document.getElementById('filtroDataInicio').value = `${ano}-${mes}-01`;
+        document.getElementById('filtroDataFim').value = `${ano}-${mes}-${dia}`;
       }
     }
 
-    function trocarAba(aba) {
-      abaAtual = aba;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(aba));
-      });
+    async function carregarOpcoesFiltros() {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/v1/relatorios/filtros-disponiveis', {
+          headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
 
-      // Mostrar/ocultar filtros contextuais
-      document.getElementById('divFiltroSituacao').style.display = (aba === 'supervisao') ? 'flex' : 'none';
+        // 1. Setores
+        const selSetor = document.getElementById('filtroSetor');
+        if (data.setores && Array.isArray(data.setores)) {
+          selSetor.innerHTML = '<option value="">Todos os Setores</option>' +
+            data.setores.map(s => `<option value="${s.id}">${s.nome}</option>`).join('');
+        }
 
-      carregarRelatorioAtual();
+        // 2. Fiscais
+        const selFiscal = document.getElementById('filtroFiscal');
+        if (data.fiscais && Array.isArray(data.fiscais)) {
+          selFiscal.innerHTML = '<option value="">Todos os Fiscais</option>' +
+            data.fiscais.map(f => `<option value="${f.id}">${f.nome} ${f.matricula ? '(' + f.matricula + ')' : ''}</option>`).join('');
+        }
+
+        // 3. Postos
+        const selPosto = document.getElementById('filtroPosto');
+        if (data.postos && Array.isArray(data.postos)) {
+          selPosto.innerHTML = '<option value="">Todos os Postos</option>' +
+            data.postos.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+        }
+      } catch (err) {
+        console.error('Erro ao carregar opções de filtros:', err);
+      }
     }
 
-    async function carregarRelatorioAtual() {
-      const dtIni = document.getElementById('filtroDataInicio').value;
+    async function carregarRelatorios() {
+      const tbody = document.getElementById('tabelaBody');
+      tbody.innerHTML = '<tr><td colspan="11" style="text-align:center; padding:3rem; color:#64748b;">Carregando registros...</td></tr>';
+      document.getElementById('labelTotalRegistros').textContent = 'Consultando...';
+
+      const periodo = document.getElementById('filtroPeriodo').value;
+      const dtInicio = document.getElementById('filtroDataInicio').value;
       const dtFim = document.getElementById('filtroDataFim').value;
       const setorId = document.getElementById('filtroSetor').value;
+      const fiscalId = document.getElementById('filtroFiscal').value;
+      const postoId = document.getElementById('filtroPosto').value;
       const situacao = document.getElementById('filtroSituacao').value;
+      const ocorrencia = document.getElementById('filtroOcorrencia').value;
 
-      let url = '';
-      if (abaAtual === 'supervisao') {
-        url = `/api/v1/relatorios/supervisao?data_inicio=${dtIni}&data_fim=${dtFim}`;
-        if (setorId) url += `&setor_id=${setorId}`;
-        if (situacao) url += `&situacao=${situacao}`;
-      } else if (abaAtual === 'ocorrencias') {
-        url = `/api/v1/relatorios/ocorrencias?data_inicio=${dtIni}&data_fim=${dtFim}`;
-      } else if (abaAtual === 'por-posto') {
-        url = `/api/v1/relatorios/por-posto`;
-      } else if (abaAtual === 'por-setor') {
-        url = `/api/v1/relatorios/por-setor`;
-      } else if (abaAtual === 'por-supervisor') {
-        url = `/api/v1/relatorios/por-supervisor`;
+      let url = '/api/v1/relatorios/supervisao?';
+      const params = [];
+
+      if (periodo && periodo !== 'todos') {
+        params.push(`periodo=${encodeURIComponent(periodo)}`);
+        if (periodo === 'personalizado') {
+          if (dtInicio) params.push(`data_inicio=${encodeURIComponent(dtInicio)}`);
+          if (dtFim) params.push(`data_fim=${encodeURIComponent(dtFim)}`);
+        }
       }
+      if (setorId) params.push(`setor_id=${encodeURIComponent(setorId)}`);
+      if (fiscalId) params.push(`fiscal_id=${encodeURIComponent(fiscalId)}`);
+      if (postoId) params.push(`posto_id=${encodeURIComponent(postoId)}`);
+      if (situacao) params.push(`situacao=${encodeURIComponent(situacao)}`);
+      if (ocorrencia) params.push(`ocorrencia=${encodeURIComponent(ocorrencia)}`);
+
+      url += params.join('&');
 
       try {
-        const token = localStorage.getItem('cco_token') || localStorage.getItem('token');
-        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-        const res = await fetch(url, { headers });
+        const token = getToken();
+        const res = await fetch(url, {
+          headers: token ? { 'Authorization': 'Bearer ' + token } : {}
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          clearAuth();
+          window.location.href = 'login.html?sessao_expirada=1';
+          return;
+        }
+
         const json = await res.json();
         dadosCache = json.dados || [];
+        const ind = json.indicadores || {};
 
-        renderizarAba(dadosCache);
+        atualizarIndicadores(ind, dadosCache);
+        renderizarTabela(dadosCache);
+
       } catch (err) {
-        console.error('Erro ao carregar dados:', err);
-        document.getElementById('tabelaBody').innerHTML = '<tr><td colspan="10" style="text-align:center; padding:2rem; color:#ef4444;">Erro ao carregar dados da API.</td></tr>';
+        console.error('Erro ao buscar relatórios:', err);
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="11" style="text-align:center; padding:2.5rem; color:#ef4444;">
+              <div style="font-size:1rem; font-weight:800; margin-bottom:0.5rem;">❌ Erro de comunicação com o servidor.</div>
+              <div style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">Não foi possível carregar os relatórios. Verifique sua conexão e tente novamente.</div>
+              <button onclick="carregarRelatorios()" class="btn-act btn-filtrar" style="margin:0 auto;">Tentar Novamente</button>
+            </td>
+          </tr>
+        `;
+        document.getElementById('labelTotalRegistros').textContent = 'Erro de carregamento';
       }
     }
 
-    function renderizarAba(dados) {
-      const thead = document.getElementById('tabelaHead');
+    function atualizarIndicadores(ind, dados) {
+      document.getElementById('cardTotalRelatorios').textContent = ind.total_relatorios !== undefined ? ind.total_relatorios : new Set(dados.map(d => d.relatorio_id)).size;
+      document.getElementById('cardTotalPostos').textContent = ind.total_postos !== undefined ? ind.total_postos : dados.length;
+      document.getElementById('cardPostosRegulares').textContent = ind.postos_regulares !== undefined ? ind.postos_regulares : dados.filter(d => d.situacao === 'Normal').length;
+      document.getElementById('cardPostosIrregulares').textContent = ind.postos_irregulares !== undefined ? ind.postos_irregulares : dados.filter(d => d.situacao === 'Irregular' || d.situacao === 'Não fiscalizado').length;
+      document.getElementById('cardTotalOcorrencias').textContent = ind.total_ocorrencias !== undefined ? ind.total_ocorrencias : dados.filter(d => d.tem_ocorrencia == 1 || d.situacao === 'Com ocorrência').length;
+      document.getElementById('cardTotalEfetivo').textContent = ind.total_efetivo !== undefined ? ind.total_efetivo : dados.reduce((acc, d) => acc + (parseInt(d.efetivo_presente) || 1), 0);
+      document.getElementById('cardTotalFaltas').textContent = ind.total_faltas !== undefined ? ind.total_faltas : dados.reduce((acc, d) => acc + (parseInt(d.falta_efetivo_qtd) || 0), 0);
+    }
+
+    function renderizarTabela(dados) {
       const tbody = document.getElementById('tabelaBody');
-      const lblTitulo = document.getElementById('labelTituloRelatorio');
       const lblTotal = document.getElementById('labelTotalRegistros');
 
-      lblTotal.textContent = `Total: ${dados.length} registro(s)`;
+      lblTotal.textContent = `Total: ${dados.length} registro(s) encontrado(s)`;
 
-      if (abaAtual === 'supervisao') {
-        lblTitulo.textContent = '1. Fiscalização Operacional Detalhada';
-        thead.innerHTML = `
+      if (dados.length === 0) {
+        tbody.innerHTML = `
           <tr>
-            <th>DATA/TURNO</th>
-            <th>HORA</th>
-            <th>POSTO</th>
-            <th>SETOR POSTO</th>
-            <th>FISCAL</th>
-            <th>SETOR FISCAL</th>
-            <th>VEÍCULO</th>
-            <th>SITUAÇÃO</th>
-            <th>DETALHES / JUSTIFICATIVA</th>
+            <td colspan="11" style="text-align:center; padding:3rem; color:#64748b;">
+              <div style="font-size:1.1rem; font-weight:700; margin-bottom:0.35rem;">Nenhum registro encontrado</div>
+              <div style="font-size:0.85rem;">Tente ajustar ou limpar os filtros para visualizar outros registros.</div>
+            </td>
           </tr>
         `;
-        if (dados.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem;">Nenhum dado encontrado para o período.</td></tr>';
-          return;
-        }
-        tbody.innerHTML = dados.map(r => {
-          let badge = '<span class="badge-situacao-ok">FISCALIZADO</span>';
-          if (r.situacao === 'Não fiscalizado' || r.situacao === 'Não supervisionado') badge = '<span class="badge-situacao-warn">NÃO FISCALIZADO</span>';
-          if (r.situacao === 'Com ocorrência') badge = '<span class="badge-situacao-ocorrencia">COM OCORRÊNCIA</span>';
-
-          return `
-            <tr>
-              <td><strong>${formatarDataBr(r.data_servico)}</strong><br><span style="font-size:0.75rem; color:#64748b;">${r.turno || 'DIURNO'}</span></td>
-              <td>${r.horario_supervisao || '--:--'}</td>
-              <td><strong>${r.posto_nome}</strong></td>
-              <td><span style="font-size:0.75rem; background:#dbeafe; color:#1e40af; padding:0.2rem 0.4rem; border-radius:3px; font-weight:700;">${r.setor_posto}</span></td>
-              <td>${r.supervisor_nome}</td>
-              <td><span style="font-size:0.75rem; background:#f1f5f9; color:#475569; padding:0.2rem 0.4rem; border-radius:3px;">${r.setor_supervisor || '-'}</span></td>
-              <td>${r.veiculo}</td>
-              <td>${badge}</td>
-              <td style="font-size:0.8rem; color:#475569;">${r.motivo_nao_supervisao || r.descricao_ocorrencia || '-'}</td>
-            </tr>
-          `;
-        }).join('');
-
-      } else if (abaAtual === 'ocorrencias') {
-        lblTitulo.textContent = '2. Registro de Ocorrências';
-        thead.innerHTML = `
-          <tr>
-            <th>DATA</th>
-            <th>POSTO</th>
-            <th>SETOR</th>
-            <th>TIPO</th>
-            <th>DESCRIÇÃO</th>
-            <th>PROVIDÊNCIAS</th>
-            <th>STATUS</th>
-            <th>FISCAL</th>
-          </tr>
-        `;
-        if (dados.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem;">Nenhuma ocorrência registrada no período.</td></tr>';
-          return;
-        }
-        tbody.innerHTML = dados.map(r => `
-          <tr>
-            <td>${formatarDataBr(r.data_servico || r.created_at)}</td>
-            <td><strong>${r.posto_nome || '-'}</strong></td>
-            <td>${r.setor_nome || '-'}</td>
-            <td><span style="font-weight:700; color:#ea580c;">${r.tipo_ocorrencia}</span></td>
-            <td>${r.descricao}</td>
-            <td>${r.providencias_adotadas || '-'}</td>
-            <td><span class="${r.status === 'resolvido' ? 'badge-situacao-ok' : 'badge-situacao-warn'}">${r.status || 'pendente'}</span></td>
-            <td>${r.supervisor_nome || '-'}</td>
-          </tr>
-        `).join('');
-
-      } else if (abaAtual === 'por-posto') {
-        lblTitulo.textContent = '3. Desempenho e Histórico por Posto (Base Oficial 59)';
-        thead.innerHTML = `
-          <tr>
-            <th>POSTO</th>
-            <th>SETOR ATUAL</th>
-            <th>MUNICÍPIO / LOCALIDADE</th>
-            <th>TOTAL FISCALIZAÇÕES</th>
-            <th>FISCALIZADOS</th>
-            <th>NÃO FISCALIZADOS</th>
-            <th>OCORRÊNCIAS</th>
-            <th>ÚLTIMA FISCALIZAÇÃO</th>
-          </tr>
-        `;
-        tbody.innerHTML = dados.map(r => `
-          <tr>
-            <td><strong>${r.nome}</strong></td>
-            <td><span style="font-size:0.75rem; background:#dbeafe; color:#1e40af; padding:0.2rem 0.4rem; border-radius:3px; font-weight:700;">${r.setor_nome || 'PLANTÃO'}</span></td>
-            <td>${[r.municipio, r.localidade].filter(Boolean).join(' - ') || '-'}</td>
-            <td style="font-weight:800; text-align:center;">${r.total_fiscalizacoes}</td>
-            <td style="color:#15803d; font-weight:700; text-align:center;">${r.total_supervisionados}</td>
-            <td style="color:#b91c1c; font-weight:700; text-align:center;">${r.total_nao_supervisionados}</td>
-            <td style="color:#ea580c; font-weight:700; text-align:center;">${r.total_ocorrencias}</td>
-            <td>${formatarDataBr(r.ultima_supervisao) || '-'}</td>
-          </tr>
-        `).join('');
-
-      } else if (abaAtual === 'por-setor') {
-        lblTitulo.textContent = '4. Relatório Consolidado por Setor';
-        thead.innerHTML = `
-          <tr>
-            <th>SETOR</th>
-            <th>RESPONSÁVEL</th>
-            <th>POSTOS CADASTRADOS</th>
-            <th>TOTAL RONDAS</th>
-            <th>FISCALIZADOS</th>
-            <th>NÃO FISCALIZADOS</th>
-            <th>OCORRÊNCIAS</th>
-            <th>TAXA CUMPRIMENTO</th>
-          </tr>
-        `;
-        tbody.innerHTML = dados.map(r => `
-          <tr>
-            <td><strong style="color:#003366; font-size:1rem;">${r.setor_nome}</strong></td>
-            <td>${r.responsavel || '-'}</td>
-            <td style="font-weight:800; text-align:center;">${r.postos_cadastrados}</td>
-            <td style="text-align:center;">${r.total_rondas}</td>
-            <td style="color:#15803d; font-weight:700; text-align:center;">${r.total_supervisionados}</td>
-            <td style="color:#b91c1c; font-weight:700; text-align:center;">${r.total_nao_supervisionados}</td>
-            <td style="color:#ea580c; font-weight:700; text-align:center;">${r.total_ocorrencias}</td>
-            <td style="font-weight:900; color:#0284c7; text-align:center; font-size:1rem;">${r.taxa_cumprimento_pct}%</td>
-          </tr>
-        `).join('');
-
-      } else if (abaAtual === 'por-supervisor') {
-        lblTitulo.textContent = '5. Produtividade por Fiscal';
-        thead.innerHTML = `
-          <tr>
-            <th>FISCAL</th>
-            <th>MATRÍCULA</th>
-            <th>SETOR VINCULADO</th>
-            <th>PLANTÕES</th>
-            <th>POSTOS AVALIADOS</th>
-            <th>FISCALIZADOS</th>
-            <th>NÃO FISCALIZADOS</th>
-            <th>KM TOTAL RODADO</th>
-            <th>ÚLTIMO SERVIÇO</th>
-          </tr>
-        `;
-        tbody.innerHTML = dados.map(r => `
-          <tr>
-            <td><strong>${r.nome}</strong></td>
-            <td>${r.matricula || '-'}</td>
-            <td>${r.setor_nome || '-'}</td>
-            <td style="text-align:center; font-weight:700;">${r.total_plantões}</td>
-            <td style="text-align:center; font-weight:700;">${r.postos_avaliados}</td>
-            <td style="color:#15803d; font-weight:700; text-align:center;">${r.postos_supervisionados}</td>
-            <td style="color:#b91c1c; font-weight:700; text-align:center;">${r.postos_nao_supervisionados}</td>
-            <td style="font-weight:700; text-align:center;">${r.km_total_rodado || 0} km</td>
-            <td>${formatarDataBr(r.ultimo_servico) || '-'}</td>
-          </tr>
-        `).join('');
+        return;
       }
+
+      tbody.innerHTML = dados.map(r => {
+        // Situação Badge
+        let badgeSit = '<span class="badge-situacao-ok">NORMAL</span>';
+        if (r.situacao === 'Não fiscalizado') {
+          badgeSit = '<span class="badge-situacao-warn">NÃO FISCALIZADO</span>';
+        } else if (r.situacao === 'Irregular') {
+          badgeSit = '<span class="badge-situacao-warn">IRREGULAR</span>';
+        } else if (r.situacao === 'Com ocorrência') {
+          badgeSit = '<span class="badge-situacao-ocorrencia">COM OCORRÊNCIA</span>';
+        }
+
+        // Efetivo Badge
+        const efetivoTexto = (r.efetivo_completo === 1 || r.efetivo_completo === '1' || r.efetivo_completo === true)
+          ? '<span style="color:#15803d; font-weight:700;">✅ Completo</span>'
+          : '<span style="color:#b91c1c; font-weight:700;">⚠️ Incompleto</span>';
+
+        // Faltas
+        const qtdFaltas = parseInt(r.falta_efetivo_qtd) || 0;
+        const faltasTexto = qtdFaltas > 0 
+          ? `<span style="color:#dc2626; font-weight:800;">${qtdFaltas} falta(s)</span>`
+          : '<span style="color:#64748b;">0</span>';
+
+        // Ocorrência
+        const temOco = (r.tem_ocorrencia == 1 || r.situacao === 'Com ocorrência');
+        const ocorrenciaTexto = temOco 
+          ? `<span style="color:#ea580c; font-weight:800;">🚨 ${r.descricao_ocorrencia || 'Sim'}</span>`
+          : '<span style="color:#64748b;">Nenhuma</span>';
+
+        // Observações
+        const obs = r.observacao || r.motivo_nao_supervisao || r.descricao_ocorrencia || '-';
+
+        return `
+          <tr>
+            <td style="font-weight:900; color:#003366; text-align:center;">#${r.relatorio_id}</td>
+            <td>
+              <strong>${formatarDataBr(r.data_servico)}</strong><br>
+              <span style="font-size:0.75rem; color:#64748b; font-weight:700;">${r.turno || 'DIURNO'}</span>
+            </td>
+            <td style="font-weight:700;">${r.horario_supervisao || '--:--'}</td>
+            <td><span class="badge-setor">${r.setor_posto || 'PLANTÃO'}</span></td>
+            <td>
+              <div style="font-weight:700;">${r.supervisor_nome || 'FISCAL'}</div>
+              <div style="font-size:0.72rem; color:#64748b;">${r.veiculo || ''}</div>
+            </td>
+            <td><strong>${r.posto_nome}</strong></td>
+            <td>${badgeSit}</td>
+            <td>${efetivoTexto}</td>
+            <td style="text-align:center;">${faltasTexto}</td>
+            <td>${ocorrenciaTexto}</td>
+            <td style="font-size:0.8rem; color:#475569; max-width:220px; word-break:break-word;">${obs}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function limparFiltros() {
+      document.getElementById('filtroPeriodo').value = 'todos';
+      document.getElementById('filtroDataInicio').value = '';
+      document.getElementById('filtroDataFim').value = '';
+      document.getElementById('divDataInicio').style.display = 'none';
+      document.getElementById('divDataFim').style.display = 'none';
+
+      document.getElementById('filtroSetor').value = '';
+      document.getElementById('filtroFiscal').value = '';
+      document.getElementById('filtroPosto').value = '';
+      document.getElementById('filtroSituacao').value = '';
+      document.getElementById('filtroOcorrencia').value = '';
+
+      carregarRelatorios();
     }
 
     function formatarDataBr(isoDate) {
@@ -487,26 +673,54 @@
       return `${dia}/${mes}/${ano}`;
     }
 
-    function exportarCSVAtual() {
+    function exportarCSV() {
       if (!dadosCache || dadosCache.length === 0) {
         alert('Não há dados para exportar com os filtros atuais.');
         return;
       }
-      const keys = Object.keys(dadosCache[0]);
-      const csvRows = [keys.join(';')];
-      dadosCache.forEach(item => {
-        const values = keys.map(k => {
-          const val = item[k] === null || item[k] === undefined ? '' : String(item[k]);
-          return `"${val.replace(/"/g, '""')}"`;
-        });
-        csvRows.push(values.join(';'));
+
+      const headers = [
+        'ID Relatório',
+        'Data',
+        'Turno',
+        'Horário',
+        'Setor Posto',
+        'Fiscal',
+        'Posto',
+        'Situação',
+        'Efetivo Completo',
+        'Faltas',
+        'Ocorrência',
+        'Observação'
+      ];
+
+      const csvRows = [headers.join(';')];
+
+      dadosCache.forEach(r => {
+        const row = [
+          r.relatorio_id,
+          formatarDataBr(r.data_servico),
+          r.turno || 'DIURNO',
+          r.horario_supervisao || '',
+          r.setor_posto || '',
+          r.supervisor_nome || '',
+          r.posto_nome || '',
+          r.situacao || '',
+          r.efetivo_completo ? 'Sim' : 'Não',
+          r.falta_efetivo_qtd || 0,
+          (r.tem_ocorrencia == 1 ? 'Sim' : 'Não'),
+          (r.observacao || r.descricao_ocorrencia || r.motivo_nao_supervisao || '').replace(/[\r\n]+/g, ' ')
+        ];
+
+        csvRows.push(row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'));
       });
+
       const csvContent = '\uFEFF' + csvRows.join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `Relatorio_CCO_${abaAtual}_${new Date().toISOString().substring(0,10)}.csv`);
+      link.setAttribute('download', `Relatorio_Executivo_CCO_${new Date().toISOString().substring(0,10)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

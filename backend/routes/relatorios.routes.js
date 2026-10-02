@@ -4,13 +4,67 @@ const { getDb } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { requirePainel } = require('../middleware/permissions');
 
-// Proteção: Apenas CCO e Diretoria podem emitir relatórios
-router.use(authenticateToken, requirePainel);
+// Proteção: Autenticação JWT obrigatória. Permissões de setor são aplicadas por perfil.
+router.use(authenticateToken);
+
+function getSaoPauloDate(daysOffset = 0) {
+    const now = new Date();
+    if (daysOffset !== 0) {
+        now.setDate(now.getDate() + daysOffset);
+    }
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    return formatter.format(now);
+}
+
+// 0. LISTAR OPÇÕES DE FILTROS REAIS EXISTENTES NO BANCO
+router.get('/filtros-disponiveis', (req, res) => {
+    try {
+        const db = getDb();
+        const setores = db.prepare("SELECT id, nome, sigla FROM setores WHERE status = 'ativo' ORDER BY id").all();
+        
+        // Fiscais que possuem registros de relatórios
+        const fiscais = db.prepare(`
+            SELECT DISTINCT sup.id, sup.nome, sup.matricula
+            FROM relatorios r
+            JOIN supervisores sup ON r.supervisor_id = sup.id
+            ORDER BY sup.nome ASC
+        `).all();
+
+        // Postos que possuem registros nos relatórios
+        const postos = db.prepare(`
+            SELECT DISTINCT p.id, COALESCE(p.nome, pr.nome_posto_digitado) as nome, p.setor_id
+            FROM postos_relatorio pr
+            LEFT JOIN postos p ON pr.posto_id = p.id
+            WHERE p.id IS NOT NULL OR pr.nome_posto_digitado IS NOT NULL
+            ORDER BY nome ASC
+        `).all();
+
+        res.json({ success: true, setores, fiscais, postos });
+    } catch (err) {
+        console.error('Erro ao listar filtros disponíveis:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // 1. RELATÓRIO DE SUPERVISÃO OPERACIONAL (DETALHADO E ANALÍTICO)
 router.get('/supervisao', (req, res) => {
     try {
-        const { data_inicio, data_fim, setor_id, supervisor_id, situacao } = req.query;
+        const { 
+            periodo, 
+            data_inicio, 
+            data_fim, 
+            setor_id, 
+            supervisor_id, 
+            fiscal_id,
+            posto_id, 
+            situacao, 
+            ocorrencia 
+        } = req.query;
         const db = getDb();
 
         let sql = `
@@ -22,19 +76,26 @@ router.get('/supervisao', (req, res) => {
                 p.id as posto_id,
                 COALESCE(p.nome, pr.nome_posto_digitado) as posto_nome,
                 COALESCE(sp.nome, pr.setor_nome_posto, 'PLANTÃO') as setor_posto,
+                p.setor_id as posto_setor_id,
+                r.setor_id as relatorio_setor_id,
                 COALESCE(r.responsavel_nome, sup.nome, 'FISCAL') as supervisor_nome,
                 s_rel.nome as setor_supervisor,
                 COALESCE(v.tipo_modelo || ' (' || v.placa || ')', r.viatura_outros_texto, 'Não informada') as veiculo,
+                pr.status_supervisao,
+                pr.supervisionado,
+                pr.tem_ocorrencia,
+                pr.efetivo_presente,
+                pr.efetivo_completo,
+                pr.falta_efetivo_qtd,
+                pr.observacao,
+                pr.descricao_ocorrencia,
+                pr.motivo_nao_supervisao,
                 CASE 
                     WHEN pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO' THEN 'Não fiscalizado'
                     WHEN pr.tem_ocorrencia = 1 OR pr.status_supervisao = 'COM_OCORRENCIA' THEN 'Com ocorrência'
-                    ELSE 'Fiscalizado'
-                END as situacao,
-                pr.motivo_nao_supervisao,
-                pr.descricao_ocorrencia,
-                pr.km_posto,
-                pr.efetivo_completo,
-                pr.falta_efetivo_qtd
+                    WHEN pr.status_supervisao = 'PENDENCIA' OR pr.status_supervisao = 'IRREGULAR' THEN 'Irregular'
+                    ELSE 'Normal'
+                END as situacao
             FROM postos_relatorio pr
             JOIN relatorios r ON pr.relatorio_id = r.id
             LEFT JOIN postos p ON pr.posto_id = p.id
@@ -46,20 +107,102 @@ router.get('/supervisao', (req, res) => {
         `;
 
         const params = [];
-        if (data_inicio) { sql += ' AND r.data_servico >= ?'; params.push(data_inicio); }
-        if (data_fim) { sql += ' AND r.data_servico <= ?'; params.push(data_fim); }
-        if (setor_id) { sql += ' AND (p.setor_id = ? OR r.setor_id = ?)'; params.push(setor_id, setor_id); }
-        if (supervisor_id) { sql += ' AND r.supervisor_id = ?'; params.push(supervisor_id); }
-        if (situacao) {
-            if (situacao === 'supervisionado') sql += " AND pr.supervisionado = 1 AND pr.status_supervisao != 'NAO_SUPERVISIONADO'";
-            else if (situacao === 'nao_supervisionado') sql += " AND (pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO')";
-            else if (situacao === 'ocorrencia') sql += " AND pr.tem_ocorrencia = 1";
+
+        // Permissão por perfil: supervisores com setor vinculado visualizam seu setor
+        if (req.user && req.user.perfil === 'supervisor' && req.user.setor_id) {
+            sql += ' AND (p.setor_id = ? OR r.setor_id = ?)';
+            params.push(req.user.setor_id, req.user.setor_id);
         }
 
-        sql += ' ORDER BY r.data_servico DESC, pr.id DESC LIMIT 500';
+        // Filtro de Data / Período (America/Sao_Paulo)
+        if (periodo === 'hoje') {
+            const hoje = getSaoPauloDate(0);
+            sql += ' AND r.data_servico = ?';
+            params.push(hoje);
+        } else if (periodo === 'ontem') {
+            const ontem = getSaoPauloDate(-1);
+            sql += ' AND r.data_servico = ?';
+            params.push(ontem);
+        } else if (periodo === 'personalizado' || (!periodo && (data_inicio || data_fim))) {
+            if (data_inicio && data_fim) {
+                sql += ' AND r.data_servico BETWEEN ? AND ?';
+                params.push(data_inicio, data_fim);
+            } else if (data_inicio) {
+                sql += ' AND r.data_servico >= ?';
+                params.push(data_inicio);
+            } else if (data_fim) {
+                sql += ' AND r.data_servico <= ?';
+                params.push(data_fim);
+            }
+        }
+
+        // Setor
+        if (setor_id) {
+            sql += ' AND (p.setor_id = ? OR r.setor_id = ?)';
+            params.push(setor_id, setor_id);
+        }
+
+        // Fiscal / Supervisor
+        const idFiscal = supervisor_id || fiscal_id;
+        if (idFiscal) {
+            sql += ' AND r.supervisor_id = ?';
+            params.push(idFiscal);
+        }
+
+        // Posto
+        if (posto_id) {
+            sql += ' AND pr.posto_id = ?';
+            params.push(posto_id);
+        }
+
+        // Situação
+        if (situacao && situacao !== 'todos') {
+            if (situacao === 'normal') {
+                sql += " AND (pr.status_supervisao = 'NORMAL' OR (pr.supervisionado = 1 AND (pr.status_supervisao IS NULL OR pr.status_supervisao NOT IN ('IRREGULAR', 'PENDENCIA', 'NAO_SUPERVISIONADO')) AND pr.tem_ocorrencia = 0))";
+            } else if (situacao === 'irregular') {
+                sql += " AND (pr.status_supervisao IN ('IRREGULAR', 'PENDENCIA', 'NAO_SUPERVISIONADO') OR pr.supervisionado = 0)";
+            } else if (situacao === 'supervisionado') {
+                sql += " AND pr.supervisionado = 1 AND pr.status_supervisao != 'NAO_SUPERVISIONADO'";
+            } else if (situacao === 'nao_supervisionado') {
+                sql += " AND (pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO')";
+            } else if (situacao === 'ocorrencia') {
+                sql += " AND pr.tem_ocorrencia = 1";
+            } else if (situacao === 'outra') {
+                sql += " AND (pr.status_supervisao NOT IN ('NORMAL', 'IRREGULAR', 'PENDENCIA', 'NAO_SUPERVISIONADO') AND pr.status_supervisao IS NOT NULL)";
+            }
+        }
+
+        // Ocorrência
+        if (ocorrencia && ocorrencia !== 'todas') {
+            if (ocorrencia === 'com_ocorrencia' || ocorrencia === 'sim' || ocorrencia === '1') {
+                sql += " AND (pr.tem_ocorrencia = 1 OR pr.status_supervisao = 'COM_OCORRENCIA')";
+            } else if (ocorrencia === 'sem_ocorrencia' || ocorrencia === 'nao' || ocorrencia === '0') {
+                sql += " AND (pr.tem_ocorrencia = 0 AND (pr.status_supervisao != 'COM_OCORRENCIA' OR pr.status_supervisao IS NULL))";
+            }
+        }
+
+        sql += ' ORDER BY r.data_servico DESC, pr.id DESC LIMIT 1000';
         const dados = db.prepare(sql).all(...params);
 
-        res.json({ success: true, total: dados.length, dados });
+        const total_relatorios = new Set(dados.map(d => d.relatorio_id)).size;
+        const total_postos = dados.length;
+        const postos_regulares = dados.filter(d => d.situacao === 'Normal').length;
+        const postos_irregulares = dados.filter(d => d.situacao === 'Irregular' || d.situacao === 'Não fiscalizado').length;
+        const total_ocorrencias = dados.filter(d => d.tem_ocorrencia == 1 || d.situacao === 'Com ocorrência').length;
+        const total_efetivo = dados.reduce((acc, d) => acc + (parseInt(d.efetivo_presente) || 1), 0);
+        const total_faltas = dados.reduce((acc, d) => acc + (parseInt(d.falta_efetivo_qtd) || 0), 0);
+
+        const indicadores = {
+            total_relatorios,
+            total_postos,
+            postos_regulares,
+            postos_irregulares,
+            total_ocorrencias,
+            total_efetivo,
+            total_faltas
+        };
+
+        res.json({ success: true, total: dados.length, indicadores, dados });
     } catch (err) {
         console.error('Erro no relatório de supervisão:', err);
         res.status(500).json({ error: err.message });
