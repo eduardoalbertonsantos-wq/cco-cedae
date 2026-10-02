@@ -9,6 +9,9 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/responsive.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     .cedae-banner { background: linear-gradient(135deg, #0a1628 0%, #1e3a8a 100%); color: #fff; padding: 1.5rem; border-radius: 0.75rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 15px rgba(10,22,40,0.15); border-left: 6px solid #00d2ff; }
     .cedae-banner h1 { font-size: 1.5rem; margin: 0; font-weight: 800; letter-spacing: 0.05em; color: #ffffff; }
@@ -205,6 +208,52 @@
             <div style="font-size:0.95rem; font-weight:700; color:#0f172a;" id="ultimoRelatorioTexto">Nenhum relatório recente</div>
           </div>
           <div id="ultimoRelatorioData" style="font-size:0.85rem; color:#64748b; font-weight:600;">-</div>
+        </div>
+
+        <!-- ==================== 🗺️ MAPA OPERACIONAL — LOCALIZAÇÃO DOS FISCAIS ==================== -->
+        <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:0.75rem; padding:1.25rem; margin-bottom:1.75rem; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem; border-bottom:1px solid #e2e8f0; padding-bottom:0.75rem;">
+            <div>
+              <h2 style="margin:0; font-size:1.2rem; color:var(--cco-navy); font-weight:800; display:flex; align-items:center; gap:0.5rem;">
+                <span>🗺️</span> MAPA OPERACIONAL &bull; LOCALIZAÇÃO DOS FISCAIS
+              </h2>
+              <p style="margin:0.25rem 0 0 0; color:#64748b; font-size:0.85rem;">
+                Acompanhamento em tempo real do posicionamento dos fiscais em campo, bases operacionais e postos de serviço.
+              </p>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+              <span id="mapaStatusAtualizacao" style="font-size:0.8rem; color:#64748b; font-weight:600;">🔄 Sincronizando...</span>
+              <button type="button" id="btnRecarregarMapa" class="btn btn-sm btn-outline" style="color:var(--cco-blue); border:1px solid #cbd5e1; background:#fff; padding:0.35rem 0.75rem; font-weight:700; cursor:pointer; border-radius:0.375rem;">
+                🔄 Atualizar Mapa
+              </button>
+            </div>
+          </div>
+
+          <!-- Legendas Oficiais: Status dos Fiscais e Cores dos Setores -->
+          <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:1rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:0.5rem; padding:0.75rem 1rem; margin-bottom:1rem; font-size:0.82rem;">
+            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+              <strong style="color:var(--cco-navy);">STATUS DOS FISCAIS:</strong>
+              <span style="display:inline-flex; align-items:center; gap:0.25rem;"><span style="color:#16a34a; font-size:1.1rem;">●</span> <strong>ONLINE</strong> <span class="badge" id="badgeTotalOnline" style="background:#16a34a; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px; margin-left:2px;">0</span></span>
+              <span style="display:inline-flex; align-items:center; gap:0.25rem;"><span style="color:#eab308; font-size:1.1rem;">●</span> <strong>ATUALIZAÇÃO ANTIGA</strong> <span class="badge" id="badgeTotalAntiga" style="background:#eab308; color:#000; font-size:0.7rem; padding:1px 6px; border-radius:10px; margin-left:2px;">0</span></span>
+              <span style="display:inline-flex; align-items:center; gap:0.25rem;"><span style="color:#dc2626; font-size:1.1rem;">●</span> <strong>OFFLINE</strong> <span class="badge" id="badgeTotalOffline" style="background:#dc2626; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px; margin-left:2px;">0</span></span>
+              <span style="display:inline-flex; align-items:center; gap:0.25rem;"><span style="color:#94a3b8; font-size:1.1rem;">●</span> <strong>GPS NÃO AUTORIZADO</strong> <span class="badge" id="badgeTotalGpsNegado" style="background:#94a3b8; color:#fff; font-size:0.7rem; padding:1px 6px; border-radius:10px; margin-left:2px;">0</span></span>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+              <strong style="color:var(--cco-navy);">SETORES:</strong>
+              <span style="color:#2563eb; font-weight:700;">🔵 TINGUÁ</span>
+              <span style="color:#16a34a; font-weight:700;">🟢 GUANDU</span>
+              <span style="color:#ea580c; font-weight:700;">🟠 LARANJAL</span>
+              <span style="color:#9333ea; font-weight:700;">🟣 PLANTÃO</span>
+            </div>
+          </div>
+
+          <!-- Container do Mapa Leaflet -->
+          <div id="mapaOperacionalCCO" style="height:480px; width:100%; border-radius:0.5rem; border:1px solid #cbd5e1; z-index:1; position:relative; background:#f1f5f9;"></div>
+
+          <!-- Lista de Fiscais Rastreados no Momento -->
+          <div id="containerListaFiscaisMapa" style="margin-top:1rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:0.75rem;">
+            <!-- Preenchido via JS com cards compactos dos fiscais -->
+          </div>
         </div>
 
         <!-- ACOMPANHAMENTO SEMANAL DE POSTOS COM MAIS TEMPO SEM VISTORIA -->

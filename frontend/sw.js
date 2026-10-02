@@ -1,10 +1,10 @@
 /**
  * CCO — FISCALIZAÇÃO OPERACIONAL
- * Service Worker v3.2.0 (Salvamento Progressivo e Proteção Produção)
+ * Service Worker v3.3.0 (GPS dos Fiscais & Mapa Operacional)
  * Estratégia Network-First, sem interceptação espúria de APIs, atualização instantânea.
  */
 
-const CACHE_NAME = 'cco-fiscalizacao-v3.2.0-salvar-producao';
+const CACHE_NAME = 'cco-fiscalizacao-v3.3.0-gps-mapa';
 const STATIC_ASSETS = [
   '/',
   '/app',
@@ -27,6 +27,7 @@ const STATIC_ASSETS = [
   '/js/utils.js',
   '/js/api.js',
   '/js/formulario.js',
+  '/js/dashboard.js',
   '/icons/icon.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

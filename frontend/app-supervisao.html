@@ -737,6 +737,19 @@
         </button>
       </div>
     </div>
+  <!-- ==================== MODAL DE ORIENTAÇÃO PERMISSÃO GPS ==================== -->
+  <div id="modalPermissaoGps" class="modal-backdrop-mob" style="display:none; align-items:center; justify-content:center; padding:16px;">
+    <div class="modal-content-mob" style="max-width:380px; text-align:center; border:2px solid #00d2ff; background:#0a1628; border-radius:12px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
+      <div style="font-size:2.4rem; margin-bottom:8px;">📍</div>
+      <h3 style="color:#00d2ff; margin:0 0 10px 0; font-size:1.15rem; font-weight:800; letter-spacing:0.04em;">PERMISSÃO DE LOCALIZAÇÃO</h3>
+      <p style="color:#cbd5e1; font-size:0.875rem; line-height:1.5; margin:0 0 16px 0;">
+        Para permitir que o CCO mostre sua localização operacional no mapa, autorize o acesso à localização do dispositivo.
+      </p>
+      <div style="display:flex; gap:10px;">
+        <button type="button" id="btnRecusarGps" class="btn-mob-secondary" style="flex:1; padding:10px 6px; font-size:0.85rem; cursor:pointer;">Agora Não</button>
+        <button type="button" id="btnAceitarGps" class="btn-mob-primary" style="flex:1; padding:10px 6px; font-size:0.85rem; background:#16a34a; border-color:#22c55e; color:#fff; font-weight:800; cursor:pointer;">Autorizar GPS</button>
+      </div>
+    </div>
   </div>
 
   <!-- ==================== MODAL DE VISUALIZAÇÃO CONSOLIDADA (PDF / IMPRESSÃO) ==================== -->
@@ -956,6 +969,155 @@
         }
       }
 
+      // ==================== GPS & GEOLOCALIZAÇÃO OPERACIONAL ====================
+      let gpsWatchId = null;
+      let ultimoEnvioGpsTimestamp = 0;
+      let ultimaCoordenadaEnviada = null;
+
+      function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const phi1 = lat1 * Math.PI / 180;
+        const phi2 = lat2 * Math.PI / 180;
+        const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+        const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+        return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+      }
+
+      function iniciarRastreamentoGps() {
+        if (!('geolocation' in navigator)) {
+          console.warn('[GPS] Geolocalização não suportada neste dispositivo.');
+          return;
+        }
+
+        const modalGps = document.getElementById('modalPermissaoGps');
+        const visto = localStorage.getItem('cco_gps_solicitado');
+
+        if (!visto && modalGps) {
+          modalGps.classList.add('active');
+          modalGps.style.display = 'flex';
+
+          document.getElementById('btnAceitarGps')?.addEventListener('click', () => {
+            localStorage.setItem('cco_gps_solicitado', '1');
+            modalGps.classList.remove('active');
+            modalGps.style.display = 'none';
+            ativarWatchGps();
+          }, { once: true });
+
+          document.getElementById('btnRecusarGps')?.addEventListener('click', () => {
+            localStorage.setItem('cco_gps_solicitado', '1');
+            modalGps.classList.remove('active');
+            modalGps.style.display = 'none';
+            notificarGpsNaoAutorizado();
+          }, { once: true });
+        } else {
+          ativarWatchGps();
+        }
+      }
+
+      function ativarWatchGps() {
+        if (gpsWatchId !== null) return;
+        try {
+          gpsWatchId = navigator.geolocation.watchPosition(
+            (pos) => {
+              processarCoordenadaGps(pos.coords);
+            },
+            (err) => {
+              console.warn('[GPS] Status:', err.code, err.message);
+              if (err.code === 1) { // PERMISSION_DENIED
+                notificarGpsNaoAutorizado();
+              }
+            },
+            {
+              enableHighAccuracy: true,
+              timeout: 25000,
+              maximumAge: 10000
+            }
+          );
+        } catch (e) {
+          console.warn('[GPS] Falha ao iniciar watchPosition:', e);
+        }
+      }
+
+      function processarCoordenadaGps(coords) {
+        const agora = Date.now();
+        if (ultimaCoordenadaEnviada && (agora - ultimoEnvioGpsTimestamp < 20000)) {
+          const dist = calcularDistanciaMetros(
+            ultimaCoordenadaEnviada.latitude, ultimaCoordenadaEnviada.longitude,
+            coords.latitude, coords.longitude
+          );
+          if (dist < 50) return;
+        }
+
+        ultimoEnvioGpsTimestamp = agora;
+        ultimaCoordenadaEnviada = { latitude: coords.latitude, longitude: coords.longitude };
+
+        const token = localStorage.getItem('cco_token');
+        if (!token) return;
+
+        const payload = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          accuracy: coords.accuracy,
+          gps_authorized: 1,
+          setor_id: currentUser ? currentUser.setor_id : currentSetorId,
+          device_info: navigator.userAgent ? navigator.userAgent.substring(0, 100) : 'Mobile'
+        };
+
+        fetch(API_BASE + '/mapa/localizacao', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(payload)
+        }).catch(err => {
+          console.warn('[GPS] Falha silenciosa de envio:', err.message);
+        });
+      }
+
+      function notificarGpsNaoAutorizado() {
+        const token = localStorage.getItem('cco_token');
+        if (!token) return;
+        fetch(API_BASE + '/mapa/localizacao', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({
+            gps_authorized: 0,
+            setor_id: currentUser ? currentUser.setor_id : currentSetorId,
+            device_info: navigator.userAgent ? navigator.userAgent.substring(0, 100) : 'Mobile'
+          })
+        }).catch(() => {});
+      }
+
+      function pararRastreamentoGps() {
+        if (gpsWatchId !== null && 'geolocation' in navigator) {
+          try {
+            navigator.geolocation.clearWatch(gpsWatchId);
+          } catch (e) {}
+          gpsWatchId = null;
+        }
+        const token = localStorage.getItem('cco_token');
+        if (token) {
+          fetch(API_BASE + '/mapa/localizacao/offline', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + token
+            }
+          }).catch(() => {});
+        }
+      }
+
+      window.addEventListener('beforeunload', () => {
+        pararRastreamentoGps();
+      });
+
       function restaurarSessao() {
         const token = localStorage.getItem('cco_token');
         const userJson = localStorage.getItem('cco_user');
@@ -970,6 +1132,7 @@
       }
 
       function encerrarSessao() {
+        pararRastreamentoGps();
         localStorage.removeItem('cco_token');
         localStorage.removeItem('cco_user');
         currentUser = null;
@@ -1037,6 +1200,7 @@
 
         await carregarEstruturaSetor();
         await checarERecuperarRelatorioEmAndamento();
+        iniciarRastreamentoGps();
       }
 
       // 3. CARREGAR ESTRUTURA DO SETOR (SUPERVISORES, VIATURAS E POSTOS)

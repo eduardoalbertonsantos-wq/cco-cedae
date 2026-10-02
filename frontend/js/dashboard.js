@@ -10,9 +10,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarFiltrosDashboard();
     await atualizarDashboard();
     setupDashboardListeners();
+    await initMapaOperacional();
     
-    // Atualização em tempo real a cada 30 segundos
+    // Atualização em tempo real do painel a cada 30 segundos
     setInterval(atualizarDashboard, 30 * 1000);
+    // Atualização em tempo real do mapa a cada 15 segundos
+    setInterval(carregarPosicoesMapa, 15 * 1000);
 });
 
 async function carregarFiltrosDashboard() {
@@ -349,3 +352,209 @@ function renderizarGraficos(stats) {
         });
     }
 }
+
+// ==================== MAPA OPERACIONAL (LEAFLET + GPS DOS FISCAIS) ====================
+let mapaCCO = null;
+let layerFiscais = null;
+let layerBases = null;
+let layerPostos = null;
+
+async function initMapaOperacional() {
+    const mapContainer = document.getElementById('mapaOperacionalCCO');
+    if (!mapContainer || typeof L === 'undefined') return;
+
+    try {
+        if (!mapaCCO) {
+            // Centro na Região Metropolitana do Rio de Janeiro
+            mapaCCO = L.map('mapaOperacionalCCO', {
+                center: [-22.85, -43.35],
+                zoom: 10,
+                zoomControl: true
+            });
+
+            // OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap &bull; CEDAE CCO Fiscalização'
+            }).addTo(mapaCCO);
+
+            layerBases = L.layerGroup().addTo(mapaCCO);
+            layerPostos = L.layerGroup().addTo(mapaCCO);
+            layerFiscais = L.layerGroup().addTo(mapaCCO);
+
+            document.getElementById('btnRecarregarMapa')?.addEventListener('click', async () => {
+                const btn = document.getElementById('btnRecarregarMapa');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = '🔄 Atualizando...';
+                }
+                await carregarPosicoesMapa();
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '🔄 Atualizar Mapa';
+                }
+            });
+        }
+
+        await carregarPosicoesMapa();
+    } catch (err) {
+        console.error('Erro ao inicializar Mapa Operacional:', err);
+    }
+}
+
+async function carregarPosicoesMapa() {
+    if (!mapaCCO || !layerFiscais) return;
+
+    const statusElem = document.getElementById('mapaStatusAtualizacao');
+    if (statusElem) statusElem.textContent = '🔄 Atualizando...';
+
+    try {
+        const res = await apiGet('/mapa/posicoes');
+        if (!res || !res.success) throw new Error('Dados inválidos retornados pela API');
+
+        // Atualizar contadores
+        const resumo = res.resumo_status || {};
+        if (document.getElementById('badgeTotalOnline')) document.getElementById('badgeTotalOnline').textContent = resumo.online || 0;
+        if (document.getElementById('badgeTotalAntiga')) document.getElementById('badgeTotalAntiga').textContent = resumo.antiga || 0;
+        if (document.getElementById('badgeTotalOffline')) document.getElementById('badgeTotalOffline').textContent = resumo.offline || 0;
+        if (document.getElementById('badgeTotalGpsNegado')) document.getElementById('badgeTotalGpsNegado').textContent = resumo.gps_nao_autorizado || 0;
+
+        // Limpar camadas
+        layerBases.clearLayers();
+        layerPostos.clearLayers();
+        layerFiscais.clearLayers();
+
+        // 1. Plotar Bases dos 4 Setores (🏢 Setor)
+        (res.bases_setores || []).forEach(b => {
+            if (b.base && b.base.lat && b.base.lng) {
+                const baseIcon = L.divIcon({
+                    className: 'custom-base-icon',
+                    html: `<div style="background:#0a1628; border:2px solid ${b.cor}; color:#fff; border-radius:6px; padding:3px 6px; font-size:11px; font-weight:800; display:inline-flex; align-items:center; gap:4px; box-shadow:0 3px 6px rgba(0,0,0,0.3); white-space:nowrap;">
+                            <span>🏢</span> ${b.nome}
+                           </div>`,
+                    iconSize: [120, 26],
+                    iconAnchor: [60, 13]
+                });
+
+                const marker = L.marker([b.base.lat, b.base.lng], { icon: baseIcon });
+                marker.bindPopup(`
+                    <div style="font-family:system-ui,sans-serif; min-width:180px;">
+                        <strong style="color:${b.cor}; font-size:1rem; display:block; margin-bottom:4px;">🏢 ${b.base.label}</strong>
+                        <div style="font-size:0.85rem; color:#475569;">Setor Operacional: <strong>${b.nome}</strong></div>
+                    </div>
+                `);
+                layerBases.addLayer(marker);
+            }
+        });
+
+        // 2. Plotar Postos que possuam coordenadas cadastradas (📍 Posto)
+        (res.postos || []).forEach(p => {
+            if (p.latitude && p.longitude) {
+                const postoIcon = L.divIcon({
+                    className: 'custom-posto-icon',
+                    html: `<div style="background:#ffffff; border:1px solid #0284c7; color:#0284c7; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.2);">📍</div>`,
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
+                });
+
+                const marker = L.marker([p.latitude, p.longitude], { icon: postoIcon });
+                marker.bindPopup(`
+                    <div style="font-family:system-ui,sans-serif; min-width:180px;">
+                        <strong style="font-size:0.95rem; color:#0f172a; display:block; margin-bottom:4px;">📍 ${p.nome}</strong>
+                        <div style="font-size:0.85rem; color:#64748b;">Setor: ${p.setor_nome || 'Geral'}</div>
+                        ${p.endereco ? `<div style="font-size:0.8rem; color:#475569; margin-top:4px;">${p.endereco}</div>` : ''}
+                    </div>
+                `);
+                layerPostos.addLayer(marker);
+            }
+        });
+
+        // 3. Plotar Fiscais (👤 Fiscal)
+        const listaCardsHtml = [];
+        (res.fiscais || []).forEach(f => {
+            const hasCoords = f.latitude && f.longitude && f.status !== 'gps_nao_autorizado';
+
+            if (hasCoords) {
+                const pulseColor = f.status_cor;
+                const fiscalIcon = L.divIcon({
+                    className: 'custom-fiscal-icon',
+                    html: `
+                        <div style="position:relative; width:34px; height:34px; display:flex; align-items:center; justify-content:center;">
+                            <div style="position:absolute; width:100%; height:100%; border-radius:50%; background:${pulseColor}; opacity:0.35; transform:scale(1.2);"></div>
+                            <div style="width:28px; height:28px; border-radius:50%; background:#ffffff; border:3px solid ${pulseColor}; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 8px rgba(0,0,0,0.3); font-size:14px; position:relative; z-index:2;">
+                                👤
+                            </div>
+                            <div style="position:absolute; bottom:-3px; right:-3px; width:12px; height:12px; border-radius:50%; background:${f.setor_cor}; border:2px solid #ffffff; z-index:3;"></div>
+                        </div>
+                    `,
+                    iconSize: [34, 34],
+                    iconAnchor: [17, 17]
+                });
+
+                const marker = L.marker([f.latitude, f.longitude], { icon: fiscalIcon });
+                marker.bindPopup(`
+                    <div style="font-family:system-ui,sans-serif; min-width:210px; padding:2px;">
+                        <div style="font-weight:800; font-size:0.95rem; color:#0f172a; margin-bottom:6px; border-bottom:2px solid ${f.setor_cor}; padding-bottom:3px; display:flex; align-items:center; gap:5px;">
+                            <span>👤</span> ${f.nome}
+                        </div>
+                        <div style="font-size:0.85rem; margin-bottom:3px; color:#334155;">
+                            <strong>Setor:</strong> <span style="font-weight:700; color:${f.setor_cor};">${f.setor}</span>
+                        </div>
+                        <div style="font-size:0.85rem; margin-bottom:3px; color:#334155;">
+                            <strong>Status:</strong> <span style="font-weight:700; color:${f.status_cor};">${f.status_badge}</span>
+                        </div>
+                        <div style="font-size:0.85rem; margin-bottom:3px; color:#334155;">
+                            <strong>Última atualização:</strong> ${f.hora_formatada} (${f.minutos_atras} min atrás)
+                        </div>
+                        <div style="font-size:0.85rem; color:#334155;">
+                            <strong>Precisão:</strong> ${f.accuracy ? f.accuracy + ' metros' : 'Aproximada'}
+                        </div>
+                    </div>
+                `);
+                layerFiscais.addLayer(marker);
+            }
+
+            // Gerar card para a lista de acompanhamento logo abaixo do mapa
+            listaCardsHtml.push(`
+                <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid ${f.setor_cor}; border-radius:0.5rem; padding:0.6rem 0.85rem; box-shadow:0 1px 3px rgba(0,0,0,0.03);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                        <strong style="color:#0f172a; font-size:0.88rem;">👤 ${f.nome}</strong>
+                        <span style="font-size:0.75rem; font-weight:700; color:${f.status_cor};">${f.status_badge}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem; color:#64748b;">
+                        <span><strong style="color:${f.setor_cor};">${f.setor}</strong></span>
+                        <span>🕒 ${f.hora_formatada} (${f.minutos_atras} min)</span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#475569; margin-top:2px; display:flex; justify-content:space-between;">
+                        <span>📡 Precisão: ${f.accuracy ? f.accuracy + 'm' : (hasCoords ? 'Padrão' : 'Sem GPS')}</span>
+                        ${hasCoords ? `<button type="button" onclick="focarFiscalNoMapa(${f.latitude}, ${f.longitude})" style="background:none; border:none; color:#2563eb; font-weight:700; cursor:pointer; padding:0; font-size:0.75rem;">Ver no Mapa 📍</button>` : ''}
+                    </div>
+                </div>
+            `);
+        });
+
+        const listContainer = document.getElementById('containerListaFiscaisMapa');
+        if (listContainer) {
+            if (listaCardsHtml.length > 0) {
+                listContainer.innerHTML = listaCardsHtml.join('');
+            } else {
+                listContainer.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:0.75rem; color:#94a3b8; font-size:0.85rem;">Nenhum fiscal com sessão ativa no momento.</div>';
+            }
+        }
+
+        if (statusElem) {
+            const agora = new Date().toLocaleTimeString('pt-BR');
+            statusElem.textContent = `✓ Atualizado às ${agora}`;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar posições do mapa:', error);
+        if (statusElem) statusElem.textContent = '⚠️ Erro ao atualizar posições';
+    }
+}
+
+window.focarFiscalNoMapa = function(lat, lng) {
+    if (mapaCCO && lat && lng) {
+        mapaCCO.setView([lat, lng], 14, { animate: true });
+    }
+};
+

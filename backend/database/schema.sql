@@ -198,6 +198,24 @@ CREATE TABLE IF NOT EXISTS configuracoes (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 10. LOCALIZAÇÃO OPERACIONAL DOS FISCAIS (GPS EM TEMPO REAL)
+CREATE TABLE IF NOT EXISTS fiscal_locations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE,
+    nome_usuario TEXT NOT NULL,
+    setor TEXT,
+    setor_id INTEGER,
+    latitude REAL,
+    longitude REAL,
+    accuracy REAL,
+    is_online INTEGER DEFAULT 1,
+    gps_authorized INTEGER DEFAULT 1,
+    device_info TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES usuarios(id)
+);
+
 -- Índices de Otimização e Integridade Única
 CREATE INDEX IF NOT EXISTS idx_supervisores_setor ON supervisores(setor_id);
 CREATE INDEX IF NOT EXISTS idx_viaturas_setor ON viaturas(setor_id);
@@ -206,8 +224,10 @@ CREATE INDEX IF NOT EXISTS idx_relatorios_setor ON relatorios(setor_id);
 CREATE INDEX IF NOT EXISTS idx_relatorios_data ON relatorios(data_servico);
 CREATE INDEX IF NOT EXISTS idx_postos_relatorio_rel ON postos_relatorio(relatorio_id);
 CREATE INDEX IF NOT EXISTS idx_ocorrencias_rel ON ocorrencias(relatorio_id);
+CREATE INDEX IF NOT EXISTS idx_fiscal_locations_user ON fiscal_locations(user_id);
 
 -- Índices Únicos para evitar duplicidades
 CREATE UNIQUE INDEX IF NOT EXISTS idx_postos_nome_setor ON postos(nome, setor_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_supervisores_matricula ON supervisores(matricula);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viaturas_placa_setor ON viaturas(placa, setor_id);
+
