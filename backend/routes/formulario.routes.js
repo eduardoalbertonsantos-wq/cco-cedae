@@ -416,6 +416,12 @@ router.post('/salvar', async (req, res) => {
 
         const activeRelId = runTransaction();
 
+        // Sincronização em nuvem com Supabase (background)
+        try {
+            const { pushRelatorioToSupabase } = require('../services/supabase_sync.service');
+            pushRelatorioToSupabase(activeRelId).catch(e => console.warn('Supabase push warning:', e.message));
+        } catch (_) {}
+
         res.json({
             success: true,
             id: activeRelId,
@@ -675,6 +681,12 @@ router.post('/enviar', async (req, res) => {
         });
 
         const newRelatorioId = runTransaction();
+
+        // Sincronização em nuvem com Supabase (background)
+        try {
+            const { pushRelatorioToSupabase } = require('../services/supabase_sync.service');
+            pushRelatorioToSupabase(newRelatorioId).catch(e => console.warn('Supabase push warning:', e.message));
+        } catch (_) {}
 
         // 4. Montar Texto Padronizado para WhatsApp
         const dadosCompletos = db.prepare(`

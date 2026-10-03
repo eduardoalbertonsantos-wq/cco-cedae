@@ -130,6 +130,9 @@ app.get('/api/v1/version', (req, res) => {
 // Initialize Database
 try {
     initializeDatabase();
+    // Sincronização em nuvem com Supabase (re-hidrata dados após reinício/redeploy)
+    const { syncFromSupabaseOnStartup } = require('./services/supabase_sync.service');
+    syncFromSupabaseOnStartup().catch(err => console.warn('Supabase sync warning:', err.message));
 } catch (error) {
     console.error('Failed to initialize database:', error);
     process.exit(1);
