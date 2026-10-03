@@ -215,6 +215,27 @@
           <div id="ultimoRelatorioData" style="font-size:0.85rem; color:#64748b; font-weight:600;">-</div>
         </div>
 
+        <!-- FISCAIS EM ATIVIDADE (ACOMPANHAMENTO EM TEMPO REAL) -->
+        <div id="secaoFiscaisAtividade" class="card" style="background:#ffffff; border:1px solid #e2e8f0; border-left:5px solid #eab308; border-radius:0.75rem; padding:1.15rem 1.25rem; margin-bottom:1.5rem; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-bottom:0.75rem; border-bottom:1px solid #f1f5f9; padding-bottom:0.5rem;">
+            <div>
+              <span style="font-size:0.75rem; font-weight:800; color:#b45309; letter-spacing:0.05em; text-transform:uppercase; display:flex; align-items:center; gap:6px;">
+                <span class="live-pulse" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#eab308; box-shadow:0 0 8px #eab308;"></span>
+                🟡 FISCAIS EM ATIVIDADE &bull; PREENCHIMENTO EM TEMPO REAL
+              </span>
+              <div style="font-size:0.85rem; color:#64748b; margin-top:2px;">
+                Fiscais com expedientes em andamento no aplicativo. Acompanhamento automático em tempo real via registro de atividade.
+              </div>
+            </div>
+            <span id="badgeQtdFiscaisAtividade" class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:0.8rem; font-weight:800; padding:4px 10px; border-radius:12px;">
+              0 em atividade
+            </span>
+          </div>
+          <div id="containerFiscaisAtividade" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:0.85rem;">
+            <div style="color:#94a3b8; font-size:0.85rem; font-style:italic;">Nenhum fiscal em preenchimento neste momento.</div>
+          </div>
+        </div>
+
         <!-- ACOMPANHAMENTO SEMANAL DE POSTOS COM MAIS TEMPO SEM VISTORIA -->
         <div class="card" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:0.75rem; padding:1.25rem; margin-bottom:1.75rem; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem; border-bottom:1px solid #e2e8f0; padding-bottom:0.75rem;">

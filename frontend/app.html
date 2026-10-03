@@ -509,6 +509,9 @@
             <span id="badgeCotaDiaria" style="background:#1e3a8a; color:#38bdf8; border:1px solid #0284c7; padding:3px 10px; border-radius:12px; font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;">
               📋 RELATÓRIOS DO DIA: <strong id="lblCotaDiaria" style="color:#fff;">0/2</strong>
             </span>
+            <span id="badgeStatusEmPreenchimentoMob" style="background:#854d0e; color:#fef08a; border:1px solid #eab308; padding:3px 10px; border-radius:12px; font-weight:800; font-size:0.75rem; display:inline-flex; align-items:center; gap:4px;">
+              🟡 STATUS: <strong id="lblStatusTextoMob">EM PREENCHIMENTO</strong> (<span id="lblProgressoTaxaMob">0/0 &bull; 0%</span>)
+            </span>
           </div>
         </div>
         <div class="sup-counters-grid">
@@ -2224,6 +2227,13 @@
         document.getElementById('cnt-sup-postos').textContent = sup;
         document.getElementById('cnt-pend-postos').textContent = pend;
         document.getElementById('cnt-nao-postos').textContent = nao;
+
+        const metaSetor = isPlantao ? 12 : (postosDoSetor ? postosDoSetor.length : 12);
+        const taxa = metaSetor > 0 ? Math.min(100, Math.round((total / metaSetor) * 100)) : 0;
+        const elTaxa = document.getElementById('lblProgressoTaxaMob');
+        if (elTaxa) {
+          elTaxa.textContent = `${total}/${metaSetor} • ${taxa}%`;
+        }
       }
 
       // 7. COLETAR DADOS DOS POSTOS PREENCHIDOS
@@ -2713,6 +2723,14 @@
           relatorioIdAtivo = null;
           const banner = document.getElementById('bannerEmAndamento');
           if (banner) banner.style.display = 'none';
+
+          const badgeStatus = document.getElementById('badgeStatusEmPreenchimentoMob');
+          if (badgeStatus) {
+            badgeStatus.style.background = '#14532d';
+            badgeStatus.style.color = '#86efac';
+            badgeStatus.style.borderColor = '#22c55e';
+            badgeStatus.innerHTML = '🟢 STATUS: <strong>ENVIADO AO CCO</strong>';
+          }
           ultimoRelatorioEnviado = data;
           textoWhatsAppGerado = data.texto_whatsapp || '';
           if (data.quota) {

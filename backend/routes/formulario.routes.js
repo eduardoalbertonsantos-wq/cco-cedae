@@ -454,9 +454,24 @@ router.post('/salvar', async (req, res) => {
             pushRelatorioToSupabase(activeRelId).catch(e => console.warn('Supabase push warning:', e.message));
         } catch (_) {}
 
+        // Emissão do evento de atualização em tempo real para Painel de Controle e Diretoria
+        try {
+            const { emitirEventoOperacional } = require('../services/realtime.service');
+            emitirEventoOperacional('EM_PREENCHIMENTO', {
+                relatorio_id: activeRelId,
+                setor_id: parseInt(setor_id),
+                data_servico,
+                turno,
+                fiscal_nome: responsavel_nome,
+                postos_preenchidos: postosValidos.length,
+                timestamp: spNow.dataHora
+            });
+        } catch (_) {}
+
         res.json({
             success: true,
             id: activeRelId,
+            relatorio_id: activeRelId,
             numero_relatorio: String(activeRelId).padStart(5, '0'),
             status: 'em_aberto',
             status_label: '🟡 EM PREENCHIMENTO',
@@ -723,6 +738,20 @@ router.post('/enviar', async (req, res) => {
         try {
             const { pushRelatorioToSupabase } = require('../services/supabase_sync.service');
             pushRelatorioToSupabase(newRelatorioId).catch(e => console.warn('Supabase push warning:', e.message));
+        } catch (_) {}
+
+        // Emissão do evento de atualização em tempo real para Painel de Controle e Diretoria
+        try {
+            const { emitirEventoOperacional } = require('../services/realtime.service');
+            emitirEventoOperacional('ENVIADO', {
+                relatorio_id: newRelatorioId,
+                setor_id: parseInt(setor_id),
+                data_servico,
+                turno,
+                fiscal_nome: responsavel_nome,
+                postos_concluidos: postosValidos.length,
+                timestamp: spNow.dataHora
+            });
         } catch (_) {}
 
         // 4. Montar Texto Padronizado para WhatsApp

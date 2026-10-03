@@ -221,6 +221,16 @@ router.delete('/:id', authenticateToken, async (req, res) => {
             });
         } catch (_) {}
 
+        // 4. Emissão do evento de atualização em tempo real para os painéis
+        try {
+            const { emitirEventoOperacional } = require('../services/realtime.service');
+            emitirEventoOperacional('EXCLUIDO', {
+                relatorio_id: id,
+                setor: relatorio.setor_nome,
+                timestamp: new Date().toISOString()
+            });
+        } catch (_) {}
+
         return res.json({
             success: true,
             message: `Relatório #${id} excluído com sucesso. Fiscal liberado para iniciar novo relatório.`,

@@ -63,7 +63,7 @@
       </span>
     </div>
 
-    <!-- 1. OS 4 CARDS EXECUTIVOS PRINCIPAIS -->
+    <!-- 1. OS 5 CARDS EXECUTIVOS PRINCIPAIS -->
     <section class="exec-cards-grid">
       <!-- CARD 1: POSTOS DISPONÍVEIS -->
       <div class="exec-card card-blue">
@@ -72,21 +72,28 @@
         <div class="card-subtitle">Cadastrados e ativos no sistema</div>
       </div>
 
-      <!-- CARD 2: POSTOS FISCALIZADOS -->
+      <!-- CARD 2: POSTOS FISCALIZADOS (CONCLUÍDOS) -->
       <div class="exec-card card-green">
-        <div class="card-header-label">✅ Postos Fiscalizados</div>
+        <div class="card-header-label">✅ Concluídos</div>
         <div class="card-value" id="valPostosFiscalizados" style="color: var(--status-green);">--</div>
-        <div class="card-subtitle">Supervisionados na data selecionada</div>
+        <div class="card-subtitle">Relatórios enviados e finalizados</div>
       </div>
 
-      <!-- CARD 3: COBERTURA -->
+      <!-- CARD 3: EM PREENCHIMENTO -->
+      <div class="exec-card card-amber">
+        <div class="card-header-label">🟡 Em Preenchimento</div>
+        <div class="card-value" id="valEmPreenchimento" style="color: var(--status-amber);">0</div>
+        <div class="card-subtitle" id="subEmPreenchimento">Postos sendo vistoriados agora</div>
+      </div>
+
+      <!-- CARD 4: COBERTURA -->
       <div class="exec-card card-blue">
         <div class="card-header-label">📈 Cobertura</div>
         <div class="card-value" id="valCobertura" style="color: var(--status-blue);">--%</div>
         <div class="card-subtitle" id="subCobertura">Calculado automaticamente</div>
       </div>
 
-      <!-- CARD 4: PENDENTES -->
+      <!-- CARD 5: PENDENTES -->
       <div class="exec-card card-amber">
         <div class="card-header-label">⚠️ Pendentes</div>
         <div class="card-value" id="valPendentes" style="color: var(--status-amber);">--</div>
@@ -94,10 +101,55 @@
       </div>
     </section>
 
+    <!-- 1.1 SEÇÃO: FISCAIS EM ATIVIDADE (TEMPO REAL) -->
+    <section class="section-block" id="secaoFiscaisAtividadeDir">
+      <div class="section-title" style="justify-content: space-between; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span>🟡</span> FISCAIS EM ATIVIDADE &bull; TEMPO REAL
+        </div>
+        <span style="font-size: 0.75rem; color: #d97706; font-weight: 700;" id="badgeFiscaisAtividadeCountDir">
+          0 em andamento
+        </span>
+      </div>
+      <div id="containerFiscaisDir" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem;">
+        <div style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 1.25rem; background: #ffffff; border-radius: 6px; border: 1px dashed var(--cedae-border); font-size: 0.85rem;">
+          ⚪ Nenhum fiscal em preenchimento nesta data.
+        </div>
+      </div>
+    </section>
+
+    <!-- 1.2 TABELA CONSOLIDADA EXECUTIVA POR SETOR -->
+    <section class="section-block">
+      <div class="section-title">
+        <span>📊</span> STATUS CONSOLIDADO POR SETOR &bull; TEMPO REAL
+      </div>
+      <div style="overflow-x: auto; background: #ffffff; border-radius: 6px; border: 1px solid var(--cedae-border);">
+        <table class="dist-table" id="tabelaExecutivaDiretoria">
+          <thead>
+            <tr>
+              <th>Setor</th>
+              <th style="text-align: center;">Total</th>
+              <th style="text-align: center;">Concluídos</th>
+              <th style="text-align: center;">Em Preenchimento</th>
+              <th style="text-align: center;">Pendentes</th>
+              <th style="text-align: right;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyExecutivaDiretoria">
+            <tr>
+              <td colspan="6" style="text-align: center; color: #64748b; padding: 1.25rem;">
+                Carregando consolidado...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- 2. FISCALIZAÇÃO POR SETOR -->
     <section class="section-block">
       <div class="section-title">
-        <span>🏢</span> FISCALIZAÇÃO POR SETOR
+        <span>🏢</span> METAS E PROGRESSO POR SETOR
       </div>
 
       <div class="setores-grid">

@@ -160,6 +160,11 @@ app.use('/api/v1/formulario', require('./routes/formulario.routes'));
 app.use('/api/v1/configuracoes', require('./routes/configuracoes.routes'));
 app.use('/api/v1/diretoria', require('./routes/diretoria.routes'));
 
+// Transmissão em Tempo Real (Server-Sent Events) para Dashboards e Diretoria
+const { subscribeRealtime } = require('./services/realtime.service');
+app.get('/api/v1/realtime/stream', subscribeRealtime);
+app.get('/api/realtime/stream', subscribeRealtime);
+
 // Serve static files with anti-cache for PWA Service Worker and HTML pages
 const frontendPath = path.join(__dirname, '..', 'frontend');
 

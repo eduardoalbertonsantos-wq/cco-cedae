@@ -392,6 +392,57 @@ router.get('/stats', (req, res) => {
 
         const total_sem_vistoria_semana = postos_criticos_cont + postos_atencao_cont;
 
+        // 15. Fiscais em Atividade (Preenchendo no momento da data/período selecionado)
+        const fiscais_em_atividade = db.prepare(`
+            SELECT 
+                r.id as relatorio_id,
+                r.setor_id,
+                s.nome as setor_nome,
+                s.sigla as setor_sigla,
+                r.data_servico,
+                r.turno,
+                COALESCE(sup.nome, r.responsavel_nome, 'Fiscal Operacional') as fiscal_nome,
+                r.created_at,
+                COUNT(pr.id) as postos_preenchidos,
+                MAX(pr.horario_supervisao) as ultimo_horario_posto
+            FROM relatorios r
+            JOIN setores s ON r.setor_id = s.id
+            LEFT JOIN supervisores sup ON r.supervisor_id = sup.id
+            LEFT JOIN postos_relatorio pr ON pr.relatorio_id = r.id
+            WHERE r.status = 'em_aberto' ${dateCondition}
+            GROUP BY r.id
+            ORDER BY r.id DESC
+        `).all(...dateParams).map(f => {
+            let totalSetor = 12;
+            if (f.setor_id === 1) totalSetor = 12;
+            else if (f.setor_id === 2) totalSetor = 19;
+            else if (f.setor_id === 3) totalSetor = 6;
+            else if (f.setor_id === 4) totalSetor = postos_cadastrados || 70;
+
+            const pct = totalSetor > 0 ? Math.min(100, Math.round((f.postos_preenchidos / totalSetor) * 100)) : 0;
+            let horaAtualizacao = f.ultimo_horario_posto;
+            if (!horaAtualizacao && f.created_at) {
+                const parts = String(f.created_at).split(' ');
+                horaAtualizacao = parts[1] ? parts[1].substring(0, 8) : String(f.created_at);
+            }
+            if (!horaAtualizacao) horaAtualizacao = 'Em andamento';
+
+            return {
+                relatorio_id: f.relatorio_id,
+                setor_id: f.setor_id,
+                setor_nome: f.setor_nome,
+                setor_sigla: f.setor_sigla,
+                fiscal_nome: f.fiscal_nome,
+                turno: f.turno,
+                data_servico: f.data_servico,
+                postos_preenchidos: f.postos_preenchidos,
+                postos_total_setor: totalSetor,
+                progresso_texto: `${f.postos_preenchidos}/${totalSetor} postos`,
+                percentual: pct,
+                ultima_atualizacao: horaAtualizacao
+            };
+        });
+
         res.json({
             total_setores,
             supervisores_ativos,
@@ -410,6 +461,7 @@ router.get('/stats', (req, res) => {
             km_rodados,
             ultimo_relatorio,
             status_setores,
+            fiscais_em_atividade,
             grafico_situacao,
             grafico_setores,
             grafico_km,

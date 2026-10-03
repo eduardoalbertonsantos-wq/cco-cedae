@@ -10,9 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await carregarFiltrosDashboard();
     await atualizarDashboard();
     setupDashboardListeners();
-    
-    // Atualização em tempo real do painel a cada 15 segundos
-    setInterval(atualizarDashboard, 15 * 1000);
+    iniciarRealtimeDashboard();
 });
 
 async function carregarFiltrosDashboard() {
@@ -142,6 +140,9 @@ async function atualizarDashboard() {
             ultTexto.textContent = 'Nenhum relatório recente encontrado';
             if (ultData) ultData.textContent = '-';
         }
+
+        // 1.5. Renderizar Fiscais em Atividade (Preenchimento em Tempo Real)
+        renderizarFiscaisEmAtividade(stats.fiscais_em_atividade);
 
         // 2. Renderizar Painel Específico por Setor
         renderizarPainelPorSetor(stats.status_setores);
@@ -351,4 +352,96 @@ function renderizarGraficos(stats) {
         });
     }
 }
+
+function renderizarFiscaisEmAtividade(fiscais) {
+    const container = document.getElementById('containerFiscaisAtividade');
+    const badge = document.getElementById('badgeQtdFiscaisAtividade');
+    if (!container) return;
+
+    const lista = fiscais || [];
+    if (badge) {
+        badge.textContent = `${lista.length} em atividade`;
+        badge.style.background = lista.length > 0 ? '#fef3c7' : '#f1f5f9';
+        badge.style.color = lista.length > 0 ? '#b45309' : '#64748b';
+        badge.style.borderColor = lista.length > 0 ? '#fde68a' : '#e2e8f0';
+    }
+
+    if (lista.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; padding: 1.25rem; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-size: 0.85rem; text-align: center;">
+                ⚪ Nenhum fiscal em preenchimento neste momento para a data/período selecionado.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = lista.map(f => `
+        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(245,158,11,0.08); display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+                <div>
+                    <div style="font-size: 0.95rem; font-weight: 800; color: #1e293b;">👮 ${f.fiscal_nome}</div>
+                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+                        Setor: <strong style="color: #0369a1;">${f.setor_nome}</strong> &bull; Turno: <strong>${f.turno}</strong>
+                    </div>
+                </div>
+                <span class="badge" style="background: #fef08a; color: #854d0e; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; white-space: nowrap;">
+                    🟡 EM PREENCHIMENTO
+                </span>
+            </div>
+            <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                    <span>Progresso: <strong>${f.progresso_texto}</strong></span>
+                    <span style="color: #b45309; font-weight: 800;">${f.percentual}%</span>
+                </div>
+                <div style="height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                    <div style="height: 100%; width: ${f.percentual}%; background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%); transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+            <div style="margin-top: 8px; font-size: 0.75rem; color: #94a3b8; text-align: right; border-top: 1px solid #fef3c7; padding-top: 5px;">
+                Última atualização: <strong style="color: #475569;">${f.ultima_atualizacao}</strong>
+            </div>
+        </div>
+    `).join('');
+}
+
+let realtimeEventSource = null;
+let realtimeFallbackTimer = null;
+
+function iniciarRealtimeDashboard() {
+    // 1. Transmissão em tempo real Server-Sent Events (SSE)
+    try {
+        if (typeof EventSource !== 'undefined') {
+            realtimeEventSource = new EventSource('/api/v1/realtime/stream');
+            
+            realtimeEventSource.onopen = () => {
+                console.log('⚡ Conectado ao stream em tempo real CCO');
+            };
+
+            realtimeEventSource.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'EM_PREENCHIMENTO' || data.type === 'ENVIADO' || data.type === 'EXCLUIDO') {
+                        // Atualiza automaticamente em segundo plano sem perder foco nem filtros
+                        atualizarDashboard();
+                    }
+                } catch (_) {}
+            };
+
+            realtimeEventSource.onerror = () => {
+                realtimeEventSource?.close();
+                realtimeEventSource = null;
+            };
+        }
+    } catch (eSSE) {
+        console.warn('SSE indisponível no ambiente:', eSSE.message);
+    }
+
+    // 2. Fallback de atualização automática a cada 6 segundos
+    if (!realtimeFallbackTimer) {
+        realtimeFallbackTimer = setInterval(() => {
+            atualizarDashboard();
+        }, 6000);
+    }
+}
+
 

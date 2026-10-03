@@ -46,7 +46,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Carregar dados iniciais
     carregarDadosDiretoria(hojeIso);
 
-    // 5. Auto-Refresh automático a cada 5 minutos
+    // 5. Iniciar escuta Server-Sent Events (SSE) para atualização em tempo real
+    iniciarRealtimeDiretoria();
+
+    // 6. Auto-Refresh automático a cada 5 minutos
     autoRefreshTimer = setInterval(() => {
         const dt = inputData ? inputData.value : getBrasiliaIsoDate();
         carregarDadosDiretoria(dt, true);
@@ -115,6 +118,10 @@ function renderizarPainel(data) {
     // 1. CARDS EXECUTIVOS PRINCIPAIS
     document.getElementById('valPostosDisponiveis').textContent = cards.postos_disponiveis;
     document.getElementById('valPostosFiscalizados').textContent = cards.postos_fiscalizados;
+    const valEmPreench = document.getElementById('valEmPreenchimento');
+    if (valEmPreench) {
+        valEmPreench.textContent = cards.postos_em_preenchimento || 0;
+    }
     document.getElementById('valCobertura').textContent = `${cards.cobertura_percentual}%`;
     document.getElementById('valPendentes').textContent = cards.postos_pendentes;
 
@@ -123,8 +130,20 @@ function renderizarPainel(data) {
     document.getElementById('subPendentes').textContent = cards.postos_pendentes === 0 
         ? 'Todos os postos fiscalizados' 
         : `${cards.postos_pendentes} aguardando fiscalização`;
+    const subEmPreench = document.getElementById('subEmPreenchimento');
+    if (subEmPreench) {
+        subEmPreench.textContent = (cards.postos_em_preenchimento || 0) > 0 
+            ? `${cards.postos_em_preenchimento} postos em vistoria ativa`
+            : 'Nenhum preenchimento ativo';
+    }
 
-    // 2. FISCALIZAÇÃO POR SETOR
+    // 1.1 FISCAIS EM ATIVIDADE (TEMPO REAL)
+    renderFiscaisEmAtividadeDiretoria(data.fiscais_em_atividade);
+
+    // 1.2 TABELA CONSOLIDADA EXECUTIVA POR SETOR
+    renderTabelaExecutiva(setores);
+
+    // 2. FISCALIZAÇÃO POR SETOR (METAS E BARRAS)
     // 2.1 Tinguá (Oficial: 12)
     renderSetorBox('tingua', setores.tingua.fiscalizados, setores.tingua.oficial, setores.tingua.percentual);
 
@@ -362,6 +381,131 @@ function renderRelatoriosDoDia(relatorios) {
         `;
     });
     listEl.innerHTML = html;
+}
+
+function renderTabelaExecutiva(setores) {
+    const tbody = document.getElementById('tbodyExecutivaDiretoria');
+    if (!tbody || !setores) return;
+
+    const listaSetores = [
+        setores.tingua,
+        setores.guandu,
+        setores.laranjal,
+        setores.plantao
+    ].filter(Boolean);
+
+    tbody.innerHTML = listaSetores.map(s => {
+        let statusBadge = '';
+        if (s.status === 'CONCLUIDO') {
+            statusBadge = '<span class="setor-badge badge-complete">🟢 CONCLUÍDO</span>';
+        } else if (s.status === 'EM_PREENCHIMENTO') {
+            statusBadge = '<span class="setor-badge badge-partial" style="background:#fef08a; color:#854d0e;">🟡 EM PREENCHIMENTO</span>';
+        } else if (s.status === 'PARCIAL') {
+            statusBadge = '<span class="setor-badge" style="background:#e0f2fe; color:#0369a1;">🔵 EM ANDAMENTO</span>';
+        } else {
+            statusBadge = '<span class="setor-badge badge-pending">⚪ NÃO INICIADO</span>';
+        }
+
+        const totalStr = s.escopo_dinamico ? 'Dinâmico' : s.oficial;
+        const pendentesStr = s.escopo_dinamico ? '--' : s.pendentes;
+
+        return `
+            <tr>
+                <td style="font-weight: 700; color: #002B49;">${escapeHtml(s.nome)}</td>
+                <td style="text-align: center; font-weight: 700;">${totalStr}</td>
+                <td style="text-align: center; font-weight: 800; color: #10b981;">${s.fiscalizados}</td>
+                <td style="text-align: center; font-weight: 800; color: #d97706;">${s.em_preenchimento || 0}</td>
+                <td style="text-align: center; font-weight: 700; color: #64748b;">${pendentesStr}</td>
+                <td style="text-align: right;">${statusBadge}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderFiscaisEmAtividadeDiretoria(lista) {
+    const container = document.getElementById('containerFiscaisDir');
+    const badgeCount = document.getElementById('badgeFiscaisAtividadeCountDir');
+    if (!container) return;
+
+    if (!lista || lista.length === 0) {
+        if (badgeCount) badgeCount.textContent = '0 em andamento';
+        container.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 1.25rem; background: #ffffff; border-radius: 6px; border: 1px dashed var(--cedae-border); font-size: 0.85rem;">
+                ⚪ Nenhum fiscal em preenchimento nesta data.
+            </div>
+        `;
+        return;
+    }
+
+    if (badgeCount) {
+        badgeCount.textContent = `${lista.length} ${lista.length === 1 ? 'fiscal preenchendo' : 'fiscais preenchendo'}`;
+    }
+
+    container.innerHTML = lista.map(f => `
+        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(245,158,11,0.08); display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+                <div>
+                    <div style="font-size: 0.95rem; font-weight: 800; color: #002B49;">👮 ${escapeHtml(f.fiscal_nome)}</div>
+                    <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
+                        Setor: <strong style="color: #004b87;">${escapeHtml(f.setor_nome)}</strong> &bull; Turno: <strong>${escapeHtml(f.turno)}</strong>
+                    </div>
+                </div>
+                <span style="background: #fef08a; color: #854d0e; font-weight: 800; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; white-space: nowrap;">
+                    🟡 EM PREENCHIMENTO
+                </span>
+            </div>
+            <div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                    <span>Progresso: <strong>${escapeHtml(f.progresso_texto)}</strong></span>
+                    <span style="color: #b45309; font-weight: 800;">${f.percentual}%</span>
+                </div>
+                <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                    <div style="height: 100%; width: ${f.percentual}%; background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%); transition: width 0.3s ease;"></div>
+                </div>
+            </div>
+            <div style="margin-top: 8px; font-size: 0.72rem; color: #94a3b8; text-align: right; border-top: 1px solid #fef3c7; padding-top: 4px;">
+                Última atualização: <strong style="color: #475569;">${escapeHtml(f.ultima_atualizacao)}</strong>
+            </div>
+        </div>
+    `).join('');
+}
+
+let diretoriaEventSource = null;
+let diretoriaFallbackTimer = null;
+
+function iniciarRealtimeDiretoria() {
+    try {
+        if (typeof EventSource !== 'undefined') {
+            diretoriaEventSource = new EventSource('/api/v1/realtime/stream');
+            
+            diretoriaEventSource.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'EM_PREENCHIMENTO' || data.type === 'ENVIADO' || data.type === 'EXCLUIDO') {
+                        const inputData = document.getElementById('inputDataFiscalizacao');
+                        const dt = inputData ? inputData.value : getBrasiliaIsoDate();
+                        carregarDadosDiretoria(dt, true);
+                    }
+                } catch (_) {}
+            };
+
+            diretoriaEventSource.onerror = () => {
+                diretoriaEventSource?.close();
+                diretoriaEventSource = null;
+            };
+        }
+    } catch (e) {
+        console.warn('Realtime SSE indisponível no ambiente:', e.message);
+    }
+
+    // Fallback de polling a cada 8 segundos para garantir sincronização contínua
+    if (!diretoriaFallbackTimer) {
+        diretoriaFallbackTimer = setInterval(() => {
+            const inputData = document.getElementById('inputDataFiscalizacao');
+            const dt = inputData ? inputData.value : getBrasiliaIsoDate();
+            carregarDadosDiretoria(dt, true);
+        }, 8000);
+    }
 }
 
 function atualizarHorarioUltimaSync() {
