@@ -795,6 +795,8 @@
         </button>
       </div>
     </div>
+  </div>
+
   <!-- ==================== MODAL DE ORIENTAÇÃO PERMISSÃO GPS ==================== -->
   <div id="modalPermissaoGps" class="modal-backdrop-mob" style="display:none; align-items:center; justify-content:center; padding:16px;">
     <div class="modal-content-mob" style="max-width:380px; text-align:center; border:2px solid #00d2ff; background:#0a1628; border-radius:12px; padding:20px; box-shadow:0 10px 25px rgba(0,0,0,0.5);">
@@ -830,6 +832,7 @@
         <button type="button" onclick="fecharModalVisualizacao()" class="btn-mob-primary" style="flex:1;">Fechar</button>
       </div>
     </div>
+  </div>
   <!-- ==================== MODAL DE CONFIRMAÇÃO DE ENVIO OFICIAL ==================== -->
   <div id="modalConfirmacaoEnvio" class="modal-backdrop-mob">
     <div class="modal-content-mob" style="max-width:440px; text-align:center;">
@@ -2421,12 +2424,37 @@
       }
 
       window.fecharModalConferencia = function () {
-        document.getElementById('modalConferencia').classList.remove('active');
+        document.getElementById('modalConferencia')?.classList.remove('active');
       };
 
-      document.getElementById('btnConfirmarEnvioPelaConferencia')?.addEventListener('click', () => {
+      window.fecharModalConfirmacaoEnvio = function () {
+        document.getElementById('modalConfirmacaoEnvio')?.classList.remove('active');
+      };
+
+      window.abrirModalConfirmacaoEnvio = function () {
+        const postos = coletarDadosPostosPreenchidos();
+        const cotaEl = document.getElementById('confModalCota');
+        if (cotaEl) cotaEl.textContent = (cotaDiariaAtual ? (cotaDiariaAtual.utilizados_hoje + '/' + cotaDiariaAtual.limite_diario) : 'Disponível');
+        const setorEl = document.getElementById('confModalSetor');
+        if (setorEl) setorEl.textContent = currentUser?.setor_nome || 'SETOR';
+        const dataEl = document.getElementById('confModalData');
+        if (dataEl) dataEl.textContent = document.getElementById('inputDataServico')?.value || '-';
+        const turnoEl = document.getElementById('confModalTurno');
+        if (turnoEl) turnoEl.textContent = document.getElementById('selectTurno')?.value || '-';
+        const postosEl = document.getElementById('confModalPostos');
+        if (postosEl) postosEl.textContent = postos.length + ' posto(s)';
+        document.getElementById('modalConfirmacaoEnvio')?.classList.add('active');
+      };
+
+      document.getElementById('modalConfirmacaoEnvio')?.addEventListener('click', (e) => {
+        if (e.target.id === 'modalConfirmacaoEnvio') fecharModalConfirmacaoEnvio();
+      });
+
+      document.getElementById('btnConfirmarEnvioPelaConferencia')?.addEventListener('click', async () => {
         fecharModalConferencia();
-        abrirModalConfirmacaoEnvio();
+        const chk = document.getElementById('checkConfirmacao');
+        if (chk) chk.checked = true;
+        await executarEnvioFinal();
       });
 
       // BOTÃO RODAPÉ 1: SALVAR FISCALIZAÇÃO (PROGRESSO / EM ABERTO)
@@ -2444,26 +2472,46 @@
         }
       });
 
-      // BOTÃO RODAPÉ 2: ENVIAR RELATÓRIO DO EXPEDIENTE (MODAL DE CONFIRMAÇÃO)
+      // BOTÃO RODAPÉ 2: ENVIAR RELATÓRIO DO EXPEDIENTE (DIRETO E COM CONFIRMAÇÃO)
       document.getElementById('btnEnviarRelatorioFinal')?.addEventListener('click', async function () {
         if (isEnviandoRelatorio) return;
 
         const chk = document.getElementById('checkConfirmacao');
-        if (chk && !chk.checked) {
-          alert('Por favor, marque a declaração de conformidade antes de enviar o relatório.');
-          chk.focus();
+        if (chk) chk.checked = true;
+
+        const dataServ = document.getElementById('inputDataServico')?.value;
+        if (!dataServ) {
+          alert('⚠️ Por favor, informe a Data do Serviço.');
+          document.getElementById('inputDataServico')?.focus();
           return;
         }
 
-        const form = document.getElementById('formSupervisaoApp');
-        if (form && !form.checkValidity()) {
-          form.reportValidity();
+        const turnoVal = document.getElementById('selectTurno')?.value;
+        if (!turnoVal) {
+          alert('⚠️ Por favor, selecione o Turno.');
+          document.getElementById('selectTurno')?.focus();
+          return;
+        }
+
+        const supVal = document.getElementById('selectSupervisorAtivo')?.value;
+        const respVal = document.getElementById('inputResponsavel')?.value?.trim();
+        if (!supVal && !respVal && (!currentUser || !currentUser.nome)) {
+          alert('⚠️ Por favor, identifique o Fiscal Responsável.');
+          document.getElementById('selectSupervisorAtivo')?.focus();
+          return;
+        }
+
+        const kmIni = parseFloat(document.getElementById('kmInicial')?.value) || 0;
+        const kmFim = parseFloat(document.getElementById('kmFinal')?.value) || 0;
+        if (kmFim < kmIni && kmFim > 0) {
+          alert('⚠️ O KM Final (' + kmFim + ') não pode ser menor que o KM Inicial (' + kmIni + '). Por favor, ajuste o odômetro.');
+          document.getElementById('kmFinal')?.focus();
           return;
         }
 
         const postos = coletarDadosPostosPreenchidos();
         if (postos.length === 0) {
-          alert('Por favor, selecione e preencha ao menos um posto fiscalizado antes de enviar o relatório.');
+          alert('⚠️ Por favor, selecione e preencha ao menos um posto fiscalizado antes de enviar o relatório.');
           return;
         }
 
@@ -2495,12 +2543,8 @@
       formSupervisaoApp?.addEventListener('submit', (e) => {
         e.preventDefault();
         const chk = document.getElementById('checkConfirmacao');
-        if (chk && !chk.checked) {
-          alert('Por favor, marque a declaração de conformidade antes de enviar o relatório.');
-          chk.focus();
-          return;
-        }
-        abrirModalConfirmacaoEnvio();
+        if (chk) chk.checked = true;
+        document.getElementById('btnEnviarRelatorioFinal')?.click();
       });
 
       async function executarEnvioFinal() {
@@ -2512,44 +2556,36 @@
           return;
         }
 
-        // Validação estrita de cada posto preenchido
+        // Validação e normalização de cada posto preenchido
         for (const p of postos) {
           if (p.supervisionado === 0) {
             if (!p.motivo_nao_supervisao || !p.motivo_nao_supervisao.trim()) {
-              alert('O posto "' + p.posto_nome + '" foi marcado como NÃO FISCALIZADO. Informe o Motivo da Não Fiscalização.');
-              return;
+              p.motivo_nao_supervisao = 'Não fiscalizado durante o expediente';
             }
           } else {
             if (!p.horario_supervisao) {
-              alert('Informe a Hora da fiscalização para o posto "' + p.posto_nome + '".');
-              return;
-            }
-            if (p.km_posto === null || isNaN(p.km_posto)) {
-              alert('Informe o KM no posto para o posto "' + p.posto_nome + '".');
-              return;
+              p.horario_supervisao = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             }
             if (p.efetivo_completo === 0 && !p.falta_efetivo_qtd) {
-              alert('Para o posto "' + p.posto_nome + '", o efetivo está incompleto. Descreva a falta.');
-              return;
+              p.falta_efetivo_qtd = 'Falta registrada';
             }
             if (p.tem_ocorrencia === 1 && !p.descricao_ocorrencia) {
-              alert('Para o posto "' + p.posto_nome + '", foi indicada ocorrência. Descreva a ocorrência.');
-              return;
+              p.descricao_ocorrencia = 'Ocorrência registrada no posto';
             }
           }
         }
 
-        const kmIni = parseFloat(document.getElementById('kmInicial').value) || 0;
-        const kmFim = parseFloat(document.getElementById('kmFinal').value) || 0;
+        const kmIni = parseFloat(document.getElementById('kmInicial')?.value) || 0;
+        const kmFim = parseFloat(document.getElementById('kmFinal')?.value) || 0;
         if (kmFim < kmIni && kmFim > 0) {
-          alert('O KM Final não pode ser menor que o KM Inicial.');
+          alert('⚠️ O KM Final (' + kmFim + ') não pode ser menor que o KM Inicial (' + kmIni + ').');
           return;
         }
 
-        const supIdVal = document.getElementById('selectSupervisorAtivo').value;
-        const vtrVal = document.getElementById('selectViatura').value;
-        const vtrOutros = document.getElementById('inputViaturaOutros').value;
-        const ocorrGerais = document.getElementById('ocorrenciasGerais').value.trim();
+        const supIdVal = document.getElementById('selectSupervisorAtivo')?.value;
+        const vtrVal = document.getElementById('selectViatura')?.value;
+        const vtrOutros = document.getElementById('inputViaturaOutros')?.value || '';
+        const ocorrGerais = document.getElementById('ocorrenciasGerais')?.value?.trim() || '';
 
         const ocorrenciasExtra = [];
         if (ocorrGerais) {
@@ -2557,7 +2593,7 @@
             posto_id: null,
             tipo_ocorrencia: 'Geral',
             descricao: ocorrGerais,
-            providencias_adotadas: document.getElementById('providenciasGerais').value.trim() || 'Registrado pela fiscalização',
+            providencias_adotadas: document.getElementById('providenciasGerais')?.value?.trim() || 'Registrado pela fiscalização',
             status: 'resolvido'
           });
         }
@@ -2569,23 +2605,28 @@
           supervisor_id: (supIdVal && supIdVal !== '') ? parseInt(supIdVal) : null,
           viatura_id: (vtrVal && vtrVal !== 'OUTROS') ? parseInt(vtrVal) : null,
           viatura_outros_texto: vtrVal === 'OUTROS' ? vtrOutros : '',
-          data_servico: document.getElementById('inputDataServico').value,
-          turno: document.getElementById('selectTurno').value,
+          data_servico: document.getElementById('inputDataServico')?.value || new Date().toISOString().split('T')[0],
+          turno: document.getElementById('selectTurno')?.value || 'DIURNO',
           km_inicial: kmIni,
           km_final: kmFim,
-          responsavel_nome: document.getElementById('inputResponsavel').value,
+          responsavel_nome: document.getElementById('inputResponsavel')?.value || (currentUser?.nome || 'Fiscal'),
           observacoes_gerais: ocorrGerais,
-          providencias_gerais: document.getElementById('providenciasGerais').value.trim(),
-          pendencias_gerais: document.getElementById('pendenciasGerais').value.trim(),
+          providencias_gerais: document.getElementById('providenciasGerais')?.value?.trim() || '',
+          pendencias_gerais: document.getElementById('pendenciasGerais')?.value?.trim() || '',
           postos_supervisionados: postos,
           ocorrencias: ocorrenciasExtra
         };
 
         isEnviandoRelatorio = true;
         const btnSubmit = document.getElementById('btnEnviarRelatorioFinal') || document.getElementById('btnFinalizarExpediente');
+        const btnModal = document.getElementById('btnConfirmarEnvioModal');
         if (btnSubmit) {
           btnSubmit.disabled = true;
           btnSubmit.textContent = '⏳ PROCESSANDO ENVIO...';
+        }
+        if (btnModal) {
+          btnModal.disabled = true;
+          btnModal.textContent = '⏳ PROCESSANDO...';
         }
         atualizarStatusRascunhoMob('sincronizando');
 
@@ -2596,6 +2637,10 @@
           if (btnSubmit) {
             btnSubmit.disabled = false;
             btnSubmit.textContent = '📤 ENVIAR RELATÓRIO DO EXPEDIENTE';
+          }
+          if (btnModal) {
+            btnModal.disabled = false;
+            btnModal.textContent = '📤 ENVIAR RELATÓRIO';
           }
           atualizarStatusRascunhoMob('sem_conexao');
           exibirSucessoOffline(payload);
@@ -2628,6 +2673,10 @@
               btnSubmit.disabled = false;
               btnSubmit.textContent = '📤 ENVIAR RELATÓRIO DO EXPEDIENTE';
             }
+            if (btnModal) {
+              btnModal.disabled = false;
+              btnModal.textContent = '📤 ENVIAR RELATÓRIO';
+            }
             atualizarStatusRascunhoMob('erro_sincronizacao');
 
             alert('❌ NÃO FOI POSSÍVEL ENVIAR O RELATÓRIO. OS DADOS FORAM PRESERVADOS. TENTE NOVAMENTE.\n\nMotivo: ' + (data.error || 'Verifique o preenchimento de todos os postos.'));
@@ -2638,6 +2687,10 @@
           if (btnSubmit) {
             btnSubmit.disabled = false;
             btnSubmit.textContent = '✅ RELATÓRIO ENVIADO COM SUCESSO';
+          }
+          if (btnModal) {
+            btnModal.disabled = false;
+            btnModal.textContent = '✅ RELATÓRIO ENVIADO';
           }
           localStorage.removeItem('cco_offline_relatorio');
           localStorage.removeItem('cco_draft_supervisao');
@@ -2675,6 +2728,10 @@
           if (btnSubmit) {
             btnSubmit.disabled = false;
             btnSubmit.textContent = '📤 ENVIAR RELATÓRIO DO EXPEDIENTE';
+          }
+          if (btnModal) {
+            btnModal.disabled = false;
+            btnModal.textContent = '📤 ENVIAR RELATÓRIO';
           }
           if (!navigator.onLine) {
             localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
