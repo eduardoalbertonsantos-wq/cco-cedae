@@ -541,9 +541,14 @@
       </div>
 
       <!-- BANNER DE RELATÓRIO EM PREENCHIMENTO -->
-      <div id="bannerEmAndamento" style="display:none; background:#78350f; color:#fef08a; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-weight:700; font-size:0.85rem; border:1px solid #facc15; align-items:center; gap:8px;">
-        <span style="font-size:1.1rem;">🟡</span>
-        <span id="bannerEmAndamentoTexto">Relatório em preenchimento recuperado. Continue preenchendo os postos pendentes.</span>
+      <div id="bannerEmAndamento" style="display:none; background:#78350f; color:#fef08a; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-weight:700; font-size:0.85rem; border:1px solid #facc15; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:1.1rem;">🟡</span>
+          <span id="bannerEmAndamentoTexto">Relatório em preenchimento recuperado. Continue preenchendo os postos pendentes.</span>
+        </div>
+        <button type="button" onclick="restaurarRascunhoLocalManual()" style="background:#0284c7; color:#fff; border:none; border-radius:6px; padding:6px 12px; font-size:0.75rem; font-weight:800; cursor:pointer;">
+          🔄 RECARREGAR DO CELULAR
+        </button>
       </div>
 
       <!-- FORMULÁRIO DO EXPEDIENTE -->
@@ -1207,6 +1212,13 @@
         document.getElementById('inputResponsavel').value = currentUser.nome || '';
         document.getElementById('inputDataServico').value = getHojeBrasiliaISO();
 
+        // Detecção automática inteligente do turno pelo horário de Brasília
+        const horaAtual = new Date().getHours();
+        const selTurno = document.getElementById('selectTurno');
+        if (selTurno) {
+          selTurno.value = (horaAtual >= 18 || horaAtual < 6) ? 'NOTURNO' : 'DIURNO';
+        }
+
         await carregarEstruturaSetor();
         await checarERecuperarRelatorioEmAndamento();
         await atualizarCotaDiariaDoFiscal();
@@ -1842,16 +1854,103 @@
         }
       };
 
+      window.restaurarRascunhoLocalManual = async function() {
+        try {
+          const draftJson = localStorage.getItem('cco_draft_supervisao');
+          if (!draftJson) {
+            alert('ℹ️ Nenhum rascunho salvo foi encontrado na memória deste aparelho.');
+            return;
+          }
+          const draftLocal = JSON.parse(draftJson);
+          aplicarDadosDoRascunhoNaTela(draftLocal);
+          await salvarProgressoNoServidor(true);
+          alert('✓ RASCUNHO RECUPERADO COM SUCESSO!\n\nTurno: ' + (draftLocal.turno || 'NOTURNO') + '\nData: ' + (draftLocal.data_servico || '') + '\nPostos: ' + (draftLocal.postos_supervisionados ? draftLocal.postos_supervisionados.length : 0) + '\n\nSeus dados foram sincronizados com a central do CCO.');
+        } catch (e) {
+          alert('Erro ao restaurar rascunho: ' + e.message);
+        }
+      };
+
+      function aplicarDadosDoRascunhoNaTela(draftLocal) {
+        if (!draftLocal) return;
+
+        if (draftLocal.turno) {
+          const turSel = document.getElementById('selectTurno');
+          if (turSel) turSel.value = draftLocal.turno;
+        }
+        if (draftLocal.data_servico) {
+          const dtInp = document.getElementById('inputDataServico');
+          if (dtInp) dtInp.value = draftLocal.data_servico;
+        }
+        if (draftLocal.supervisor_id) {
+          const supSel = document.getElementById('selectSupervisorAtivo');
+          if (supSel) supSel.value = draftLocal.supervisor_id;
+        }
+        if (draftLocal.responsavel_nome) {
+          const respInp = document.getElementById('inputResponsavel');
+          if (respInp) respInp.value = draftLocal.responsavel_nome;
+        }
+        if (draftLocal.viatura_id) {
+          const vSel = document.getElementById('selectViatura');
+          if (vSel) {
+            vSel.value = draftLocal.viatura_id;
+            vSel.dispatchEvent(new Event('change'));
+          }
+        } else if (draftLocal.viatura_outros_texto) {
+          const vSel = document.getElementById('selectViatura');
+          if (vSel) {
+            vSel.value = 'OUTROS';
+            vSel.dispatchEvent(new Event('change'));
+            const inpOutros = document.getElementById('inputViaturaOutros');
+            if (inpOutros) inpOutros.value = draftLocal.viatura_outros_texto;
+          }
+        }
+        if (draftLocal.km_inicial !== undefined && draftLocal.km_inicial !== null) {
+          document.getElementById('kmInicial').value = draftLocal.km_inicial;
+        }
+        if (draftLocal.km_final !== undefined && draftLocal.km_final !== null && draftLocal.km_final > 0) {
+          document.getElementById('kmFinal').value = draftLocal.km_final;
+        }
+        if (draftLocal.observacoes_gerais) {
+          document.getElementById('ocorrenciasGerais').value = draftLocal.observacoes_gerais;
+        }
+        if (draftLocal.providencias_gerais) {
+          document.getElementById('providenciasGerais').value = draftLocal.providencias_gerais;
+        }
+        if (draftLocal.pendencias_gerais) {
+          document.getElementById('pendenciasGerais').value = draftLocal.pendencias_gerais;
+        }
+
+        if (draftLocal.postos_supervisionados && Array.isArray(draftLocal.postos_supervisionados) && draftLocal.postos_supervisionados.length > 0) {
+          preencherCardsComDadosSalvos(draftLocal.postos_supervisionados);
+        }
+
+        document.getElementById('kmInicial')?.dispatchEvent(new Event('input'));
+        atualizarContadores();
+      }
+
       async function checarERecuperarRelatorioEmAndamento() {
         const sId = currentUser ? (currentUser.setor_id || 4) : 4;
-        const dataServico = document.getElementById('inputDataServico')?.value || getHojeBrasiliaISO();
-        const turno = document.getElementById('selectTurno')?.value || 'DIURNO';
 
         let draftLocal = null;
         try {
           const draftJson = localStorage.getItem('cco_draft_supervisao');
           if (draftJson) draftLocal = JSON.parse(draftJson);
         } catch (e) {}
+
+        // 1. Se existir rascunho local, pré-alimenta imediatamente turno e data
+        if (draftLocal) {
+          if (draftLocal.turno) {
+            const turSel = document.getElementById('selectTurno');
+            if (turSel) turSel.value = draftLocal.turno;
+          }
+          if (draftLocal.data_servico) {
+            const dtInp = document.getElementById('inputDataServico');
+            if (dtInp) dtInp.value = draftLocal.data_servico;
+          }
+        }
+
+        const dataServico = document.getElementById('inputDataServico')?.value || getHojeBrasiliaISO();
+        const turno = document.getElementById('selectTurno')?.value || ((new Date().getHours() >= 18 || new Date().getHours() < 6) ? 'NOTURNO' : 'DIURNO');
 
         const relId = relatorioIdAtivo || (draftLocal ? draftLocal.relatorio_id : null);
         const banner = document.getElementById('bannerEmAndamento');
@@ -1864,35 +1963,32 @@
           const res = await fetch(url, {
             headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('cco_token') || '') }
           });
-          if (!res.ok) return;
 
-          const data = await res.json();
-          if (data.tem_relatorio && data.relatorio) {
+          let data = null;
+          if (res.ok) {
+            data = await res.json();
+          }
+
+          if (data && data.tem_relatorio && data.relatorio) {
             const r = data.relatorio;
             relatorioIdAtivo = r.id;
 
             if (r.supervisor_id) {
               const supSel = document.getElementById('selectSupervisorAtivo');
-              if (supSel) {
-                supSel.value = r.supervisor_id;
-              }
+              if (supSel) supSel.value = r.supervisor_id;
             }
-
             if (r.responsavel_nome) {
               const respInp = document.getElementById('inputResponsavel');
               if (respInp) respInp.value = r.responsavel_nome;
             }
-
             if (r.data_servico) {
               const dtInp = document.getElementById('inputDataServico');
               if (dtInp) dtInp.value = r.data_servico;
             }
-
             if (r.turno) {
               const turSel = document.getElementById('selectTurno');
               if (turSel) turSel.value = r.turno;
             }
-
             if (r.viatura_id) {
               const vSel = document.getElementById('selectViatura');
               if (vSel) {
@@ -1908,7 +2004,6 @@
                 if (inpOutros) inpOutros.value = r.viatura_outros_texto;
               }
             }
-
             if (r.km_inicial !== null && r.km_inicial !== undefined) {
               document.getElementById('kmInicial').value = r.km_inicial;
             }
@@ -1936,26 +2031,34 @@
               banner.style.display = 'flex';
               bannerTexto.innerHTML = '🟡 <strong>RELATÓRIO EM PREENCHIMENTO (Nº ' + r.id + ') RECUPERADO:</strong> ' + (data.postos ? data.postos.length : 0) + ' postos carregados. Continue preenchendo os postos pendentes.';
             }
-          } else if (draftLocal && draftLocal.postos_supervisionados && draftLocal.postos_supervisionados.length > 0) {
-            if (draftLocal.relatorio_id) relatorioIdAtivo = draftLocal.relatorio_id;
-            if (draftLocal.supervisor_id) {
-              const supSel = document.getElementById('selectSupervisorAtivo');
-              if (supSel) supSel.value = draftLocal.supervisor_id;
+          } else if (draftLocal) {
+            // RECUPERAÇÃO AUTOMÁTICA DE CONTINGÊNCIA (DO APARELHO LOCAL)
+            aplicarDadosDoRascunhoNaTela(draftLocal);
+
+            if (banner && bannerTexto) {
+              banner.style.display = 'flex';
+              bannerTexto.innerHTML = '🟡 <strong>RASCUNHO LOCAL (' + (draftLocal.turno || 'NOTURNO') + ') RECUPERADO DO APARELHO:</strong> Seus dados foram restaurados. Sincronizando com o CCO central...';
             }
-            if (draftLocal.responsavel_nome) {
-              const respInp = document.getElementById('inputResponsavel');
-              if (respInp) respInp.value = draftLocal.responsavel_nome;
+
+            // Sincroniza em segundo plano com o servidor para criar o relatório em aberto no CCO imediatamente
+            try {
+              await salvarProgressoNoServidor(true);
+            } catch (syncErr) {
+              console.warn('Sincronização em segundo plano postergada:', syncErr);
             }
-            if (draftLocal.km_inicial !== undefined) document.getElementById('kmInicial').value = draftLocal.km_inicial;
-            if (draftLocal.km_final !== undefined && draftLocal.km_final > 0) document.getElementById('kmFinal').value = draftLocal.km_final;
-            preencherCardsComDadosSalvos(draftLocal.postos_supervisionados);
-            atualizarContadores();
           } else {
             relatorioIdAtivo = null;
             if (banner) banner.style.display = 'none';
           }
         } catch (err) {
           console.warn('Erro ao verificar relatório em andamento:', err);
+          if (draftLocal) {
+            aplicarDadosDoRascunhoNaTela(draftLocal);
+            if (banner && bannerTexto) {
+              banner.style.display = 'flex';
+              bannerTexto.innerHTML = '🟡 <strong>RASCUNHO LOCAL (' + (draftLocal.turno || 'NOTURNO') + ') RECUPERADO:</strong> Operando em modo de contingência local.';
+            }
+          }
         }
       }
 
@@ -2565,6 +2668,22 @@
           if (btnSubmit) btnSubmit.textContent = '✅ RELATÓRIO ENVIADO COM SUCESSO';
           localStorage.removeItem('cco_offline_relatorio');
           localStorage.removeItem('cco_draft_supervisao');
+
+          // Guarda cópia permanente no histórico do aparelho celular (nunca apagada)
+          try {
+            const histRaw = localStorage.getItem('cco_historico_envios_locais') || '[]';
+            const hist = JSON.parse(histRaw);
+            hist.unshift({
+              id: data.id,
+              data_servico: payload.data_servico,
+              turno: payload.turno,
+              supervisor_nome: payload.responsavel_nome,
+              enviado_em: new Date().toISOString(),
+              payload: payload
+            });
+            localStorage.setItem('cco_historico_envios_locais', JSON.stringify(hist.slice(0, 30)));
+          } catch (eHist) {}
+
           relatorioIdAtivo = null;
           const banner = document.getElementById('bannerEmAndamento');
           if (banner) banner.style.display = 'none';
