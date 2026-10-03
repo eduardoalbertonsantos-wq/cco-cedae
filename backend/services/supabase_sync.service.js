@@ -379,9 +379,32 @@ async function syncAllLocalToSupabase() {
     }
 }
 
+/**
+ * Exclui com segurança o relatório e seus registros filhos do Supabase.
+ */
+async function deleteRelatorioFromSupabase(relatorioId) {
+    const client = getPgClient();
+    if (!client) return;
+
+    try {
+        await client.connect();
+        const rId = parseInt(relatorioId);
+        // Exclui em cascata na nuvem
+        await client.query('DELETE FROM ocorrencias WHERE relatorio_id = $1', [rId]);
+        await client.query('DELETE FROM postos_relatorio WHERE relatorio_id = $1', [rId]);
+        await client.query('DELETE FROM relatorios WHERE id = $1', [rId]);
+        await client.end();
+        console.log(`☁️ [SUPABASE] Relatório #${rId} excluído com sucesso da nuvem.`);
+    } catch (err) {
+        console.warn(`⚠️ [SUPABASE] Falha ao excluir relatório #${relatorioId} da nuvem:`, err.message);
+        try { await client.end(); } catch (_) {}
+    }
+}
+
 module.exports = {
     syncFromSupabaseOnStartup,
     pushRelatorioToSupabase,
+    deleteRelatorioFromSupabase,
     syncAllLocalToSupabase,
     getConnectionString
 };

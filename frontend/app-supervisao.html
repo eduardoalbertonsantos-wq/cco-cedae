@@ -704,7 +704,7 @@
     <section id="view-sucesso" class="view-card" style="display:none; text-align:center; padding:24px 16px;">
       <div style="font-size:3rem; color:#4ade80; margin-bottom:8px;">✓</div>
       <h2 style="color:#4ade80; margin:0 0 6px 0; font-size:1.3rem; font-weight:900;">
-        ✅ FISCALIZAÇÃO SALVA COM SUCESSO
+        ✅ RELATÓRIO ENVIADO COM SUCESSO
       </h2>
       <p style="color:#cbd5e1; font-size:0.9rem; margin:0 0 16px 0;" id="sucesso-info-texto">
         Os dados foram consolidados no banco central e estão imediatamente disponíveis para a equipe CCO.
@@ -913,6 +913,7 @@
       let textoWhatsAppGerado = '';
       let isPlantao = false;
       let relatorioIdAtivo = null;
+      let isEnviandoRelatorio = false;
       let cotaDiariaAtual = { relatorios_hoje: 0, limite: 2, disponiveis: 2, bloqueado: false, label: '0/2' };
 
       async function atualizarCotaDiariaDoFiscal() {
@@ -939,14 +940,10 @@
 
           if (lbl) lbl.textContent = data.label || '0/2';
           if (badge) {
-            if (data.bloqueado) {
-              badge.style.background = '#7f1d1d';
-              badge.style.borderColor = '#ef4444';
-              badge.style.color = '#fca5a5';
-            } else if (data.relatorios_hoje === 1) {
-              badge.style.background = '#78350f';
-              badge.style.borderColor = '#f59e0b';
-              badge.style.color = '#fde68a';
+            if (data.relatorios_hoje >= 1) {
+              badge.style.background = '#15803d';
+              badge.style.borderColor = '#22c55e';
+              badge.style.color = '#86efac';
             } else {
               badge.style.background = '#1e3a8a';
               badge.style.borderColor = '#0284c7';
@@ -954,18 +951,11 @@
             }
           }
 
-          if (btnEnv) {
-            if (data.bloqueado) {
-              btnEnv.disabled = true;
-              btnEnv.style.opacity = '0.6';
-              btnEnv.style.cursor = 'not-allowed';
-              btnEnv.title = '⚠️ Limite diário de 2 relatórios atingido para esta data.';
-            } else {
-              btnEnv.disabled = false;
-              btnEnv.style.opacity = '1';
-              btnEnv.style.cursor = 'pointer';
-              btnEnv.title = '';
-            }
+          if (btnEnv && !isEnviandoRelatorio) {
+            btnEnv.disabled = false;
+            btnEnv.style.opacity = '1';
+            btnEnv.style.cursor = 'pointer';
+            btnEnv.title = 'Enviar Relatório do Expediente';
           }
         } catch (e) {
           console.warn('Erro ao verificar cota diária:', e);
@@ -2456,6 +2446,8 @@
 
       // BOTÃO RODAPÉ 2: ENVIAR RELATÓRIO DO EXPEDIENTE (MODAL DE CONFIRMAÇÃO)
       document.getElementById('btnEnviarRelatorioFinal')?.addEventListener('click', async function () {
+        if (isEnviandoRelatorio) return;
+
         const chk = document.getElementById('checkConfirmacao');
         if (chk && !chk.checked) {
           alert('Por favor, marque a declaração de conformidade antes de enviar o relatório.');
@@ -2466,12 +2458,6 @@
         const form = document.getElementById('formSupervisaoApp');
         if (form && !form.checkValidity()) {
           form.reportValidity();
-          return;
-        }
-
-        await atualizarCotaDiariaDoFiscal();
-        if (cotaDiariaAtual.bloqueado) {
-          alert('⚠️ Limite diário de 2 relatórios atingido.\n\nCada fiscal pode enviar no máximo 2 relatórios por dia na data selecionada.\nNovos envios estão bloqueados.');
           return;
         }
 
@@ -2518,6 +2504,8 @@
       });
 
       async function executarEnvioFinal() {
+        if (isEnviandoRelatorio) return;
+
         const postos = coletarDadosPostosPreenchidos();
         if (postos.length === 0) {
           alert('Por favor, selecione e preencha ao menos um posto fiscalizado.');
@@ -2593,16 +2581,18 @@
           ocorrencias: ocorrenciasExtra
         };
 
+        isEnviandoRelatorio = true;
         const btnSubmit = document.getElementById('btnEnviarRelatorioFinal') || document.getElementById('btnFinalizarExpediente');
         if (btnSubmit) {
           btnSubmit.disabled = true;
-          btnSubmit.textContent = '⏳ TRANSMITINDO AO CCO...';
+          btnSubmit.textContent = '⏳ PROCESSANDO ENVIO...';
         }
         atualizarStatusRascunhoMob('sincronizando');
 
         if (!navigator.onLine) {
           // Fila offline
           localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
+          isEnviandoRelatorio = false;
           if (btnSubmit) {
             btnSubmit.disabled = false;
             btnSubmit.textContent = '📤 ENVIAR RELATÓRIO DO EXPEDIENTE';
@@ -2633,39 +2623,22 @@
           }
 
           if (!res.ok) {
+            isEnviandoRelatorio = false;
             if (btnSubmit) {
               btnSubmit.disabled = false;
-              btnSubmit.textContent = '❌ TENTAR NOVAMENTE';
+              btnSubmit.textContent = '📤 ENVIAR RELATÓRIO DO EXPEDIENTE';
             }
             atualizarStatusRascunhoMob('erro_sincronizacao');
 
-            if (res.status === 429) {
-              alert('⚠️ LIMITE DIÁRIO ATINGIDO:\n' + (data.error || 'Limite de 2 relatórios por dia atingido.'));
-              await atualizarCotaDiariaDoFiscal();
-              return;
-            }
-            if (res.status === 409) {
-              alert('⚠️ RELATÓRIO JÁ REGISTRADO:\n' + (data.error || 'Já existe um relatório registrado.'));
-              return;
-            }
-            if (res.status === 400) {
-              alert('❌ NÃO FOI POSSÍVEL ENVIAR — Os dados permanecem preenchidos. Verifique os campos e tente novamente.\n\nMotivo: ' + (data.error || 'Verifique o preenchimento de todos os postos.'));
-              return;
-            }
-            if (res.status === 403) {
-              alert('🚫 ACESSO NÃO AUTORIZADO:\n' + (data.error || 'Acesso negado para postos deste setor.'));
-              return;
-            }
-            if (res.status === 401) {
-              alert('🔒 SESSÃO EXPIRADA:\nSua sessão expirou. Faça login novamente.');
-              encerrarSessao();
-              return;
-            }
-            alert('❌ NÃO FOI POSSÍVEL ENVIAR — Os dados permanecem preenchidos. Verifique a conexão e tente novamente.\n\nDetalhe técnico: ' + (data.error || 'Erro no servidor do CCO'));
+            alert('❌ NÃO FOI POSSÍVEL ENVIAR O RELATÓRIO. OS DADOS FORAM PRESERVADOS. TENTE NOVAMENTE.\n\nMotivo: ' + (data.error || 'Verifique o preenchimento de todos os postos.'));
             return;
           }
 
-          if (btnSubmit) btnSubmit.textContent = '✅ RELATÓRIO ENVIADO COM SUCESSO';
+          isEnviandoRelatorio = false;
+          if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.textContent = '✅ RELATÓRIO ENVIADO COM SUCESSO';
+          }
           localStorage.removeItem('cco_offline_relatorio');
           localStorage.removeItem('cco_draft_supervisao');
 
@@ -2697,16 +2670,17 @@
           exibirSucessoOnline(data, payload);
         } catch (networkErr) {
           console.warn('Erro de rede ao enviar relatório:', networkErr);
+          isEnviandoRelatorio = false;
           atualizarStatusRascunhoMob('erro_sincronizacao');
           if (btnSubmit) {
             btnSubmit.disabled = false;
-            btnSubmit.textContent = '❌ TENTAR NOVAMENTE';
+            btnSubmit.textContent = '📤 ENVIAR RELATÓRIO DO EXPEDIENTE';
           }
           if (!navigator.onLine) {
             localStorage.setItem('cco_offline_relatorio', JSON.stringify(payload));
             exibirSucessoOffline(payload);
           } else {
-            alert('❌ NÃO FOI POSSÍVEL ENVIAR — Os dados permanecem preenchidos. Verifique a conexão e tente novamente.\n\nDetalhes de conexão: ' + (networkErr.message || 'Falha de rede'));
+            alert('❌ NÃO FOI POSSÍVEL ENVIAR O RELATÓRIO. OS DADOS FORAM PRESERVADOS. TENTE NOVAMENTE.\n\nDetalhes de conexão: ' + (networkErr.message || 'Falha de comunicação com o servidor CCO'));
           }
         }
       }
@@ -2830,7 +2804,9 @@
         document.getElementById('modalVisualizacaoRelatorio').classList.remove('active');
       };
 
-      document.getElementById('btnNovoExpediente').addEventListener('click', () => {
+      document.getElementById('btnNovoExpediente')?.addEventListener('click', () => {
+        relatorioIdAtivo = null;
+        localStorage.removeItem('cco_draft_supervisao');
         location.reload();
       });
 

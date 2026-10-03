@@ -154,4 +154,90 @@ router.get('/:id', authenticateToken, (req, res) => {
     }
 });
 
+// Excluir Relatório (Acesso restrito ao CCO / Administrador / Diretoria)
+// Libera imediatamente o fiscal para iniciar um novo expediente
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        if (!id || isNaN(id)) {
+            return res.status(400).json({ success: false, message: 'ID de relatório inválido' });
+        }
+
+        const db = getDb();
+
+        // 1. Verificar se o relatório existe e coletar metadados completos
+        const relatorio = db.prepare(`
+            SELECT r.*, s.nome as setor_nome, sup.nome as supervisor_nome,
+                   (SELECT COUNT(*) FROM postos_relatorio WHERE relatorio_id = r.id) as total_postos,
+                   (SELECT COUNT(*) FROM ocorrencias WHERE relatorio_id = r.id) as total_ocorrencias
+            FROM relatorios r
+            JOIN setores s ON r.setor_id = s.id
+            LEFT JOIN supervisores sup ON r.supervisor_id = sup.id
+            WHERE r.id = ?
+        `).get(id);
+
+        if (!relatorio) {
+            return res.status(404).json({ success: false, message: `Relatório #${id} não encontrado.` });
+        }
+
+        // 2. Exclusão atômica em cascata no SQLite
+        const runDeleteTransaction = db.transaction(() => {
+            // Auditoria
+            try {
+                db.prepare(`
+                    INSERT INTO auditoria_log (tabela, registro_id, acao, detalhes, usuario_id, usuario_nome, ip_origem)
+                    VALUES ('relatorios', ?, 'DELETE', ?, ?, ?, ?)
+                `).run(
+                    id,
+                    JSON.stringify({
+                        setor: relatorio.setor_nome,
+                        fiscal: relatorio.responsavel_nome || relatorio.supervisor_nome,
+                        data_servico: relatorio.data_servico,
+                        turno: relatorio.turno,
+                        total_postos: relatorio.total_postos,
+                        status: relatorio.status
+                    }),
+                    req.user ? req.user.id : null,
+                    req.user ? req.user.nome : 'Sistema',
+                    req.ip || '127.0.0.1'
+                );
+            } catch (eAud) {
+                console.warn('Erro ao registrar log de auditoria na exclusão:', eAud.message);
+            }
+
+            // Exclusão dos registros filhos e do relatório
+            db.prepare('DELETE FROM ocorrencias WHERE relatorio_id = ?').run(id);
+            db.prepare('DELETE FROM postos_relatorio WHERE relatorio_id = ?').run(id);
+            db.prepare('DELETE FROM relatorios WHERE id = ?').run(id);
+        });
+
+        runDeleteTransaction();
+
+        // 3. Exclusão em segundo plano na nuvem (Supabase)
+        try {
+            const { deleteRelatorioFromSupabase } = require('../services/supabase_sync.service');
+            deleteRelatorioFromSupabase(id).catch(err => {
+                console.warn(`[SUPABASE] Aviso na exclusão do relatório #${id}:`, err.message);
+            });
+        } catch (_) {}
+
+        return res.json({
+            success: true,
+            message: `Relatório #${id} excluído com sucesso. Fiscal liberado para iniciar novo relatório.`,
+            relatorio_excluido: {
+                id: relatorio.id,
+                setor: relatorio.setor_nome,
+                fiscal: relatorio.responsavel_nome || relatorio.supervisor_nome || 'Supervisor',
+                data_servico: relatorio.data_servico,
+                turno: relatorio.turno,
+                total_postos: relatorio.total_postos,
+                situacao: relatorio.status === 'concluido' ? 'CONSOLIDADO / ENVIADO' : 'EM PREENCHIMENTO'
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao excluir relatório:', error);
+        res.status(500).json({ success: false, message: 'Erro ao excluir relatório: ' + error.message });
+    }
+});
+
 module.exports = router;

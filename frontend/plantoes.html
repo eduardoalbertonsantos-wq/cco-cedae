@@ -158,8 +158,48 @@
           <button type="button" id="btnCopiarWhatsModal" class="btn btn-outline" style="font-weight:700;">📋 Copiar WhatsApp</button>
           <button type="button" id="btnAbrirWhatsModal" class="btn btn-success" style="background:#22c55e; border:none; font-weight:700;">💬 Abrir no WhatsApp</button>
           <button type="button" id="btnImprimirModal" class="btn btn-secondary" style="font-weight:700;">🖨️ Imprimir / PDF</button>
+          <button type="button" id="btnExcluirModal" class="btn btn-danger" style="background:#dc2626; border:none; color:#fff; font-weight:700;">🗑️ Excluir Relatório</button>
         </div>
         <button type="button" id="btnFecharModalRodape" class="btn btn-primary">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DE CONFIRMAÇÃO DE EXCLUSÃO ==================== -->
+  <div id="modalConfirmarExclusao" class="modal-overlay">
+    <div class="modal-box" style="max-width: 520px; border-top: 5px solid #dc2626;">
+      <div class="modal-box-header" style="background:#fef2f2;">
+        <h3 style="margin:0; font-size:1.15rem; color:#dc2626; font-weight:800; display:flex; align-items:center; gap:8px;">
+          🗑️ CONFIRMAR EXCLUSÃO DE RELATÓRIO
+        </h3>
+        <button type="button" id="btnFecharModalExclusaoTopo" style="background:none; border:none; color:#64748b; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-box-body">
+        <p style="margin-top:0; color:#334155; font-size:0.95rem; font-weight:600;">
+          Tem certeza de que deseja excluir permanentemente o relatório abaixo?
+        </p>
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; font-size:0.9rem; line-height:1.6; margin-bottom:14px;">
+          <div><strong>ID:</strong> <span id="excRelId" style="color:#0284c7; font-weight:800;">-</span></div>
+          <div><strong>Setor:</strong> <span id="excSetor" style="font-weight:700;">-</span></div>
+          <div><strong>Fiscal Responsável:</strong> <span id="excFiscal" style="font-weight:700;">-</span></div>
+          <div><strong>Data do Serviço:</strong> <span id="excData">-</span></div>
+          <div><strong>Turno / Horário:</strong> <span id="excTurno">-</span></div>
+          <div><strong>Quantidade de Postos:</strong> <span id="excQtdPostos" style="font-weight:700;">-</span></div>
+          <div><strong>Situação:</strong> <span id="excSituacao">-</span></div>
+        </div>
+
+        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:6px; padding:10px; font-size:0.82rem; color:#991b1b; line-height:1.5;">
+          ⚠️ <strong>AVISO IMPORTANTE:</strong><br>
+          Esta ação apagará o relatório e todos os seus postos/ocorrências associados de forma definitiva (inclusive na nuvem). 
+          <strong>O fiscal será imediatamente liberado</strong> para iniciar e enviar um novo relatório para este expediente.
+        </div>
+      </div>
+      <div class="modal-box-footer" style="justify-content: flex-end; gap: 10px;">
+        <button type="button" id="btnCancelarExclusao" class="btn btn-secondary">Cancelar</button>
+        <button type="button" id="btnConfirmarExclusaoDefinitiva" class="btn btn-danger" style="background:#dc2626; border:none; color:#fff; font-weight:800; padding:8px 16px;">
+          🗑️ SIM, EXCLUIR RELATÓRIO
+        </button>
       </div>
     </div>
   </div>
@@ -205,6 +245,21 @@
         window.print();
       });
 
+      // Excluir pelo modal de detalhes
+      document.getElementById('btnExcluirModal')?.addEventListener('click', () => {
+        if (relatorioAtualCarregado) {
+          solicitarExclusao(relatorioAtualCarregado);
+        }
+      });
+
+      // Modal de confirmação de exclusão
+      document.getElementById('btnCancelarExclusao')?.addEventListener('click', fecharModalExclusao);
+      document.getElementById('btnFecharModalExclusaoTopo')?.addEventListener('click', fecharModalExclusao);
+      document.getElementById('modalConfirmarExclusao')?.addEventListener('click', (e) => {
+        if (e.target.id === 'modalConfirmarExclusao') fecharModalExclusao();
+      });
+      document.getElementById('btnConfirmarExclusaoDefinitiva')?.addEventListener('click', confirmarExclusaoDefinitiva);
+
       // Fechar modal
       const fechar = () => document.getElementById('modalDetalhes').classList.remove('active');
       document.getElementById('btnFecharModalTopo').addEventListener('click', fechar);
@@ -213,9 +268,55 @@
         if (e.target.id === 'modalDetalhes') fechar();
       });
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') fechar();
+        if (e.key === 'Escape') {
+          fechar();
+          fecharModalExclusao();
+        }
       });
     });
+
+    let relatoriosEmMemoria = [];
+    let relatorioAtualCarregado = null;
+    let relatorioParaExcluir = null;
+
+    function solicitarExclusao(r) {
+      relatorioParaExcluir = r;
+      document.getElementById('excRelId').textContent = '#' + r.id;
+      document.getElementById('excSetor').textContent = r.setor_nome || '-';
+      document.getElementById('excFiscal').textContent = r.supervisor_nome || r.responsavel_nome || '-';
+      document.getElementById('excData').textContent = formatDate(r.data_servico);
+      document.getElementById('excTurno').textContent = r.turno || '-';
+      const qtdPostos = r.total_postos !== undefined ? r.total_postos : (r.postos ? r.postos.length : 0);
+      document.getElementById('excQtdPostos').textContent = qtdPostos + ' postos';
+      document.getElementById('excSituacao').textContent = (r.status === 'concluido' ? 'CONSOLIDADO / ENVIADO' : 'EM PREENCHIMENTO');
+      document.getElementById('modalConfirmarExclusao').classList.add('active');
+    }
+
+    function fecharModalExclusao() {
+      document.getElementById('modalConfirmarExclusao').classList.remove('active');
+      relatorioParaExcluir = null;
+    }
+
+    async function confirmarExclusaoDefinitiva() {
+      if (!relatorioParaExcluir) return;
+      const btn = document.getElementById('btnConfirmarExclusaoDefinitiva');
+      const txtAntigo = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '⏳ Excluindo relatório...';
+
+      try {
+        const res = await apiDelete(`/plantoes/${relatorioParaExcluir.id}`);
+        alert(res.message || '✓ Relatório excluído com sucesso. O fiscal foi liberado.');
+        fecharModalExclusao();
+        document.getElementById('modalDetalhes').classList.remove('active');
+        await carregarRelatorios();
+      } catch (err) {
+        alert('Erro ao excluir relatório: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = txtAntigo;
+      }
+    }
 
     async function carregarFiltroSetores() {
       try {
@@ -239,6 +340,7 @@
 
       try {
         const relatorios = await apiGet(`/plantoes?${params.toString()}`);
+        relatoriosEmMemoria = relatorios || [];
         tbody.innerHTML = '';
 
         if (!relatorios || relatorios.length === 0) {
@@ -265,7 +367,12 @@
             <td>${r.total_postos || 0} postos</td>
             <td><strong>${r.km_rodado || 0} km</strong></td>
             <td>${r.total_ocorrencias > 0 ? `<span class="badge badge-red">${r.total_ocorrencias}</span>` : '<span class="badge badge-green">0</span>'}</td>
-            <td><button class="btn btn-sm btn-primary btn-ver-relatorio" data-id="${r.id}">👁️ VER RELATÓRIO</button></td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm btn-primary btn-ver-relatorio" data-id="${r.id}" style="padding:4px 8px;">👁️ VER</button>
+                <button class="btn btn-sm btn-danger btn-excluir-relatorio" data-id="${r.id}" style="background:#dc2626; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-weight:700; cursor:pointer;" title="Excluir Relatório e Liberar Fiscal">🗑️</button>
+              </div>
+            </td>
           `;
           tbody.appendChild(tr);
         });
@@ -278,14 +385,24 @@
           });
         });
 
+        document.querySelectorAll('.btn-excluir-relatorio').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = parseInt(btn.dataset.id);
+            const r = relatoriosEmMemoria.find(x => x.id === id);
+            if (r) solicitarExclusao(r);
+          });
+        });
+
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; color:red;">Erro: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:red;">Erro: ${e.message}</td></tr>`;
       }
     }
 
     async function verDetalhes(id) {
       try {
         const r = await apiGet(`/plantoes/${id}`);
+        relatorioAtualCarregado = r;
         textoWhatsAtual = r.texto_whatsapp || '';
 
         document.getElementById('detalheTitulo').textContent = `RELATÓRIO DO EXPEDIENTE #${r.id}`;

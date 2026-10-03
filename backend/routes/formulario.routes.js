@@ -97,14 +97,14 @@ router.get('/quota', (req, res) => {
         
         const limite = 2;
         const disponiveis = Math.max(0, limite - count);
-        const bloqueado = count >= limite;
+        const bloqueado = false; // Desbloqueado: fiscais podem registrar novos expedientes/plantões livremente
         
         res.json({
             relatorios_hoje: count,
             limite,
             disponiveis,
-            bloqueado,
-            label: `${count}/${limite}`,
+            bloqueado: false,
+            label: count > 0 ? `Envio ${count + 1}` : '0/2',
             data_servico: dataAlvo
         });
     } catch (error) {
@@ -537,14 +537,7 @@ router.post('/enviar', async (req, res) => {
             countConcluidosHoje = rowCount ? rowCount.total : 0;
         }
 
-        if (countConcluidosHoje >= 2) {
-            return res.status(429).json({
-                error: `⚠️ Limite diário de 2 relatórios atingido. O fiscal já possui 2 relatórios enviados e consolidados na data ${data_servico}. Novos envios para esta data estão bloqueados.`,
-                limite_atingido: true,
-                relatorios_hoje: countConcluidosHoje,
-                limite: 2
-            });
-        }
+        // Removido bloqueio por limite diário: fiscais podem registrar novos expedientes/plantões livremente
 
         // Buscar se existe relatório em aberto para atualizar para concluído
         let activeRelId = activeIdNum;
@@ -834,10 +827,10 @@ router.post('/enviar', async (req, res) => {
                 relatorios_hoje: countAtualizado,
                 limite: 2,
                 disponiveis: Math.max(0, 2 - countAtualizado),
-                bloqueado: countAtualizado >= 2,
-                label: `${countAtualizado}/2`
+                bloqueado: false,
+                label: `Envio ${countAtualizado}`
             },
-            message: '✅ FISCALIZAÇÃO ENVIADA COM SUCESSO',
+            message: '✅ RELATÓRIO ENVIADO COM SUCESSO',
             texto_whatsapp: textoWhatsApp
         });
         
