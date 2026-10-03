@@ -33,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (userObj && userObj.perfil === 'supervisor') {
                     window.location.href = 'app-supervisao.html';
+                } else if (userObj && userObj.perfil === 'consulta') {
+                    window.location.href = 'painel-diretoria.html';
                 } else {
                     window.location.href = 'dashboard.html';
                 }

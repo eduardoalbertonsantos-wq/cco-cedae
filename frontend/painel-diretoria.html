@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CCO — Painel Executivo da Diretoria | CEDAE</title>
+  <meta name="theme-color" content="#002B49">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+  <link rel="stylesheet" href="css/diretoria.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- CABEÇALHO EXECUTIVO INSTITUCIONAL -->
+  <header class="exec-header">
+    <div class="exec-header-inner">
+      <div class="brand-block">
+        <span class="brand-badge">DIRETORIA</span>
+        <div class="brand-titles">
+          <h1>CCO &bull; PAINEL EXECUTIVO</h1>
+          <p>FISCALIZAÇÃO OPERACIONAL &bull; CEDAE</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="date-filter-box">
+          <label for="inputDataFiscalizacao">📅 DATA:</label>
+          <input type="date" id="inputDataFiscalizacao" title="Filtrar por data da fiscalização">
+        </div>
+        <button id="btnRefreshExec" class="btn-refresh" title="Atualizar dados agora">
+          ↻ Atualizar
+        </button>
+        <a href="dashboard.html" class="btn-nav-painel" title="Ir para o Painel Geral CCO">
+          🖥️ Painel Operacional
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- BARRA DE STATUS EM TEMPO REAL -->
+  <section class="live-bar">
+    <div class="live-bar-inner">
+      <div class="live-indicator">
+        <span class="dot-pulse"></span>
+        <span>VISUALIZAÇÃO EXECUTIVA &bull; SOMENTE LEITURA</span>
+      </div>
+      <div id="timestampUltimaSync">Sincronizando dados...</div>
+    </div>
+  </section>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="exec-container">
+    
+    <!-- SUBTÍTULO INFORMATIVO DA DATA -->
+    <div style="margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem;">
+      <h2 style="font-size: 1.15rem; font-weight: 900; color: var(--cedae-navy);" id="displayDataSub">
+        DATA DA FISCALIZAÇÃO
+      </h2>
+      <span style="font-size: 0.8rem; font-weight: 700; color: var(--cedae-muted);" id="execUserName">
+        DIRETORIA CEDAE
+      </span>
+    </div>
+
+    <!-- 1. OS 4 CARDS EXECUTIVOS PRINCIPAIS -->
+    <section class="exec-cards-grid">
+      <!-- CARD 1: POSTOS DISPONÍVEIS -->
+      <div class="exec-card card-blue">
+        <div class="card-header-label">🏢 Postos Disponíveis</div>
+        <div class="card-value" id="valPostosDisponiveis">--</div>
+        <div class="card-subtitle">Cadastrados e ativos no sistema</div>
+      </div>
+
+      <!-- CARD 2: POSTOS FISCALIZADOS -->
+      <div class="exec-card card-green">
+        <div class="card-header-label">✅ Postos Fiscalizados</div>
+        <div class="card-value" id="valPostosFiscalizados" style="color: var(--status-green);">--</div>
+        <div class="card-subtitle">Supervisionados na data selecionada</div>
+      </div>
+
+      <!-- CARD 3: COBERTURA -->
+      <div class="exec-card card-blue">
+        <div class="card-header-label">📈 Cobertura</div>
+        <div class="card-value" id="valCobertura" style="color: var(--status-blue);">--%</div>
+        <div class="card-subtitle" id="subCobertura">Calculado automaticamente</div>
+      </div>
+
+      <!-- CARD 4: PENDENTES -->
+      <div class="exec-card card-amber">
+        <div class="card-header-label">⚠️ Pendentes</div>
+        <div class="card-value" id="valPendentes" style="color: var(--status-amber);">--</div>
+        <div class="card-subtitle" id="subPendentes">Aguardando supervisão no dia</div>
+      </div>
+    </section>
+
+    <!-- 2. FISCALIZAÇÃO POR SETOR -->
+    <section class="section-block">
+      <div class="section-title">
+        <span>🏢</span> FISCALIZAÇÃO POR SETOR
+      </div>
+
+      <div class="setores-grid">
+        <!-- TINGUÁ (12) -->
+        <div class="setor-box">
+          <div>
+            <div class="setor-box-header">
+              <span class="setor-name">TINGUÁ</span>
+              <span class="setor-badge" id="badge_tingua">--</span>
+            </div>
+            <div class="setor-stat-row">
+              <div class="setor-numbers">
+                <span id="fisc_tingua">0</span> / <span id="oficial_tingua">12</span>
+              </div>
+              <div class="setor-percent" id="pct_tingua">0%</div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill fill-blue" id="bar_tingua" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="setor-note">Meta Oficial: 12 postos</div>
+        </div>
+
+        <!-- GUANDU (19) -->
+        <div class="setor-box">
+          <div>
+            <div class="setor-box-header">
+              <span class="setor-name">GUANDU</span>
+              <span class="setor-badge" id="badge_guandu">--</span>
+            </div>
+            <div class="setor-stat-row">
+              <div class="setor-numbers">
+                <span id="fisc_guandu">0</span> / <span id="oficial_guandu">19</span>
+              </div>
+              <div class="setor-percent" id="pct_guandu">0%</div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill fill-blue" id="bar_guandu" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="setor-note">Meta Oficial: 19 postos</div>
+        </div>
+
+        <!-- LARANJAL (6) -->
+        <div class="setor-box">
+          <div>
+            <div class="setor-box-header">
+              <span class="setor-name">LARANJAL</span>
+              <span class="setor-badge" id="badge_laranjal">--</span>
+            </div>
+            <div class="setor-stat-row">
+              <div class="setor-numbers">
+                <span id="fisc_laranjal">0</span> / <span id="oficial_laranjal">6</span>
+              </div>
+              <div class="setor-percent" id="pct_laranjal">0%</div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill fill-blue" id="bar_laranjal" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="setor-note">Meta Oficial: 6 postos</div>
+        </div>
+
+        <!-- PLANTÃO (ROTA GERAL / DINÂMICO) -->
+        <div class="setor-box" style="border-left: 3px solid var(--cedae-cyan);">
+          <div>
+            <div class="setor-box-header">
+              <span class="setor-name">PLANTÃO</span>
+              <span class="setor-badge" id="badge_plantao">ROTA GERAL</span>
+            </div>
+            <div class="setor-stat-row">
+              <div class="setor-numbers">
+                <span id="fisc_plantao">0</span> / <span id="oficial_plantao">--</span>
+              </div>
+              <div class="setor-percent" id="pct_plantao">0%</div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill fill-blue" id="bar_plantao" style="width: 0%;"></div>
+            </div>
+          </div>
+          <div class="setor-note">Escopo: Todos os postos ativos</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. DETALHAMENTO DO PLANTÃO -->
+    <section class="section-block">
+      <div class="section-title" style="justify-content: space-between; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span>🔎</span> DETALHAMENTO DO PLANTÃO &bull; DISTRIBUIÇÃO POR SETOR DO POSTO
+        </div>
+        <span style="font-size: 0.75rem; color: var(--cedae-blue); font-weight: 700;" id="plantaoTotalCount">
+          0 postos fiscalizados
+        </span>
+      </div>
+
+      <div class="plantao-split-grid">
+        <!-- TABELA DE DISTRIBUIÇÃO POR SETOR DO POSTO -->
+        <div>
+          <table class="dist-table">
+            <thead>
+              <tr>
+                <th>Setor do Posto</th>
+                <th style="text-align: right;">Fiscalizados pelo Plantão</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaDistribuicaoPlantao">
+              <tr>
+                <td colspan="2" style="text-align: center; color: #64748b; padding: 1.25rem;">
+                  Carregando distribuição...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; line-height: 1.4;">
+            * <em>O Plantão supervisiona qualquer posto da CEDAE. A vinculação original do posto permanece inalterada.</em>
+          </div>
+        </div>
+
+        <!-- LISTA DOS POSTOS COBERTOS PELO PLANTÃO -->
+        <div>
+          <div style="font-size: 0.8rem; font-weight: 800; color: var(--cedae-navy); margin-bottom: 0.5rem;">
+            Postos Fiscalizados pelo Plantão na Data
+          </div>
+          <div class="postos-scroll-list" id="listaPostosPlantao">
+            <div style="text-align: center; padding: 1.5rem; color: #64748b;">
+              Carregando postos...
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. EVOLUÇÃO DIÁRIA -->
+    <section class="section-block">
+      <div class="section-title">
+        <span>📈</span> EVOLUÇÃO DIÁRIA DA COBERTURA &bull; HISTÓRICO RECENTE
+      </div>
+      <div class="chart-container">
+        <canvas id="chartEvolucaoDiaria"></canvas>
+      </div>
+    </section>
+
+    <!-- 5. EXPEDIENTES / RELATÓRIOS DO DIA -->
+    <section class="section-block">
+      <div class="section-title">
+        <span>📋</span> EXPEDIENTES E EQUIPES EM CAMPO NA DATA
+      </div>
+      <div id="listaRelatoriosDia" style="border: 1px solid var(--cedae-border); border-radius: 6px; overflow: hidden; background: #ffffff;">
+        <div style="text-align: center; padding: 1.5rem; color: #64748b;">
+          Carregando relatórios...
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- RODAPÉ EXECUTIVO -->
+  <footer class="exec-footer">
+    CEDAE &bull; Assessoria de Segurança Corporativa &bull; Centro de Controle Operacional (CCO)
+    <div style="margin-top: 0.25rem; font-size: 0.7rem; color: #94a3b8;">
+      Acesso Exclusivo da Diretoria &bull; Visualização Somente Leitura &bull; Atualização Contínua
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/diretoria.js"></script>
+</body>
+</html>

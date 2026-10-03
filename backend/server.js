@@ -158,13 +158,14 @@ app.use('/api/v1/webhook', require('./routes/webhook.routes'));
 app.use('/api/v1/mapa', require('./routes/mapa.routes'));
 app.use('/api/v1/formulario', require('./routes/formulario.routes'));
 app.use('/api/v1/configuracoes', require('./routes/configuracoes.routes'));
+app.use('/api/v1/diretoria', require('./routes/diretoria.routes'));
 
 // Serve static files with anti-cache for PWA Service Worker and HTML pages
 const frontendPath = path.join(__dirname, '..', 'frontend');
 
 app.use((req, res, next) => {
     const p = req.path.toLowerCase();
-    if (p === '/sw.js' || p === '/manifest.json' || p.endsWith('.html') || p === '/app' || p === '/painel' || p === '/') {
+    if (p === '/sw.js' || p === '/manifest.json' || p.endsWith('.html') || p === '/app' || p === '/painel' || p === '/diretoria' || p === '/') {
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.setHeader('Pragma', 'no-cache');
         res.setHeader('Expires', '0');
@@ -176,6 +177,7 @@ app.use((req, res, next) => {
 app.get('/app.html', (req, res) => res.redirect(301, '/app'));
 app.get('/app', (req, res) => res.sendFile(path.join(frontendPath, 'app-supervisao.html')));
 app.get('/painel', (req, res) => res.sendFile(path.join(frontendPath, 'dashboard.html')));
+app.get('/diretoria', (req, res) => res.sendFile(path.join(frontendPath, 'painel-diretoria.html')));
 app.get('/logout', (req, res) => res.redirect('/login.html?logout=1'));
 app.get('/sair', (req, res) => res.redirect('/login.html?logout=1'));
 app.get('/login', (req, res) => res.sendFile(path.join(frontendPath, 'login.html')));
