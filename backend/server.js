@@ -131,8 +131,13 @@ app.get('/api/v1/version', (req, res) => {
 try {
     initializeDatabase();
     // Sincronização em nuvem com Supabase (re-hidrata dados após reinício/redeploy)
-    const { syncFromSupabaseOnStartup } = require('./services/supabase_sync.service');
-    syncFromSupabaseOnStartup().catch(err => console.warn('Supabase sync warning:', err.message));
+    const { syncFromSupabaseOnStartup, syncAllLocalToSupabase } = require('./services/supabase_sync.service');
+    syncFromSupabaseOnStartup().catch(err => console.warn('Supabase startup sync warning:', err.message));
+
+    // Sincronização periódica a cada 5 minutos garantindo persistência contínua
+    setInterval(() => {
+        syncAllLocalToSupabase().catch(err => console.warn('Supabase periodic sync warning:', err.message));
+    }, 5 * 60 * 1000);
 } catch (error) {
     console.error('Failed to initialize database:', error);
     process.exit(1);
@@ -224,8 +229,12 @@ if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
 }
 
 // Graceful shutdown
-const shutdown = () => {
+const shutdown = async () => {
     console.log('\nDesligando servidor...');
+    try {
+        const { syncAllLocalToSupabase } = require('./services/supabase_sync.service');
+        await syncAllLocalToSupabase();
+    } catch (_) {}
     server.close(() => {
         closeDatabase();
         console.log('Servidor finalizado e banco de dados fechado.');
