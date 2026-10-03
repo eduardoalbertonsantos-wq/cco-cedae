@@ -347,7 +347,10 @@ router.post('/salvar', async (req, res) => {
                 const isSup = (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') ? 0 : 1;
                 const statusSupervisaoFinal = isSup === 0 ? 'NAO_SUPERVISIONADO' : (p.status_supervisao || 'NORMAL');
                 const efetivoComp = (p.efetivo_completo === false || p.efetivo_completo === 0 || p.efetivo_completo === 'NAO') ? 0 : 1;
-                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM') ? 1 : 0;
+                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM' || isSup === 0 || statusSupervisaoFinal === 'COM_OCORRENCIA') ? 1 : 0;
+                const descOcorr = isSup === 0 
+                    ? (p.motivo_nao_supervisao || p.descricao_ocorrencia || 'Posto não fiscalizado')
+                    : (p.descricao_ocorrencia || p.observacao || '');
                 const kmNum = (p.km_posto !== undefined && p.km_posto !== null && p.km_posto !== '') ? parseFloat(p.km_posto) : null;
 
                 const sPostoId = dbPosto.setor_id || 4;
@@ -370,7 +373,7 @@ router.post('/salvar', async (req, res) => {
                     efetivoComp,
                     efetivoComp === 0 ? (p.falta_efetivo_qtd || '') : null,
                     temOcorr,
-                    temOcorr === 1 ? (p.descricao_ocorrencia || '') : null,
+                    temOcorr === 1 ? descOcorr : null,
                     p.observacao || '',
                     dbPosto.endereco || null,
                     dbPosto.localidade || null,
@@ -380,13 +383,42 @@ router.post('/salvar', async (req, res) => {
                 );
             }
 
-            // Ocorrências
+            // Ocorrências: limpar e reinserir tanto as do array quanto as automáticas de postos
+            db.prepare('DELETE FROM ocorrencias WHERE relatorio_id = ?').run(activeRelId);
+            const stmtOc = db.prepare(`
+                INSERT INTO ocorrencias (relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `);
+
+            // 1. Ocorrências originadas diretamente dos postos (não supervisionados ou reportados com ocorrência)
+            for (const p of postosValidos) {
+                const dbPosto = p._dbPosto;
+                const isSup = (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') ? 0 : 1;
+                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM' || isSup === 0 || p.status_supervisao === 'COM_OCORRENCIA') ? 1 : 0;
+                
+                if (isSup === 0) {
+                    stmtOc.run(
+                        activeRelId,
+                        dbPosto.id,
+                        'Posto Não Fiscalizado',
+                        p.motivo_nao_supervisao || 'Posto não fiscalizado no expediente.',
+                        'Reagendar fiscalização para o próximo turno.',
+                        'pendente'
+                    );
+                } else if (temOcorr === 1 && (p.descricao_ocorrencia || p.observacao)) {
+                    stmtOc.run(
+                        activeRelId,
+                        dbPosto.id,
+                        'COM_OCORRENCIA',
+                        p.descricao_ocorrencia || p.observacao,
+                        'Informado no posto pelo fiscal',
+                        'resolvido'
+                    );
+                }
+            }
+
+            // 2. Ocorrências gerais adicionais
             if (ocorrencias && Array.isArray(ocorrencias) && ocorrencias.length > 0) {
-                db.prepare('DELETE FROM ocorrencias WHERE relatorio_id = ?').run(activeRelId);
-                const stmtOc = db.prepare(`
-                    INSERT INTO ocorrencias (relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                `);
                 for (const oc of ocorrencias) {
                     stmtOc.run(
                         activeRelId,
@@ -607,7 +639,10 @@ router.post('/enviar', async (req, res) => {
                 const isSup = (p.supervisionado === false || p.supervisionado === 0 || p.status_supervisao === 'NAO_SUPERVISIONADO') ? 0 : 1;
                 const statusSupervisaoFinal = isSup === 0 ? 'NAO_SUPERVISIONADO' : (p.status_supervisao || 'NORMAL');
                 const efetivoComp = (p.efetivo_completo === false || p.efetivo_completo === 0 || p.efetivo_completo === 'NAO') ? 0 : 1;
-                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM') ? 1 : 0;
+                const temOcorr = (p.tem_ocorrencia === true || p.tem_ocorrencia === 1 || p.tem_ocorrencia === 'SIM' || isSup === 0 || statusSupervisaoFinal === 'COM_OCORRENCIA') ? 1 : 0;
+                const descOcorr = isSup === 0 
+                    ? (p.motivo_nao_supervisao || p.descricao_ocorrencia || 'Posto não fiscalizado')
+                    : (p.descricao_ocorrencia || p.observacao || '');
                 const kmNum = (p.km_posto !== undefined && p.km_posto !== null && p.km_posto !== '') ? parseFloat(p.km_posto) : null;
 
                 const sPostoId = dbPosto.setor_id || 4;
@@ -630,7 +665,7 @@ router.post('/enviar', async (req, res) => {
                     efetivoComp,
                     efetivoComp === 0 ? (p.falta_efetivo_qtd || '') : null,
                     temOcorr,
-                    temOcorr === 1 ? (p.descricao_ocorrencia || '') : null,
+                    temOcorr === 1 ? descOcorr : null,
                     p.observacao || '',
                     dbPosto.endereco || null,
                     dbPosto.localidade || null,
@@ -639,12 +674,21 @@ router.post('/enviar', async (req, res) => {
                     sPostoNome
                 );
 
-                if (temOcorr === 1 && p.descricao_ocorrencia) {
+                if (isSup === 0) {
+                    stmtOcorrencia.run(
+                        activeRelId,
+                        dbPosto.id,
+                        'Posto Não Fiscalizado',
+                        p.motivo_nao_supervisao || 'Posto não fiscalizado no expediente.',
+                        'Reagendar fiscalização para o próximo turno.',
+                        'pendente'
+                    );
+                } else if (temOcorr === 1 && (p.descricao_ocorrencia || p.observacao)) {
                     stmtOcorrencia.run(
                         activeRelId,
                         dbPosto.id,
                         'COM_OCORRENCIA',
-                        p.descricao_ocorrencia,
+                        p.descricao_ocorrencia || p.observacao,
                         'Informado no posto pelo fiscal',
                         'resolvido'
                     );

@@ -133,6 +133,33 @@ async function syncFromSupabaseOnStartup() {
             console.log(`☁️ [SUPABASE] ${resPostosRel.rows.length} fiscalizações sincronizadas para o banco local.`);
         }
 
+        // 3. Sincronizar Ocorrências da Nuvem
+        const resOcorr = await client.query('SELECT * FROM ocorrencias ORDER BY id ASC');
+        if (resOcorr.rows && resOcorr.rows.length > 0) {
+            const stmtOc = db.prepare(`
+                INSERT INTO ocorrencias (
+                    id, relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    descricao = excluded.descricao,
+                    providencias_adotadas = excluded.providencias_adotadas,
+                    status = excluded.status
+            `);
+            for (const oc of resOcorr.rows) {
+                stmtOc.run(
+                    oc.id,
+                    oc.relatorio_id,
+                    oc.posto_id,
+                    oc.tipo_ocorrencia,
+                    oc.descricao,
+                    oc.providencias_adotadas,
+                    oc.status,
+                    oc.created_at ? new Date(oc.created_at).toISOString() : null
+                );
+            }
+            console.log(`☁️ [SUPABASE] ${resOcorr.rows.length} ocorrências sincronizadas para o banco local.`);
+        }
+
         await client.end();
         console.log('✅ [SUPABASE] Sincronização inicial concluída com sucesso!');
     } catch (err) {
@@ -220,6 +247,23 @@ async function pushRelatorioToSupabase(relatorioId) {
             ]);
         }
         await client.query("SELECT setval('postos_relatorio_id_seq', COALESCE((SELECT MAX(id) FROM postos_relatorio), 1))");
+        
+        await client.query('DELETE FROM ocorrencias WHERE relatorio_id = $1', [r.id]);
+        for (const oc of ocorrencias) {
+            await client.query(`
+                INSERT INTO ocorrencias (
+                    id, relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status, created_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ON CONFLICT (id) DO UPDATE SET
+                    descricao = EXCLUDED.descricao,
+                    providencias_adotadas = EXCLUDED.providencias_adotadas,
+                    status = EXCLUDED.status
+            `, [
+                oc.id, oc.relatorio_id, oc.posto_id, oc.tipo_ocorrencia, oc.descricao,
+                oc.providencias_adotadas, oc.status, oc.created_at || new Date().toISOString()
+            ]);
+        }
+        await client.query("SELECT setval('ocorrencias_id_seq', COALESCE((SELECT MAX(id) FROM ocorrencias), 1))");
 
         await client.end();
         console.log(`☁️ [SUPABASE] Relatório #${relatorioId} sincronizado na nuvem com sucesso!`);
@@ -306,9 +350,27 @@ async function syncAllLocalToSupabase() {
                     pr.empresa, pr.setor_id_posto, pr.setor_nome_posto
                 ]);
             }
+
+            const ocorrencias = db.prepare('SELECT * FROM ocorrencias WHERE relatorio_id = ?').all(rel.id);
+            await client.query('DELETE FROM ocorrencias WHERE relatorio_id = $1', [r.id]);
+            for (const oc of ocorrencias) {
+                await client.query(`
+                    INSERT INTO ocorrencias (
+                        id, relatorio_id, posto_id, tipo_ocorrencia, descricao, providencias_adotadas, status, created_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ON CONFLICT (id) DO UPDATE SET
+                        descricao = EXCLUDED.descricao,
+                        providencias_adotadas = EXCLUDED.providencias_adotadas,
+                        status = EXCLUDED.status
+                `, [
+                    oc.id, oc.relatorio_id, oc.posto_id, oc.tipo_ocorrencia, oc.descricao,
+                    oc.providencias_adotadas, oc.status, oc.created_at || new Date().toISOString()
+                ]);
+            }
         }
         await client.query("SELECT setval('relatorios_id_seq', COALESCE((SELECT MAX(id) FROM relatorios), 1))");
         await client.query("SELECT setval('postos_relatorio_id_seq', COALESCE((SELECT MAX(id) FROM postos_relatorio), 1))");
+        await client.query("SELECT setval('ocorrencias_id_seq', COALESCE((SELECT MAX(id) FROM ocorrencias), 1))");
         await client.end();
         console.log(`☁️ [SUPABASE] Sync periódico: ${rels.length} relatórios sincronizados.`);
     } catch (err) {
