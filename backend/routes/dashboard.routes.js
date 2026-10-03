@@ -4,6 +4,20 @@ const { getDb } = require('../database/db');
 const { authenticateToken } = require('../middleware/auth');
 const { requirePainel } = require('../middleware/permissions');
 
+function getSaoPauloDate(daysOffset = 0) {
+    const now = new Date();
+    if (daysOffset !== 0) {
+        now.setDate(now.getDate() + daysOffset);
+    }
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    return formatter.format(now);
+}
+
 // Proteção estrita: Somente CCO (admin) e Diretoria (consulta)
 router.use(authenticateToken, requirePainel);
 
@@ -16,13 +30,17 @@ router.get('/stats', (req, res) => {
         let dateParams = [];
         
         if (periodo === 'hoje') {
-            dateCondition = "AND date(r.data_servico) = date('now', 'localtime')";
+            dateCondition = "AND date(r.data_servico) = ?";
+            dateParams = [getSaoPauloDate(0)];
         } else if (periodo === 'ontem') {
-            dateCondition = "AND date(r.data_servico) = date('now', '-1 day', 'localtime')";
+            dateCondition = "AND date(r.data_servico) = ?";
+            dateParams = [getSaoPauloDate(-1)];
         } else if (periodo === '7dias') {
-            dateCondition = "AND date(r.data_servico) >= date('now', '-7 days', 'localtime')";
+            dateCondition = "AND date(r.data_servico) >= ?";
+            dateParams = [getSaoPauloDate(-7)];
         } else if (periodo === '30dias') {
-            dateCondition = "AND date(r.data_servico) >= date('now', '-30 days', 'localtime')";
+            dateCondition = "AND date(r.data_servico) >= ?";
+            dateParams = [getSaoPauloDate(-30)];
         } else if (periodo === 'personalizado' && data_inicio && data_fim) {
             dateCondition = 'AND date(r.data_servico) BETWEEN ? AND ?';
             dateParams = [data_inicio, data_fim];
@@ -506,7 +524,7 @@ router.get('/relatorio-plantao', authenticateToken, (req, res) => {
         const { data, turno, relatorio_id } = req.query;
         const db = getDb();
 
-        const dataServico = data || new Date().toISOString().split('T')[0];
+        const dataServico = data || getSaoPauloDate(0);
 
         // Buscar relatório do plantão especificado ou o mais recente da data
         let relatorioPlantao = null;
@@ -613,7 +631,7 @@ router.get('/relatorio-plantao', authenticateToken, (req, res) => {
 router.get('/auditoria-dados', authenticateToken, (req, res) => {
     try {
         const db = getDb();
-        const dataServico = req.query.data || new Date().toISOString().split('T')[0];
+        const dataServico = req.query.data || getSaoPauloDate(0);
 
         // 1. Cadastros no Banco
         const totalPostosCadastrados = db.prepare("SELECT COUNT(*) as t FROM postos WHERE status = 'ativo'").get().t;
