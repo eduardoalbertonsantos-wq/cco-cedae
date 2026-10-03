@@ -11,9 +11,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await atualizarDashboard();
     setupDashboardListeners();
     
-    // Atualização em tempo real do painel a cada 30 segundos
-    setInterval(atualizarDashboard, 30 * 1000);
-    // Atualização em tempo real do mapa a cada 15 segundos
+    // Atualização em tempo real do painel a cada 15 segundos
+    setInterval(atualizarDashboard, 15 * 1000);
 });
 
 async function carregarFiltrosDashboard() {
@@ -105,6 +104,7 @@ async function atualizarDashboard() {
         // 1. Atualizar os Cards Oficiais
         atualizarCard('statPostosCadastrados', stats.postos_cadastrados);
         atualizarCard('statPostosSupervisionados', stats.postos_supervisionados);
+        atualizarCard('statPostosEmPreenchimento', stats.postos_em_preenchimento ?? 0);
         atualizarCard('statPostosNaoSupervisionados', stats.postos_nao_supervisionados);
         atualizarCard('statPostosPendentes', stats.postos_pendentes);
         atualizarCard('statPercentualSupervisao', `${stats.percentual_supervisao}%`);
@@ -278,7 +278,8 @@ function renderizarPainelPorSetor(setores) {
                     <span class="badge badge-primary">📍 Quantidade de Postos: ${s.postos_cadastrados}</span>
                 `}
                 <span class="badge badge-green">🟢 ${s.postos_supervisionados} Fiscalizados</span>
-                ${s.postos_nao_supervisionados > 0 ? `<span class="badge badge-red">🔴 ${s.postos_nao_supervisionados} Não Atendidos</span>` : ''}
+                ${s.postos_em_preenchimento > 0 ? `<span class="badge badge-yellow" style="background:#fef3c7; color:#d97706; border:1px solid #fde68a;">🟡 ${s.postos_em_preenchimento} Em Preenchimento</span>` : ''}
+                ${s.postos_nao_supervisionados > 0 ? `<span class="badge badge-red">🔴 ${s.postos_nao_supervisionados} Não Fiscalizados</span>` : ''}
                 ${s.ocorrencias > 0 ? `<span class="badge badge-red">🚨 ${s.ocorrencias} Ocorrências</span>` : ''}
                 ${s.pendencias > 0 ? `<span class="badge badge-yellow">⚠️ ${s.pendencias} Pendências</span>` : ''}
             </div>

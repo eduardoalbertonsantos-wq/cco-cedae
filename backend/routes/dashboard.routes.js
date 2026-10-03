@@ -108,22 +108,29 @@ router.get('/stats', (req, res) => {
             SELECT COUNT(DISTINCT pr.posto_id) as total
             FROM postos_relatorio pr
             JOIN relatorios r ON pr.relatorio_id = r.id
-            WHERE ${whereRel} AND (pr.supervisionado = 1 OR pr.supervisionado IS NULL) AND pr.status_supervisao != 'NAO_SUPERVISIONADO'
+            WHERE ${whereRel} AND (pr.supervisionado = 1 OR pr.supervisionado IS NULL) 
+              AND pr.status_supervisao != 'NAO_SUPERVISIONADO'
+              AND (r.status = 'concluido' OR r.status IS NULL)
         `).get(...paramsRel).total;
 
-        // 6.1 Postos NÃO supervisionados no período (que não foram supervisionados no período)
-        const postos_nao_supervisionados = db.prepare(`
+        // 6.1 Postos em preenchimento (com preenchimento salvo em aberto no período e ainda não concluídos)
+        const postos_em_preenchimento = db.prepare(`
             SELECT COUNT(DISTINCT pr.posto_id) as total
             FROM postos_relatorio pr
             JOIN relatorios r ON pr.relatorio_id = r.id
-            WHERE ${whereRel} AND (pr.supervisionado = 0 OR pr.status_supervisao = 'NAO_SUPERVISIONADO')
-            AND pr.posto_id NOT IN (
-                SELECT pr2.posto_id
-                FROM postos_relatorio pr2
-                JOIN relatorios r2 ON pr2.relatorio_id = r2.id
-                WHERE ${whereRel} AND (pr2.supervisionado = 1 OR pr2.supervisionado IS NULL) AND pr2.status_supervisao != 'NAO_SUPERVISIONADO'
-            )
+            WHERE ${whereRel} AND r.status = 'em_aberto'
+              AND pr.posto_id NOT IN (
+                  SELECT pr2.posto_id
+                  FROM postos_relatorio pr2
+                  JOIN relatorios r2 ON pr2.relatorio_id = r2.id
+                  WHERE ${whereRel} AND (pr2.supervisionado = 1 OR pr2.supervisionado IS NULL) 
+                    AND pr2.status_supervisao != 'NAO_SUPERVISIONADO'
+                    AND (r2.status = 'concluido' OR r2.status IS NULL)
+              )
         `).get(...paramsRel, ...paramsRel).total;
+
+        // 6.2 Postos NÃO supervisionados no período (cadastrados menos os supervisionados e os em preenchimento)
+        const postos_nao_supervisionados = Math.max(0, postos_cadastrados - postos_supervisionados - postos_em_preenchimento);
         
         // 7. Ocorrências no período
         const total_ocorrencias = db.prepare(`
@@ -198,34 +205,43 @@ router.get('/stats', (req, res) => {
             }
             
             let postosSupervisionadosHoje = 0;
+            let postosEmPreenchimentoHoje = 0;
             let postosNaoSupervisionadosHoje = 0;
             let ocorrenciasHoje = 0;
             let pendenciasHoje = 0;
             
             // Relatórios do setor no período selecionado
             const relatoriosSetor = db.prepare(`
-                SELECT r.id FROM relatorios r
+                SELECT r.id, r.status FROM relatorios r
                 WHERE r.setor_id = ? AND ${whereRel}
             `).all(s.id, ...paramsRel);
             
             const relIds = relatoriosSetor.map(r => r.id);
-            if (relIds.length > 0) {
-                const placeholders = relIds.map(() => '?').join(',');
+            const relConcluidosIds = relatoriosSetor.filter(r => r.status === 'concluido' || r.status === null).map(r => r.id);
+            const relAbertosIds = relatoriosSetor.filter(r => r.status === 'em_aberto').map(r => r.id);
+
+            if (relConcluidosIds.length > 0) {
+                const placeholders = relConcluidosIds.map(() => '?').join(',');
                 postosSupervisionadosHoje = db.prepare(`
                     SELECT COUNT(DISTINCT posto_id) as total 
                     FROM postos_relatorio 
                     WHERE relatorio_id IN (${placeholders}) 
                     AND (supervisionado = 1 OR supervisionado IS NULL) 
                     AND status_supervisao != 'NAO_SUPERVISIONADO'
-                `).get(...relIds).total;
+                `).get(...relConcluidosIds).total;
+            }
 
-                postosNaoSupervisionadosHoje = db.prepare(`
+            if (relAbertosIds.length > 0) {
+                const placeholders = relAbertosIds.map(() => '?').join(',');
+                postosEmPreenchimentoHoje = db.prepare(`
                     SELECT COUNT(DISTINCT posto_id) as total 
                     FROM postos_relatorio 
-                    WHERE relatorio_id IN (${placeholders}) 
-                    AND (supervisionado = 0 OR status_supervisao = 'NAO_SUPERVISIONADO')
-                `).get(...relIds).total;
+                    WHERE relatorio_id IN (${placeholders})
+                `).get(...relAbertosIds).total;
+            }
 
+            if (relIds.length > 0) {
+                const placeholders = relIds.map(() => '?').join(',');
                 ocorrenciasHoje = db.prepare(`
                     SELECT COUNT(*) as total 
                     FROM ocorrencias 
@@ -239,11 +255,15 @@ router.get('/stats', (req, res) => {
                     AND status_supervisao = 'PENDENCIA'
                 `).get(...relIds).total;
             }
+
+            postosNaoSupervisionadosHoje = Math.max(0, postosSetor - postosSupervisionadosHoje - postosEmPreenchimentoHoje);
             
             let statusOperacional = 'SEM_REGISTRO';
             if (relIds.length > 0) {
                 if (pendenciasHoje > 0) statusOperacional = 'PENDENCIA';
                 else if (ocorrenciasHoje > 0) statusOperacional = 'COM_OCORRENCIA';
+                else if (postosSupervisionadosHoje > 0) statusOperacional = 'NORMAL';
+                else if (postosEmPreenchimentoHoje > 0) statusOperacional = 'EM_PREENCHIMENTO';
                 else statusOperacional = 'NORMAL';
             }
             
@@ -257,6 +277,7 @@ router.get('/stats', (req, res) => {
                 ultimo_relatorio_data: ultRel ? ultRel.data_servico : null,
                 ultimo_relatorio_turno: ultRel ? ultRel.turno : null,
                 postos_supervisionados: postosSupervisionadosHoje,
+                postos_em_preenchimento: postosEmPreenchimentoHoje,
                 postos_nao_supervisionados: postosNaoSupervisionadosHoje,
                 ocorrencias: ocorrenciasHoje,
                 pendencias: pendenciasHoje,
@@ -378,6 +399,7 @@ router.get('/stats', (req, res) => {
             postos_cadastrados,
             relatorios_periodo,
             postos_supervisionados,
+            postos_em_preenchimento,
             postos_nao_supervisionados,
             postos_pendentes,
             percentual_supervisao,

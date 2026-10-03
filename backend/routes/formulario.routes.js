@@ -64,6 +64,55 @@ router.get('/setor/:id', (req, res) => {
     }
 });
 
+// 1.05. CONSULTAR COTA DIÁRIA DO FISCAL (Regra do Prompt Mestre: Máximo de 2 relatórios por dia)
+router.get('/quota', (req, res) => {
+    try {
+        const db = getDb();
+        const { supervisor_id, responsavel_nome, data_servico } = req.query;
+        const spNow = getBrasiliaDateTime();
+        const dataAlvo = data_servico || spNow.isoDate;
+        
+        let count = 0;
+        if (supervisor_id) {
+            const sId = parseInt(supervisor_id);
+            const row = db.prepare(`
+                SELECT COUNT(*) as total 
+                FROM relatorios 
+                WHERE (supervisor_id = ? OR responsavel_nome = (SELECT nome FROM supervisores WHERE id = ?))
+                  AND data_servico = ? 
+                  AND status = 'concluido'
+            `).get(sId, sId, dataAlvo);
+            count = row ? row.total : 0;
+        } else if (responsavel_nome) {
+            const rNome = responsavel_nome.trim();
+            const row = db.prepare(`
+                SELECT COUNT(*) as total 
+                FROM relatorios 
+                WHERE (responsavel_nome = ? OR supervisor_id IN (SELECT id FROM supervisores WHERE nome = ?))
+                  AND data_servico = ? 
+                  AND status = 'concluido'
+            `).get(rNome, rNome, dataAlvo);
+            count = row ? row.total : 0;
+        }
+        
+        const limite = 2;
+        const disponiveis = Math.max(0, limite - count);
+        const bloqueado = count >= limite;
+        
+        res.json({
+            relatorios_hoje: count,
+            limite,
+            disponiveis,
+            bloqueado,
+            label: `${count}/${limite}`,
+            data_servico: dataAlvo
+        });
+    } catch (error) {
+        console.error('Erro ao consultar quota de relatórios:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // 1.1. CONSULTAR RELATÓRIO EM ANDAMENTO (PARA CONTINUAÇÃO AUTOMÁTICA)
 router.get('/em-andamento', (req, res) => {
     try {
@@ -423,29 +472,53 @@ router.post('/enviar', async (req, res) => {
         const km_rodado = (kmFim >= kmIni && kmFim > 0) ? (kmFim - kmIni) : 0;
         const spNow = getBrasiliaDateTime();
 
-        // Verificar se já existe relatório 'concluido' para evitar duplicidade acidental
-        let buscaDupSql = "SELECT id, created_at, status, supervisor_id, responsavel_nome FROM relatorios WHERE setor_id = ? AND data_servico = ? AND turno = ?";
-        const buscaDupParams = [setor_id, data_servico, turno];
+        // Verificar limite de 2 relatórios por fiscal por dia (Prompt Mestre - Regra 4)
+        const activeIdNum = reqRelatorioId ? parseInt(reqRelatorioId) : null;
+        let countConcluidosHoje = 0;
         if (supervisor_id) {
-            buscaDupSql += " AND supervisor_id = ?";
-            buscaDupParams.push(supervisor_id);
+            const sId = parseInt(supervisor_id);
+            const rowCount = db.prepare(`
+                SELECT COUNT(*) as total 
+                FROM relatorios 
+                WHERE (supervisor_id = ? OR responsavel_nome = (SELECT nome FROM supervisores WHERE id = ?))
+                  AND data_servico = ? 
+                  AND status = 'concluido'
+                  AND (? IS NULL OR id != ?)
+            `).get(sId, sId, data_servico, activeIdNum, activeIdNum);
+            countConcluidosHoje = rowCount ? rowCount.total : 0;
         } else if (responsavel_nome) {
-            buscaDupSql += " AND responsavel_nome = ?";
-            buscaDupParams.push(responsavel_nome);
+            const rNome = responsavel_nome.trim();
+            const rowCount = db.prepare(`
+                SELECT COUNT(*) as total 
+                FROM relatorios 
+                WHERE (responsavel_nome = ? OR supervisor_id IN (SELECT id FROM supervisores WHERE nome = ?))
+                  AND data_servico = ? 
+                  AND status = 'concluido'
+                  AND (? IS NULL OR id != ?)
+            `).get(rNome, rNome, data_servico, activeIdNum, activeIdNum);
+            countConcluidosHoje = rowCount ? rowCount.total : 0;
         }
-        const relatoriosSetor = db.prepare(buscaDupSql).all(...buscaDupParams);
-        const relJaConcluido = relatoriosSetor.find(r => r.status === 'concluido' && (!reqRelatorioId || r.id !== parseInt(reqRelatorioId)));
 
-        if (relJaConcluido) {
-            return res.status(409).json({
-                error: `Atenção: Já existe um relatório finalizado para este Setor, Data, Turno e Fiscal (Relatório #${relJaConcluido.id}). Para evitar duplicidade acidental, o envio foi bloqueado.`
+        if (countConcluidosHoje >= 2) {
+            return res.status(429).json({
+                error: `⚠️ Limite diário de 2 relatórios atingido. O fiscal já possui 2 relatórios enviados e consolidados na data ${data_servico}. Novos envios para esta data estão bloqueados.`,
+                limite_atingido: true,
+                relatorios_hoje: countConcluidosHoje,
+                limite: 2
             });
         }
 
         // Buscar se existe relatório em aberto para atualizar para concluído
-        let activeRelId = reqRelatorioId ? parseInt(reqRelatorioId) : null;
+        let activeRelId = activeIdNum;
         if (!activeRelId) {
-            const relEmAberto = relatoriosSetor.find(r => r.status === 'em_aberto');
+            let buscaAbertoSql = "SELECT id FROM relatorios WHERE setor_id = ? AND data_servico = ? AND turno = ? AND status = 'em_aberto'";
+            const buscaAbertoParams = [setor_id, data_servico, turno];
+            if (supervisor_id) {
+                buscaAbertoSql += " AND (supervisor_id = ? OR supervisor_id IS NULL)";
+                buscaAbertoParams.push(supervisor_id);
+            }
+            buscaAbertoSql += " ORDER BY id DESC LIMIT 1";
+            const relEmAberto = db.prepare(buscaAbertoSql).get(...buscaAbertoParams);
             if (relEmAberto) activeRelId = relEmAberto.id;
         }
 
@@ -672,6 +745,23 @@ router.post('/enviar', async (req, res) => {
             console.warn('Alerta e-mail:', e.message);
         }
         
+        let countAtualizado = 1;
+        if (dadosCompletos.supervisor_id) {
+            const rCount = db.prepare(`
+                SELECT COUNT(*) as total FROM relatorios 
+                WHERE (supervisor_id = ? OR responsavel_nome = (SELECT nome FROM supervisores WHERE id = ?))
+                  AND data_servico = ? AND status = 'concluido'
+            `).get(dadosCompletos.supervisor_id, dadosCompletos.supervisor_id, dadosCompletos.data_servico);
+            countAtualizado = rCount ? rCount.total : 1;
+        } else if (dadosCompletos.responsavel_nome) {
+            const rCount = db.prepare(`
+                SELECT COUNT(*) as total FROM relatorios 
+                WHERE (responsavel_nome = ? OR supervisor_id IN (SELECT id FROM supervisores WHERE nome = ?))
+                  AND data_servico = ? AND status = 'concluido'
+            `).get(dadosCompletos.responsavel_nome, dadosCompletos.responsavel_nome, dadosCompletos.data_servico);
+            countAtualizado = rCount ? rCount.total : 1;
+        }
+
         res.status(201).json({
             success: true,
             id: newRelatorioId,
@@ -684,6 +774,13 @@ router.post('/enviar', async (req, res) => {
             timezone: 'America/Sao_Paulo',
             status: 'concluido',
             status_label: '🟢 ENVIADO',
+            quota: {
+                relatorios_hoje: countAtualizado,
+                limite: 2,
+                disponiveis: Math.max(0, 2 - countAtualizado),
+                bloqueado: countAtualizado >= 2,
+                label: `${countAtualizado}/2`
+            },
             message: '✅ FISCALIZAÇÃO ENVIADA COM SUCESSO',
             texto_whatsapp: textoWhatsApp
         });
