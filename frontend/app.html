@@ -554,6 +554,25 @@
         </button>
       </div>
 
+      <!-- CARD DE CONTROLE DE INÍCIO DA FISCALIZAÇÃO (TEMPO REAL) -->
+      <div id="cardControleInicioFiscalizacao" class="view-card" style="border: 2px solid #00d2ff; background: linear-gradient(135deg, #091932 0%, #0f274a 100%); margin-bottom: 14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <span style="font-size:0.85rem; font-weight:800; color:#38bdf8;">⚡ INÍCIO DO EXPEDIENTE &bull; TEMPO REAL</span>
+          <span id="badgeStatusFiscalizacaoTopo" style="background:#1e3a8a; color:#93c5fd; border:1px solid #3b82f6; padding:3px 10px; border-radius:12px; font-weight:900; font-size:0.8rem;">
+            ⚪ AGUARDANDO INÍCIO
+          </span>
+        </div>
+        <p style="font-size:0.85rem; color:#cbd5e1; margin:0 0 12px 0;">
+          Ao clicar abaixo, o CCO e a Diretoria recebem imediatamente a notificação em tempo real de que você iniciou a rota de fiscalização.
+        </p>
+        <button type="button" id="btnIniciarFiscalizacao" class="btn-mob-success" style="width:100%; font-weight:900; font-size:1.1rem; padding:15px; background:linear-gradient(135deg, #16a34a 0%, #15803d 100%); border:none; border-radius:8px; box-shadow:0 4px 14px rgba(34,197,94,0.4); display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+          🟢 INICIAR FISCALIZAÇÃO
+        </button>
+        <div id="infoInicioFiscalizacao" style="display:none; margin-top:10px; font-size:0.8rem; color:#86efac; font-weight:700; text-align:center;">
+          ✓ Fiscalização em andamento iniciada às <span id="horaInicioDisplay">--:--</span> &bull; Relatório ID #<span id="idRelatorioDisplay">--</span>
+        </div>
+      </div>
+
       <!-- FORMULÁRIO DO EXPEDIENTE -->
       <form id="formSupervisaoApp">
 
@@ -1357,9 +1376,76 @@
         document.getElementById('selectTurno')?.addEventListener('change', () => {
           checarERecuperarRelatorioEmAndamento();
         });
-        document.getElementById('selectSupervisorAtivo')?.addEventListener('change', () => {
-          checarERecuperarRelatorioEmAndamento();
-          atualizarCotaDiariaDoFiscal();
+        document.getElementById('btnIniciarFiscalizacao')?.addEventListener('click', async function() {
+          const btn = this;
+          const setorId = document.getElementById('selectSetorAtivo')?.value || window.setorAtualId || (currentUser?.setor_id) || 1;
+          const dataServico = document.getElementById('inputDataServico')?.value || (new Date().toISOString().split('T')[0]);
+          const turno = document.getElementById('selectTurno')?.value || 'DIURNO';
+          const responsavelNome = document.getElementById('selectSupervisorAtivo')?.selectedOptions?.[0]?.text || document.getElementById('sup-nome-bold')?.textContent || currentUser?.nome || 'Fiscal Operacional';
+          const viaturaId = document.getElementById('selectViatura')?.value || null;
+          const kmInicial = document.getElementById('inputKmInicial')?.value || 0;
+
+          btn.disabled = true;
+          btn.textContent = '⏳ INICIANDO NO SISTEMA...';
+
+          try {
+            const token = localStorage.getItem('cco_token') || sessionStorage.getItem('cco_token');
+            const res = await fetch(API_BASE + '/formulario/iniciar', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                setor_id: parseInt(setorId),
+                data_servico: dataServico,
+                turno: turno,
+                responsavel_nome: responsavelNome,
+                viatura_id: viaturaId ? parseInt(viaturaId) : null,
+                km_inicial: kmInicial,
+                client_uuid: localStorage.getItem('cco_client_uuid') || `rel_${Date.now()}`
+              })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+              window.relatorioIdAtual = data.relatorio_id;
+              localStorage.setItem('cco_active_rel_id', data.relatorio_id);
+
+              btn.style.background = 'linear-gradient(135deg, #15803d 0%, #166534 100%)';
+              btn.innerHTML = `✓ FISCALIZAÇÃO INICIADA (${data.hora_inicio}) &bull; ID #${data.relatorio_id}`;
+
+              const badgeTopo = document.getElementById('badgeStatusFiscalizacaoTopo');
+              if (badgeTopo) {
+                badgeTopo.style.background = '#166534';
+                badgeTopo.style.color = '#bbf7d0';
+                badgeTopo.style.border = '1px solid #22c55e';
+                badgeTopo.textContent = '🟢 EM PROGRESSO';
+              }
+
+              const infoInicio = document.getElementById('infoInicioFiscalizacao');
+              if (infoInicio) {
+                document.getElementById('horaInicioDisplay').textContent = data.hora_inicio;
+                document.getElementById('idRelatorioDisplay').textContent = data.relatorio_id;
+                infoInicio.style.display = 'block';
+              }
+
+              const badgeStatusMob = document.getElementById('badgeStatusEmPreenchimentoMob');
+              if (badgeStatusMob) {
+                badgeStatusMob.style.display = 'inline-flex';
+                document.getElementById('lblStatusTextoMob').textContent = 'EM PROGRESSO';
+              }
+
+              alert(`🟢 FISCALIZAÇÃO INICIADA COM SUCESSO!\n\nHorário de Início: ${data.hora_inicio}\nStatus: EM PROGRESSO transmitido em tempo real para o Painel de Controle e Diretoria.`);
+            } else {
+              throw new Error(data.error || 'Falha ao iniciar fiscalização');
+            }
+          } catch (err) {
+            console.error('Erro ao iniciar fiscalização:', err);
+            btn.disabled = false;
+            btn.textContent = '🟢 INICIAR FISCALIZAÇÃO AGORA';
+            alert('Erro ao iniciar fiscalização: ' + err.message);
+          }
         });
       }
 

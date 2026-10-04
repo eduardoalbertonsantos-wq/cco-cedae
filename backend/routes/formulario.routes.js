@@ -212,6 +212,134 @@ function processarPostosDoPayload(db, postos_supervisionados, setor_id, ehFinal 
     return postosValidos;
 }
 
+// 1.5 INICIAR FISCALIZAÇÃO EM TEMPO REAL
+// Registra o início do expediente pelo fiscal (status = 'em_aberto', status_operacional = 'EM PROGRESSO')
+router.post('/iniciar', async (req, res) => {
+    try {
+        const db = getDb();
+        const {
+            setor_id,
+            supervisor_id,
+            viatura_id,
+            data_servico,
+            turno,
+            responsavel_nome,
+            km_inicial,
+            client_uuid
+        } = req.body;
+
+        if (!setor_id || !data_servico || !turno) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Setor, Data do Serviço e Turno são obrigatórios para iniciar a fiscalização.' 
+            });
+        }
+
+        const spNow = getBrasiliaDateTime();
+        const horaInicio = spNow.horaCurta; // HH:MM
+
+        // Verificar se já existe um relatório em aberto para este fiscal/setor/data/turno
+        let relExistente = null;
+        if (client_uuid) {
+            relExistente = db.prepare("SELECT * FROM relatorios WHERE client_uuid = ?").get(client_uuid);
+        }
+        if (!relExistente) {
+            relExistente = db.prepare(`
+                SELECT * FROM relatorios 
+                WHERE setor_id = ? AND data_servico = ? AND turno = ? AND status = 'em_aberto'
+                ORDER BY id DESC LIMIT 1
+            `).get(setor_id, data_servico, turno);
+        }
+
+        let relId;
+        if (relExistente) {
+            relId = relExistente.id;
+            db.prepare(`
+                UPDATE relatorios 
+                SET responsavel_nome = COALESCE(?, responsavel_nome),
+                    viatura_id = COALESCE(?, viatura_id),
+                    km_inicial = COALESCE(?, km_inicial)
+                WHERE id = ?
+            `).run(responsavel_nome || null, viatura_id || null, parseFloat(km_inicial) || null, relId);
+        } else {
+            const insRes = db.prepare(`
+                INSERT INTO relatorios (
+                    setor_id, supervisor_id, viatura_id, data_servico, turno,
+                    km_inicial, responsavel_nome, status, client_uuid, created_at,
+                    observacoes_gerais
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'em_aberto', ?, ?, ?)
+            `).run(
+                setor_id,
+                supervisor_id || null,
+                viatura_id || null,
+                data_servico,
+                turno,
+                parseFloat(km_inicial) || 0,
+                responsavel_nome || 'Fiscal Operacional',
+                client_uuid || `rel_iniciado_${Date.now()}`,
+                spNow.dataHora,
+                `Fiscalização iniciada às ${horaInicio}.`
+            );
+            relId = Number(insRes.lastInsertRowid);
+        }
+
+        const setorObj = db.prepare("SELECT nome, sigla FROM setores WHERE id = ?").get(setor_id);
+        const setorNome = setorObj ? setorObj.nome : 'SETOR OPERACIONAL';
+
+        // Sincronizar criação para o Supabase em background
+        try {
+            const { pushRelatorioToSupabase } = require('../services/supabase_sync.service');
+            pushRelatorioToSupabase(relId).catch(() => {});
+        } catch (_) {}
+
+        // Registrar auditoria
+        try {
+            db.prepare(`
+                INSERT INTO auditoria_log (tabela, registro_id, acao, detalhes, usuario_nome, ip_origem)
+                VALUES ('relatorios', ?, 'INICIAR_FISCALIZACAO', ?, ?, ?)
+            `).run(
+                relId,
+                JSON.stringify({ setor: setorNome, turno, hora_inicio: horaInicio }),
+                responsavel_nome || 'Fiscal',
+                req.ip || '127.0.0.1'
+            );
+        } catch (_) {}
+
+        // Transmitir evento SSE para Painel de Controle e Painel da Diretoria
+        try {
+            const { emitirEventoOperacional } = require('../services/realtime.service');
+            emitirEventoOperacional('EM_PROGRESSO', {
+                relatorio_id: relId,
+                setor_id: parseInt(setor_id),
+                setor_nome: setorNome,
+                data_servico,
+                turno,
+                fiscal_nome: responsavel_nome || 'Fiscal Operacional',
+                hora_inicio: horaInicio,
+                status: 'EM_PROGRESSO',
+                postos_preenchidos: 0,
+                timestamp: spNow.dataHora
+            });
+        } catch (_) {}
+
+        res.json({
+            success: true,
+            relatorio_id: relId,
+            id: relId,
+            status: 'em_aberto',
+            status_operacional: 'EM PROGRESSO',
+            hora_inicio: horaInicio,
+            data_servico,
+            setor_nome: setorNome,
+            message: `✓ Fiscalização iniciada às ${horaInicio}. Status: 🟢 EM PROGRESSO no CCO.`
+        });
+
+    } catch (err) {
+        console.error('Erro ao iniciar fiscalização:', err);
+        res.status(500).json({ success: false, error: 'Erro ao iniciar fiscalização: ' + err.message });
+    }
+});
+
 // 2. SALVAMENTO PARCIAL E PROGRESSIVO DO PROGRESSO (SALVAR)
 // Grava postos preenchidos sem finalizar o expediente (Status: 🟡 em_aberto)
 router.post('/salvar', async (req, res) => {

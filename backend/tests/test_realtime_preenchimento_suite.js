@@ -126,7 +126,7 @@ async function runRealtimeSuite() {
         // 3. Teste de Salvamento Parcial (SALVAR != ENVIAR)
         console.log('\n--- 2. FISCAL PREENCHENDO (SALVAR EM ABERTO) ---');
         const testUuid = 'realtime-test-' + Date.now();
-        const testDate = '2026-10-03';
+        const testDate = '2026-10-05';
 
         const saveRes = await makeRequest('POST', '/api/v1/formulario/salvar', {
             client_uuid: testUuid,

@@ -420,7 +420,7 @@ function iniciarRealtimeDashboard() {
             realtimeEventSource.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
-                    if (data.type === 'EM_PREENCHIMENTO' || data.type === 'ENVIADO' || data.type === 'EXCLUIDO') {
+                    if (data.type === 'EM_PREENCHIMENTO' || data.type === 'EM_PROGRESSO' || data.type === 'ENVIADO' || data.type === 'EXCLUIDO') {
                         // Atualiza automaticamente em segundo plano sem perder foco nem filtros
                         atualizarDashboard();
                     }

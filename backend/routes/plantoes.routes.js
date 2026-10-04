@@ -163,6 +163,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
             return res.status(400).json({ success: false, message: 'ID de relatório inválido' });
         }
 
+        // Proteção Absoluta: Somente administradores ou supervisores autenticados podem excluir
+        if (req.user && req.user.perfil === 'consulta') {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Acesso negado: Perfil de consulta (somente leitura) não possui permissão para excluir relatórios.' 
+            });
+        }
+
         const db = getDb();
 
         // 1. Verificar se o relatório existe e coletar metadados completos
