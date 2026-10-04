@@ -404,7 +404,14 @@ router.get('/stats', (req, res) => {
                 COALESCE(sup.nome, r.responsavel_nome, 'Fiscal Operacional') as fiscal_nome,
                 r.created_at,
                 COUNT(pr.id) as postos_preenchidos,
-                MAX(pr.horario_supervisao) as ultimo_horario_posto
+                MAX(pr.horario_supervisao) as ultimo_horario_posto,
+                (
+                    SELECT COALESCE(pr2.nome_posto_digitado, p.nome, 'Posto ' || pr2.id)
+                    FROM postos_relatorio pr2
+                    LEFT JOIN postos p ON pr2.posto_id = p.id
+                    WHERE pr2.relatorio_id = r.id
+                    ORDER BY pr2.id DESC LIMIT 1
+                ) as posto_atual
             FROM relatorios r
             JOIN setores s ON r.setor_id = s.id
             LEFT JOIN supervisores sup ON r.supervisor_id = sup.id
@@ -427,6 +434,16 @@ router.get('/stats', (req, res) => {
             }
             if (!horaAtualizacao) horaAtualizacao = 'Em andamento';
 
+            let horaInicio = '-';
+            if (f.created_at) {
+                const parts = String(f.created_at).split(' ');
+                horaInicio = parts[1] ? parts[1].substring(0, 5) : String(f.created_at);
+            }
+
+            const postoAtualDesc = f.posto_atual 
+                ? f.posto_atual 
+                : (f.postos_preenchidos === 0 ? 'Aguardando 1º posto' : 'Em preenchimento');
+
             return {
                 relatorio_id: f.relatorio_id,
                 setor_id: f.setor_id,
@@ -435,10 +452,13 @@ router.get('/stats', (req, res) => {
                 fiscal_nome: f.fiscal_nome,
                 turno: f.turno,
                 data_servico: f.data_servico,
+                hora_inicio: horaInicio,
+                posto_atual: postoAtualDesc,
                 postos_preenchidos: f.postos_preenchidos,
                 postos_total_setor: totalSetor,
                 progresso_texto: `${f.postos_preenchidos}/${totalSetor} postos`,
                 percentual: pct,
+                status_operacional: 'EM PREENCHIMENTO',
                 ultima_atualizacao: horaAtualizacao
             };
         });

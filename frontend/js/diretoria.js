@@ -430,9 +430,11 @@ function renderFiscaisEmAtividadeDiretoria(lista) {
     if (!lista || lista.length === 0) {
         if (badgeCount) badgeCount.textContent = '0 em andamento';
         container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; color: #64748b; padding: 1.25rem; background: #ffffff; border-radius: 6px; border: 1px dashed var(--cedae-border); font-size: 0.85rem;">
-                ⚪ Nenhum fiscal em preenchimento nesta data.
-            </div>
+            <tr>
+                <td colspan="6" style="padding: 1.25rem; text-align: center; color: #94a3b8; font-style: italic;">
+                    ⚪ Nenhuma fiscalização em andamento nesta data.
+                </td>
+            </tr>
         `;
         return;
     }
@@ -441,33 +443,45 @@ function renderFiscaisEmAtividadeDiretoria(lista) {
         badgeCount.textContent = `${lista.length} ${lista.length === 1 ? 'fiscal preenchendo' : 'fiscais preenchendo'}`;
     }
 
-    container.innerHTML = lista.map(f => `
-        <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(245,158,11,0.08); display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
-                <div>
-                    <div style="font-size: 0.95rem; font-weight: 800; color: #002B49;">👮 ${escapeHtml(f.fiscal_nome)}</div>
-                    <div style="font-size: 0.78rem; color: #64748b; margin-top: 2px;">
-                        Setor: <strong style="color: #004b87;">${escapeHtml(f.setor_nome)}</strong> &bull; Turno: <strong>${escapeHtml(f.turno)}</strong>
+    container.innerHTML = lista.map(f => {
+        const postoTexto = f.posto_atual || (f.postos_preenchidos === 0 ? 'Aguardando 1º posto' : 'Em preenchimento');
+        return `
+            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 10px 12px; font-weight: 700;">
+                    <span class="badge" style="background: #e0f2fe; color: #004b87; font-weight: 800; padding: 4px 8px; border-radius: 4px;">
+                        ${escapeHtml(f.setor_nome)}
+                    </span>
+                    <span style="font-size: 0.75rem; color: #64748b; margin-left: 4px;">(${escapeHtml(f.turno)})</span>
+                </td>
+                <td style="padding: 10px 12px; font-weight: 700; color: #002B49;">
+                    👮 ${escapeHtml(f.fiscal_nome)}
+                </td>
+                <td style="padding: 10px 12px; font-weight: 600; color: #0f172a;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                        📍 <strong>${escapeHtml(postoTexto)}</strong>
+                    </span>
+                </td>
+                <td style="padding: 10px 12px; min-width: 140px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 3px;">
+                        <span>${escapeHtml(f.progresso_texto)}</span>
+                        <span style="color: #b45309; font-weight: 800;">${f.percentual}%</span>
                     </div>
-                </div>
-                <span style="background: #fef08a; color: #854d0e; font-weight: 800; font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; white-space: nowrap;">
-                    🟡 EM PREENCHIMENTO
-                </span>
-            </div>
-            <div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
-                    <span>Progresso: <strong>${escapeHtml(f.progresso_texto)}</strong></span>
-                    <span style="color: #b45309; font-weight: 800;">${f.percentual}%</span>
-                </div>
-                <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                    <div style="height: 100%; width: ${f.percentual}%; background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%); transition: width 0.3s ease;"></div>
-                </div>
-            </div>
-            <div style="margin-top: 8px; font-size: 0.72rem; color: #94a3b8; text-align: right; border-top: 1px solid #fef3c7; padding-top: 4px;">
-                Última atualização: <strong style="color: #475569;">${escapeHtml(f.ultima_atualizacao)}</strong>
-            </div>
-        </div>
-    `).join('');
+                    <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: ${f.percentual}%; background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%); transition: width 0.3s ease;"></div>
+                    </div>
+                </td>
+                <td style="padding: 10px 12px; text-align: center;">
+                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">
+                        <span class="live-pulse" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #16a34a;"></span>
+                        🟢 EM PREENCHIMENTO
+                    </span>
+                </td>
+                <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: #475569; font-size: 0.8rem;">
+                    ⏰ ${escapeHtml(f.ultima_atualizacao)}
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 let diretoriaEventSource = null;

@@ -360,48 +360,62 @@ function renderizarFiscaisEmAtividade(fiscais) {
 
     const lista = fiscais || [];
     if (badge) {
-        badge.textContent = `${lista.length} em atividade`;
-        badge.style.background = lista.length > 0 ? '#fef3c7' : '#f1f5f9';
-        badge.style.color = lista.length > 0 ? '#b45309' : '#64748b';
-        badge.style.borderColor = lista.length > 0 ? '#fde68a' : '#e2e8f0';
+        badge.textContent = `${lista.length} ${lista.length === 1 ? 'em atividade' : 'em atividade'}`;
+        badge.style.background = lista.length > 0 ? '#dcfce7' : '#f1f5f9';
+        badge.style.color = lista.length > 0 ? '#15803d' : '#64748b';
+        badge.style.borderColor = lista.length > 0 ? '#86efac' : '#e2e8f0';
     }
 
     if (lista.length === 0) {
         container.innerHTML = `
-            <div style="grid-column: 1 / -1; padding: 1.25rem; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-size: 0.85rem; text-align: center;">
-                ⚪ Nenhum fiscal em preenchimento neste momento para a data/período selecionado.
-            </div>
+            <tr>
+                <td colspan="6" style="padding: 1.25rem; text-align: center; color: #94a3b8; font-style: italic;">
+                    ⚪ Nenhuma fiscalização em andamento neste momento para a data/período selecionado.
+                </td>
+            </tr>
         `;
         return;
     }
 
-    container.innerHTML = lista.map(f => `
-        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(245,158,11,0.08); display: flex; flex-direction: column; justify-content: space-between;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
-                <div>
-                    <div style="font-size: 0.95rem; font-weight: 800; color: #1e293b;">👮 ${f.fiscal_nome}</div>
-                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
-                        Setor: <strong style="color: #0369a1;">${f.setor_nome}</strong> &bull; Turno: <strong>${f.turno}</strong>
+    container.innerHTML = lista.map(f => {
+        const postoTexto = f.posto_atual || (f.postos_preenchidos === 0 ? 'Aguardando 1º posto' : 'Em preenchimento');
+        return `
+            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 10px 12px; font-weight: 700;">
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; padding: 4px 8px; border-radius: 4px;">
+                        ${escapeHtml(f.setor_nome)}
+                    </span>
+                    <span style="font-size: 0.75rem; color: #64748b; margin-left: 4px;">(${escapeHtml(f.turno)})</span>
+                </td>
+                <td style="padding: 10px 12px; font-weight: 700; color: #1e293b;">
+                    👮 ${escapeHtml(f.fiscal_nome)}
+                </td>
+                <td style="padding: 10px 12px; font-weight: 600; color: #0f172a;">
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                        📍 <strong>${escapeHtml(postoTexto)}</strong>
+                    </span>
+                </td>
+                <td style="padding: 10px 12px; min-width: 140px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; color: #334155; margin-bottom: 3px;">
+                        <span>${escapeHtml(f.progresso_texto)}</span>
+                        <span style="color: #b45309; font-weight: 800;">${f.percentual}%</span>
                     </div>
-                </div>
-                <span class="badge" style="background: #fef08a; color: #854d0e; font-weight: 800; font-size: 0.72rem; padding: 3px 8px; border-radius: 6px; white-space: nowrap;">
-                    🟡 EM PREENCHIMENTO
-                </span>
-            </div>
-            <div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
-                    <span>Progresso: <strong>${f.progresso_texto}</strong></span>
-                    <span style="color: #b45309; font-weight: 800;">${f.percentual}%</span>
-                </div>
-                <div style="height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
-                    <div style="height: 100%; width: ${f.percentual}%; background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%); transition: width 0.3s ease;"></div>
-                </div>
-            </div>
-            <div style="margin-top: 8px; font-size: 0.75rem; color: #94a3b8; text-align: right; border-top: 1px solid #fef3c7; padding-top: 5px;">
-                Última atualização: <strong style="color: #475569;">${f.ultima_atualizacao}</strong>
-            </div>
-        </div>
-    `).join('');
+                    <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: ${f.percentual}%; background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%); transition: width 0.3s ease;"></div>
+                    </div>
+                </td>
+                <td style="padding: 10px 12px; text-align: center;">
+                    <span class="badge" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 800; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;">
+                        <span class="live-pulse" style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #16a34a;"></span>
+                        🟢 EM PREENCHIMENTO
+                    </span>
+                </td>
+                <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: #475569; font-size: 0.8rem;">
+                    ⏰ ${escapeHtml(f.ultima_atualizacao)}
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 let realtimeEventSource = null;
