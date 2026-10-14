@@ -80,17 +80,24 @@ function initializeDatabase() {
         console.log('✅ Usuário Administrador garantido no banco de dados');
     }
 
-    // Garantir usuário Diretoria
+    // Garantir usuário Diretoria (Perfil Administrador para permissão total de gerenciamento)
     const diretoria = database.prepare('SELECT id FROM usuarios WHERE email = ?').get('diretoria@cedae.gov.br');
     if (!diretoria) {
         const senhaHash = bcrypt.hashSync('cco@2026', 12);
         database.prepare(
             'INSERT INTO usuarios (nome, email, senha_hash, perfil) VALUES (?, ?, ?, ?)'
-        ).run('DIRETORIA CEDAE', 'diretoria@cedae.gov.br', senhaHash, 'consulta');
+        ).run('DIRETORIA CEDAE', 'diretoria@cedae.gov.br', senhaHash, 'admin');
         console.log('✅ Usuário Diretoria garantido no banco de dados');
+    } else {
+        database.prepare("UPDATE usuarios SET perfil = 'admin' WHERE email = 'diretoria@cedae.gov.br'").run();
     }
     
-    console.log('✅ Banco de dados sincronizado e 100% blindado contra exclusões');
+    // Ativação da Exclusão Manual: remover trigger restritivo caso exista no banco
+    try {
+        database.exec('DROP TRIGGER IF EXISTS trg_proteger_relatorios_historicos');
+    } catch (_) {}
+
+    console.log('✅ Banco de dados sincronizado e exclusão manual autorizada ativa');
     return database;
 }
 

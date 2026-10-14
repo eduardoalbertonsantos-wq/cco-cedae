@@ -461,6 +461,15 @@ router.delete('/:id', async (req, res) => {
             });
         } catch (_) {}
 
+        try {
+            const { emitirEventoOperacional } = require('../services/realtime.service');
+            emitirEventoOperacional('EXCLUIDO', {
+                relatorio_id: id,
+                setor: relatorio.setor_nome,
+                timestamp: new Date().toISOString()
+            });
+        } catch (_) {}
+
         return res.json({
             success: true,
             message: `Relatório #${id} excluído com sucesso. Fiscal liberado para iniciar novo relatório.`,

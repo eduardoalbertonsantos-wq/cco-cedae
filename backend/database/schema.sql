@@ -232,17 +232,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_supervisores_matricula ON supervisores(mat
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viaturas_placa_setor ON viaturas(placa, setor_id);
 
 -- =========================================================================
--- REGRA MESTRE CCO: TRIGGERS DE PROTEÇÃO TOTAL E IMUTABILIDADE DO HISTÓRICO
+-- REGRA MESTRE CCO: TRIGGERS DE PROTEÇÃO DE ESTRUTURA OPERACIONAL
 -- =========================================================================
 
--- Bloquear exclusão de setores operacionais
+-- Bloquear exclusão acidental de setores operacionais
 CREATE TRIGGER IF NOT EXISTS trg_proteger_setores
 BEFORE DELETE ON setores
 BEGIN
     SELECT RAISE(ABORT, 'REGRA MESTRE CCO: Proibido excluir setores operacionais.');
 END;
 
--- Bloquear exclusão de postos com histórico
+-- Bloquear exclusão de postos com histórico de fiscalização
 CREATE TRIGGER IF NOT EXISTS trg_proteger_postos
 BEFORE DELETE ON postos
 WHEN (SELECT COUNT(*) FROM postos_relatorio WHERE posto_id = OLD.id) > 0
@@ -250,12 +250,5 @@ BEGIN
     SELECT RAISE(ABORT, 'REGRA MESTRE CCO: Proibido excluir postos com histórico de fiscalização.');
 END;
 
--- Bloquear exclusão de relatórios consolidados do histórico (IDs 1 a 113)
-CREATE TRIGGER IF NOT EXISTS trg_proteger_relatorios_historicos
-BEFORE DELETE ON relatorios
-WHEN OLD.id <= 113
-BEGIN
-    SELECT RAISE(ABORT, 'REGRA MESTRE CCO: É estritamente proibido excluir relatórios históricos consolidados (IDs 1 a 113).');
-END;
 
 

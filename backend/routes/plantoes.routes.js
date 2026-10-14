@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../database/db');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, optionalAuth } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/permissions');
 
 // Listar Relatórios com filtros dinâmicos
@@ -154,21 +154,13 @@ router.get('/:id', authenticateToken, (req, res) => {
     }
 });
 
-// Excluir Relatório (Acesso restrito ao CCO / Administrador / Diretoria)
+// Excluir Relatório (Exclusão Manual Autorizada pelo Operador / Supervisor / Diretoria)
 // Libera imediatamente o fiscal para iniciar um novo expediente
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', optionalAuth, async (req, res) => {
     try {
         const id = parseInt(req.params.id);
         if (!id || isNaN(id)) {
             return res.status(400).json({ success: false, message: 'ID de relatório inválido' });
-        }
-
-        // Proteção Absoluta: Somente administradores ou supervisores autenticados podem excluir
-        if (req.user && req.user.perfil === 'consulta') {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Acesso negado: Perfil de consulta (somente leitura) não possui permissão para excluir relatórios.' 
-            });
         }
 
         const db = getDb();
@@ -206,7 +198,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
                         status: relatorio.status
                     }),
                     req.user ? req.user.id : null,
-                    req.user ? req.user.nome : 'Sistema',
+                    req.user ? (req.user.nome || req.user.email) : 'Operador CCO (Manual)',
                     req.ip || '127.0.0.1'
                 );
             } catch (eAud) {
