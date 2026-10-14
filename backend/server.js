@@ -28,13 +28,16 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://cdnjs.cloudflare.com", "https://*.googleapis.com", "https://*.google.com"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: [
                 "'self'", 
                 "data:", 
                 "blob:", 
+                "https://*.google.com",
+                "https://*.googleapis.com",
+                "https://*.gstatic.com",
                 "https://*.tile.openstreetmap.org", 
                 "https://tile.openstreetmap.org",
                 "https://*.tile.openstreetmap.fr",

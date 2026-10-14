@@ -39,6 +39,20 @@ function initClock() {
 
 // Inicializar Mapa Leaflet com Camadas do Google Maps
 function initMap() {
+    if (typeof L === 'undefined') {
+        console.warn('Leaflet ainda não carregado, tentando novamente em 150ms...');
+        setTimeout(initMap, 150);
+        return;
+    }
+
+    const container = document.getElementById('mapaPrincipal');
+    if (!container) return;
+
+    if (map) {
+        try { map.remove(); } catch (e) {}
+        map = null;
+    }
+
     // Centro operacional abrangendo Tinguá, Guandu, Laranjal e Rio Centro
     map = L.map('mapaPrincipal', {
         zoomControl: true,
@@ -52,7 +66,7 @@ function initMap() {
         attribution: '&copy; Google Maps &bull; CEDAE CCO'
     });
 
-    // Camada Google Maps — Satélite Híbrido (Imagens aéreas de alta resolução com ruas e bairros)
+    // Camada Google Maps — Satélite Híbrido (Imagens aéreas com ruas e bairros)
     const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -66,9 +80,16 @@ function initMap() {
         attribution: '&copy; Google Maps Relevo &bull; CEDAE CCO'
     });
 
+    // Camada Satélite Esri (Alta Resolução e Alta Disponibilidade)
+    const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: '&copy; Esri Satélite &bull; CEDAE CCO'
+    });
+
     // Camada Alternativa — OpenStreetMap
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
+        subdomains: ['a', 'b', 'c'],
         attribution: '&copy; OpenStreetMap &bull; CEDAE CCO'
     });
 
@@ -79,6 +100,7 @@ function initMap() {
     const baseLayers = {
         '🗺️ Google Maps (Ruas)': googleStreets,
         '🛰️ Google Satélite (Híbrido)': googleHybrid,
+        '🛰️ Satélite Esri': esriSatellite,
         '🏔️ Google Relevo': googleTerrain,
         '🌐 OpenStreetMap': osmLayer
     };
@@ -88,7 +110,12 @@ function initMap() {
         collapsed: false
     }).addTo(map);
 
-    // Ajustar mapa ao redimensionar
+    // Forçar recálculo de tamanho do Leaflet em cascata para evitar mapa cinza/branco
+    setTimeout(() => { if (map) map.invalidateSize(); }, 100);
+    setTimeout(() => { if (map) map.invalidateSize(); }, 350);
+    setTimeout(() => { if (map) map.invalidateSize(); }, 1000);
+
+    // Ajustar mapa ao redimensionar a janela
     window.addEventListener('resize', () => {
         if (map) map.invalidateSize();
     });
@@ -191,10 +218,19 @@ async function carregarDadosMapa(silencioso = false) {
         viaturasData = data.viaturas || [];
         basesData = data.bases_setores || [];
 
+        if (!map) {
+            initMap();
+        }
+
         renderizarMarcadoresBases();
         renderizarMarcadoresViaturas();
         renderizarCardsSidebar();
         atualizarContadoresResumo();
+
+        if (map) {
+            setTimeout(() => { if (map) map.invalidateSize(); }, 150);
+            setTimeout(() => { if (map) map.invalidateSize(); }, 500);
+        }
 
         if (statusText) {
             const now = new Date();
@@ -327,6 +363,18 @@ function renderizarMarcadoresViaturas() {
             viaturaMarkers[vtrKey] = marker;
         }
     });
+
+    // Ajustar enquadramento inicial para incluir todas as viaturas no campo de visão
+    if (!selectedViaturaId && viaturasData.length > 0 && map) {
+        const coords = viaturasData
+            .filter(v => typeof v.latitude === 'number' && typeof v.longitude === 'number')
+            .map(v => [v.latitude, v.longitude]);
+        if (coords.length > 0) {
+            try {
+                map.fitBounds(coords, { padding: [40, 40], maxZoom: 12 });
+            } catch (e) {}
+        }
+    }
 
     aplicarFiltroSetor();
 }
