@@ -458,3 +458,89 @@ body.fullscreen-mode .btn-exit-fullscreen {
     border-top: 1px solid var(--cedae-border);
   }
 }
+
+/* ==========================================================================
+   ESTILOS GOOGLE MAPS — CONTROLES E POPUPS
+   ========================================================================== */
+
+/* Controle de Camadas Estilo Google Maps */
+.leaflet-control-layers {
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+  padding: 8px 12px !important;
+  margin-top: 12px !important;
+  margin-right: 12px !important;
+}
+
+.leaflet-control-layers-base label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-bottom: 5px !important;
+  cursor: pointer !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  transition: background 0.15s ease !important;
+}
+
+.leaflet-control-layers-base label:last-child {
+  margin-bottom: 0 !important;
+}
+
+.leaflet-control-layers-base label:hover {
+  background: #f1f5f9 !important;
+}
+
+.leaflet-control-layers-base input[type="radio"] {
+  accent-color: #1a73e8 !important;
+  cursor: pointer !important;
+}
+
+/* Botão Abrir Rota no Google Maps no Popup */
+.btn-popup-gmaps {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #1a73e8;
+  color: #ffffff !important;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none !important;
+  box-shadow: 0 2px 4px rgba(26, 115, 232, 0.35);
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.btn-popup-gmaps:hover {
+  background: #1557b0;
+  box-shadow: 0 3px 8px rgba(26, 115, 232, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Efeito Pulsante para Viatura Online */
+.online-pulse {
+  animation: pulse-ring 2.5s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7), 0 3px 10px rgba(0,0,0,0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0), 0 3px 10px rgba(0,0,0,0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0), 0 3px 10px rgba(0,0,0,0.35);
+  }
+}
+

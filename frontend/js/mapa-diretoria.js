@@ -37,7 +37,7 @@ function initClock() {
     setInterval(update, 1000);
 }
 
-// Inicializar Mapa Leaflet
+// Inicializar Mapa Leaflet com Camadas do Google Maps
 function initMap() {
     // Centro operacional abrangendo Tinguá, Guandu, Laranjal e Rio Centro
     map = L.map('mapaPrincipal', {
@@ -45,10 +45,47 @@ function initMap() {
         attributionControl: true
     }).setView([-22.82, -43.35], 10);
 
-    // Camada OpenStreetMap padrão com fallbacks
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Camada Google Maps — Ruas (Padrão Google Maps Oficial)
+    const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps &bull; CEDAE CCO'
+    });
+
+    // Camada Google Maps — Satélite Híbrido (Imagens aéreas de alta resolução com ruas e bairros)
+    const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps &bull; Imagens Satélite &bull; CEDAE CCO'
+    });
+
+    // Camada Google Maps — Relevo e Topografia
+    const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps Relevo &bull; CEDAE CCO'
+    });
+
+    // Camada Alternativa — OpenStreetMap
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap &bull; CEDAE CCO'
+    });
+
+    // Iniciar com Google Maps Ruas ativo
+    googleStreets.addTo(map);
+
+    // Seletor de Camadas Estilo Google Maps no canto superior direito
+    const baseLayers = {
+        '🗺️ Google Maps (Ruas)': googleStreets,
+        '🛰️ Google Satélite (Híbrido)': googleHybrid,
+        '🏔️ Google Relevo': googleTerrain,
+        '🌐 OpenStreetMap': osmLayer
+    };
+
+    L.control.layers(baseLayers, null, {
+        position: 'topright',
+        collapsed: false
     }).addTo(map);
 
     // Ajustar mapa ao redimensionar
@@ -189,9 +226,13 @@ function renderizarMarcadoresBases() {
             const marker = L.marker([b.base.lat, b.base.lng], { icon: baseIcon, zIndexOffset: 100 })
                 .addTo(map)
                 .bindPopup(`
-                    <div style="padding:6px; font-family:sans-serif;">
+                    <div style="padding:6px; font-family:sans-serif; min-width:210px;">
                         <h4 style="margin:0 0 4px 0; color:${b.cor}; font-size:14px; font-weight:800;">🏢 ${b.base.label}</h4>
-                        <div style="font-size:12px; color:#475569;">Setor Operacional: <strong>${b.nome}</strong></div>
+                        <div style="font-size:12px; color:#475569; margin-bottom:4px;">Setor Operacional: <strong>${b.nome}</strong></div>
+                        <div style="font-size:11px; color:#64748b; font-family:monospace; margin-bottom:8px;">📍 ${b.base.lat.toFixed(5)}, ${b.base.lng.toFixed(5)}</div>
+                        <a href="https://www.google.com/maps/search/?api=1&query=${b.base.lat},${b.base.lng}" target="_blank" rel="noopener noreferrer" class="btn-popup-gmaps">
+                            🗺️ Ver no Google Maps ↗
+                        </a>
                     </div>
                 `);
 
@@ -213,7 +254,7 @@ function renderizarMarcadoresViaturas() {
         const vtrIcon = L.divIcon({
             className: 'custom-vtr-marker',
             html: `
-                <div class="vtr-marker-bubble" style="background:${cor}; border-color:${isOnline ? '#22c55e' : '#ffffff'};">
+                <div class="vtr-marker-bubble ${isOnline ? 'online-pulse' : ''}" style="background:${cor}; border-color:${isOnline ? '#22c55e' : '#ffffff'};">
                     <span style="font-size:13px;">🚗</span>
                     <span>${v.prefixo}</span>
                     <span style="background:rgba(0,0,0,0.3); padding:1px 4px; border-radius:3px; font-size:9px;">${v.placa}</span>
@@ -226,7 +267,7 @@ function renderizarMarcadoresViaturas() {
         });
 
         const popupContent = `
-            <div style="min-width:220px; font-family:sans-serif; padding:4px;">
+            <div style="min-width:230px; font-family:sans-serif; padding:4px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid ${cor}; padding-bottom:6px; margin-bottom:8px;">
                     <div>
                         <div style="font-size:14px; font-weight:900; color:#002B49;">${v.prefixo}</div>
@@ -236,22 +277,33 @@ function renderizarMarcadoresViaturas() {
                         ${v.setor_nome}
                     </span>
                 </div>
-                <div style="font-size:12px; margin-bottom:6px;">
+                <div style="font-size:12px; margin-bottom:5px;">
                     👮 <strong>Fiscal:</strong> <span style="color:#0369a1; font-weight:700;">${v.fiscal_responsavel}</span>
                 </div>
-                <div style="font-size:11px; margin-bottom:6px; color:#334155;">
+                <div style="font-size:11px; margin-bottom:5px; color:#334155;">
                     📍 <strong>Localização:</strong> ${v.ultimo_posto}
+                </div>
+                <div style="font-size:10px; color:#64748b; margin-bottom:5px; font-family:monospace;">
+                    🌐 <strong>GPS:</strong> ${v.latitude.toFixed(5)}, ${v.longitude.toFixed(5)}
                 </div>
                 <div style="font-size:10px; color:#64748b; margin-bottom:8px;">
                     ⏰ <strong>Última Posição:</strong> ${v.hora_formatada || '-'}
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; font-weight:800;">
+                <div style="display:flex; justify-content:space-between; align-items:center; font-size:10px; font-weight:800; margin-bottom:10px;">
                     <span style="color:${isOnline ? '#16a34a' : '#dc2626'};">
                         ${v.status_badge}
                     </span>
                     <span style="color:#64748b; font-size:9px;">
                         ${v.tem_gps_real ? '🛰️ GPS Real' : '🏢 Base Operacional'}
                     </span>
+                </div>
+                <div style="border-top:1px dashed #cbd5e1; padding-top:8px; text-align:center;">
+                    <a href="https://www.google.com/maps/search/?api=1&query=${v.latitude},${v.longitude}" 
+                       target="_blank" 
+                       rel="noopener noreferrer" 
+                       class="btn-popup-gmaps">
+                        🗺️ Abrir Rota no Google Maps ↗
+                    </a>
                 </div>
             </div>
         `;
