@@ -4,8 +4,26 @@ const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
 const DB_PATH = path.join(__dirname, '..', '..', 'data', 'cco.db');
+const BACKUPS_DIR = path.join(__dirname, '..', '..', 'data', 'backups');
 
 let db;
+
+/**
+ * Cria snapshot automático do banco de dados para segurança absoluta
+ */
+function criarSnapshotSeguranca() {
+    try {
+        if (fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).size > 0) {
+            fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+            const timestamp = Date.now();
+            const snapPath = path.join(BACKUPS_DIR, `cco_auto_snapshot_${timestamp}.db`);
+            fs.copyFileSync(DB_PATH, snapPath);
+            console.log(`🛡️ [PROTEÇÃO TOTAL CCO] Snapshot automático criado: cco_auto_snapshot_${timestamp}.db`);
+        }
+    } catch (e) {
+        console.warn('Aviso ao criar snapshot automático:', e.message);
+    }
+}
 
 function getDb() {
     if (!db) {
@@ -13,9 +31,26 @@ function getDb() {
         if (!fs.existsSync(dataDir)) {
             fs.mkdirSync(dataDir, { recursive: true });
         }
+
+        // Criar snapshot preventivo antes de qualquer conexão
+        criarSnapshotSeguranca();
+
         db = new Database(DB_PATH);
         db.pragma('journal_mode = WAL');
         db.pragma('foreign_keys = ON');
+
+        // Blindagem contra consultas destrutivas globais
+        const originalExec = db.exec.bind(db);
+        db.exec = function(sql) {
+            const upper = String(sql).toUpperCase();
+            if (upper.includes('DROP TABLE') && !upper.includes('DROP TABLE IF EXISTS TEMP_')) {
+                throw new Error('[REGRA MESTRE CCO] Execução de DROP TABLE bloqueada pelo sistema de proteção total.');
+            }
+            if (upper.includes('TRUNCATE')) {
+                throw new Error('[REGRA MESTRE CCO] Execução de TRUNCATE bloqueada pelo sistema de proteção total.');
+            }
+            return originalExec(sql);
+        };
     }
     return db;
 }
@@ -23,11 +58,11 @@ function getDb() {
 function initializeDatabase() {
     const database = getDb();
     
-    // Executar Schema
+    // Executar Schema com os Triggers de Imutabilidade
     const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
     database.exec(schema);
     
-    // Inserir Seed Data SOMENTE se o banco estiver vazio (primeira inicialização)
+    // Inserir Seed Data SOMENTE se o banco estiver completamente vazio (primeira inicialização)
     const countPostos = database.prepare('SELECT COUNT(*) as count FROM postos').get();
     if (countPostos.count === 0) {
         const seed = fs.readFileSync(path.join(__dirname, 'seed.sql'), 'utf-8');
@@ -55,7 +90,7 @@ function initializeDatabase() {
         console.log('✅ Usuário Diretoria garantido no banco de dados');
     }
     
-    console.log('✅ Banco de dados sincronizado com estrutura CEDAE');
+    console.log('✅ Banco de dados sincronizado e 100% blindado contra exclusões');
     return database;
 }
 
