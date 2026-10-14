@@ -1437,6 +1437,9 @@
               }
 
               alert(`🟢 FISCALIZAÇÃO INICIADA COM SUCESSO!\n\nHorário de Início: ${data.hora_inicio}\nStatus: EM PROGRESSO transmitido em tempo real para o Painel de Controle e Diretoria.`);
+              
+              // Transmitir GPS em segundo plano de forma silenciosa e resiliente
+              tentarTransmitirGpsEmSegundoPlano(setorId);
             } else {
               throw new Error(data.error || 'Falha ao iniciar fiscalização');
             }
@@ -1448,6 +1451,65 @@
           }
         });
       }
+
+      // TRANSMISSÃO RESILIENTE DE LOCALIZAÇÃO GPS EM SEGUNDO PLANO
+      function tentarTransmitirGpsEmSegundoPlano(setorId) {
+        if (!navigator.geolocation) return;
+        try {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const payload = {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+                gps_authorized: 1,
+                setor_id: parseInt(setorId || window.setorAtualId || 4, 10),
+                device_info: navigator.userAgent
+              };
+              if (!navigator.onLine) {
+                localStorage.setItem('cco_pending_gps_coords', JSON.stringify(payload));
+                return;
+              }
+              try {
+                const token = localStorage.getItem('cco_token') || sessionStorage.getItem('cco_token');
+                await fetch(API_BASE + '/mapa/localizacao', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify(payload)
+                });
+                localStorage.removeItem('cco_pending_gps_coords');
+              } catch (_) {}
+            },
+            (err) => {
+              console.warn('GPS não disponível ou não autorizado:', err.message);
+            },
+            { timeout: 8000, enableHighAccuracy: true, maximumAge: 30000 }
+          );
+        } catch (_) {}
+      }
+
+      window.addEventListener('online', () => {
+        const pendingGps = localStorage.getItem('cco_pending_gps_coords');
+        if (pendingGps) {
+          try {
+            const payload = JSON.parse(pendingGps);
+            const token = localStorage.getItem('cco_token') || sessionStorage.getItem('cco_token');
+            fetch(API_BASE + '/mapa/localizacao', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify(payload)
+            }).then(() => {
+              localStorage.removeItem('cco_pending_gps_coords');
+            }).catch(() => {});
+          } catch (_) {}
+        }
+      });
 
       // 6. RENDERIZAR POSTOS
       function renderizarPostos(postos) {

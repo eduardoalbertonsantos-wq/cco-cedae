@@ -298,5 +298,166 @@ router.get('/posicoes', authenticateToken, (req, res) => {
     }
 });
 
+// GET /api/v1/mapa/viaturas-fiscais - Retorna viaturas ativas com fiscais em campo e localização GPS
+router.get('/viaturas-fiscais', authenticateToken, (req, res) => {
+    try {
+        const db = getDb();
+        const { setor_id, data_servico } = req.query;
+
+        let sqlVtr = `
+            SELECT v.id as viatura_id, v.tipo_modelo, v.marca, v.placa, v.prefixo, v.setor_id, v.status, s.nome as setor_nome
+            FROM viaturas v
+            JOIN setores s ON v.setor_id = s.id
+            WHERE v.status = 'ativo'
+        `;
+        const paramsVtr = [];
+        if (setor_id) {
+            sqlVtr += " AND v.setor_id = ?";
+            paramsVtr.push(parseInt(setor_id, 10));
+        }
+        sqlVtr += " ORDER BY v.setor_id ASC, v.id ASC";
+
+        const viaturas = db.prepare(sqlVtr).all(...paramsVtr);
+
+        const viaturasDetalhadas = viaturas.map(v => {
+            const setorConf = SETORES_CONFIG[v.setor_id] || { 
+                nome: v.setor_nome, 
+                cor: '#2563eb', 
+                emoji: '🚗', 
+                base: { lat: -22.9068, lng: -43.1729, label: 'CEDAE Sede' } 
+            };
+
+            // Buscar se há relatório em aberto ou o mais recente do dia para este setor / viatura
+            let sqlRel = `
+                SELECT r.id, r.data_servico, r.turno, r.status, r.responsavel_nome, sup.nome as supervisor_nome, r.created_at,
+                       (SELECT COALESCE(pr.nome_posto_digitado, p.nome) FROM postos_relatorio pr LEFT JOIN postos p ON pr.posto_id = p.id WHERE pr.relatorio_id = r.id ORDER BY pr.id DESC LIMIT 1) as ultimo_posto,
+                       (SELECT p.latitude FROM postos_relatorio pr JOIN postos p ON pr.posto_id = p.id WHERE pr.relatorio_id = r.id AND p.latitude IS NOT NULL ORDER BY pr.id DESC LIMIT 1) as ultimo_posto_lat,
+                       (SELECT p.longitude FROM postos_relatorio pr JOIN postos p ON pr.posto_id = p.id WHERE pr.relatorio_id = r.id AND p.longitude IS NOT NULL ORDER BY pr.id DESC LIMIT 1) as ultimo_posto_lng
+                FROM relatorios r
+                LEFT JOIN supervisores sup ON r.supervisor_id = sup.id
+                WHERE (r.viatura_id = ? OR r.setor_id = ?)
+            `;
+            const paramsRel = [v.viatura_id, v.setor_id];
+            if (data_servico) {
+                sqlRel += " AND r.data_servico = ?";
+                paramsRel.push(data_servico);
+            }
+            sqlRel += " ORDER BY CASE WHEN r.status = 'em_aberto' THEN 0 ELSE 1 END, r.data_servico DESC, r.id DESC LIMIT 1";
+
+            const rel = db.prepare(sqlRel).get(...paramsRel);
+            const fiscalNome = rel ? (rel.supervisor_nome || rel.responsavel_nome) : 'Fiscal em Escala';
+
+            // Buscar localização GPS registrada em fiscal_locations
+            const locGps = db.prepare(`
+                SELECT *, 
+                       (strftime('%s', 'now') - strftime('%s', updated_at)) as seg_passados,
+                       datetime(updated_at, '-3 hours') as updated_at_brasilia
+                FROM fiscal_locations
+                WHERE setor_id = ? OR nome_usuario LIKE ?
+                ORDER BY updated_at DESC LIMIT 1
+            `).get(v.setor_id, `%${fiscalNome}%`);
+
+            let lat = null;
+            let lng = null;
+            let origemPosicao = 'BASE_OPERACIONAL';
+            let temGpsReal = false;
+            let dataHoraPosicao = null;
+            let statusConexao = 'offline';
+            let statusBadge = '🔴 OFFLINE';
+
+            if (locGps && locGps.latitude && locGps.longitude && locGps.gps_authorized === 1) {
+                lat = locGps.latitude;
+                lng = locGps.longitude;
+                origemPosicao = 'GPS_TEMPO_REAL';
+                temGpsReal = true;
+                dataHoraPosicao = locGps.updated_at_brasilia || locGps.updated_at;
+                
+                const minutos = Math.floor((locGps.seg_passados || 0) / 60);
+                if (locGps.is_online === 1 && minutos <= 10) {
+                    statusConexao = 'online';
+                    statusBadge = '🟢 ONLINE (GPS ATIVO)';
+                } else if (minutos <= 30) {
+                    statusConexao = 'recente';
+                    statusBadge = '🟡 RECENTE';
+                } else {
+                    statusConexao = 'offline';
+                    statusBadge = '🔴 DESCONECTADO';
+                }
+            } else if (rel && rel.ultimo_posto_lat && rel.ultimo_posto_lng) {
+                lat = rel.ultimo_posto_lat;
+                lng = rel.ultimo_posto_lng;
+                origemPosicao = 'ULTIMO_POSTO_VISTORIADO';
+                dataHoraPosicao = rel.created_at;
+                statusConexao = rel.status === 'em_aberto' ? 'online' : 'offline';
+                statusBadge = rel.status === 'em_aberto' ? '🟢 EM PREENCHIMENTO' : '⚪ BASE/CONCLUÍDO';
+            } else {
+                lat = setorConf.base.lat;
+                lng = setorConf.base.lng;
+                origemPosicao = 'BASE_OPERACIONAL';
+                dataHoraPosicao = rel ? rel.created_at : null;
+                statusConexao = rel && rel.status === 'em_aberto' ? 'online' : 'offline';
+                statusBadge = rel && rel.status === 'em_aberto' ? '🟢 EM EXPEDIENTE' : '⚪ BASE OPERACIONAL';
+            }
+
+            let horaFormatada = '-';
+            if (dataHoraPosicao) {
+                const parts = String(dataHoraPosicao).split(' ');
+                horaFormatada = parts[1] ? parts[1].substring(0, 5) : String(dataHoraPosicao);
+            }
+
+            return {
+                viatura_id: v.viatura_id,
+                prefixo: v.prefixo || `VTR-${v.setor_nome}`,
+                tipo_modelo: v.tipo_modelo,
+                marca: v.marca || 'CEDAE',
+                placa: v.placa,
+                setor_id: v.setor_id,
+                setor_nome: v.setor_nome,
+                setor_cor: setorConf.cor,
+                setor_emoji: setorConf.emoji,
+                base_nome: setorConf.base.label,
+                fiscal_responsavel: fiscalNome,
+                relatorio_ativo_id: rel ? rel.id : null,
+                relatorio_status: rel ? rel.status : 'sem_escala',
+                ultimo_posto: rel ? (rel.ultimo_posto || 'Em deslocamento') : 'Em base operacional',
+                latitude: lat,
+                longitude: lng,
+                tem_gps_real: temGpsReal,
+                origem_posicao: origemPosicao,
+                data_hora_posicao: dataHoraPosicao,
+                hora_formatada: horaFormatada,
+                status_conexao: statusConexao,
+                status_badge: statusBadge,
+                is_online: statusConexao === 'online' ? 1 : 0
+            };
+        });
+
+        // Bases operacionais dos setores
+        const basesSetores = Object.keys(SETORES_CONFIG).map(id => {
+            const conf = SETORES_CONFIG[id];
+            return {
+                setor_id: parseInt(id, 10),
+                nome: conf.nome,
+                cor: conf.cor,
+                emoji: conf.emoji,
+                base: conf.base
+            };
+        });
+
+        res.json({
+            success: true,
+            total_viaturas: viaturasDetalhadas.length,
+            online_count: viaturasDetalhadas.filter(v => v.is_online === 1).length,
+            viaturas: viaturasDetalhadas,
+            bases_setores: basesSetores,
+            timestamp_sync: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('Erro ao consultar viaturas e fiscais do mapa:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;
 

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CCO — Mapa Operacional das Viaturas e Fiscais | Diretoria CEDAE</title>
+  <meta name="theme-color" content="#002B49">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <!-- Estilos Executivos do Mapa -->
+  <link rel="stylesheet" href="css/mapa-diretoria.css">
+</head>
+<body>
+
+  <!-- CABEÇALHO EXECUTIVO INSTITUCIONAL -->
+  <header class="mapa-header">
+    <div class="mapa-header-title">
+      <span class="mapa-brand-badge">DIRETORIA EXECUTIVA</span>
+      <div class="mapa-title-text">
+        <h1>🗺️ MAPA OPERACIONAL &bull; VIATURAS E FISCAIS</h1>
+        <p>Acompanhamento em tempo real das viaturas, fiscais em campo e bases operacionais</p>
+      </div>
+    </div>
+
+    <div class="mapa-header-controls">
+      <div style="font-family: monospace; font-weight: 800; font-size: 0.95rem; background: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);" id="mapaClock">
+        00:00:00
+      </div>
+      <button type="button" id="btnAmpliarMapa" class="btn-header btn-header-fullscreen" title="Expandir mapa para tela cheia">
+        🖥️ AMPLIAR MAPA
+      </button>
+      <button type="button" id="btnRefreshMapa" class="btn-header btn-header-refresh" title="Atualizar posições agora">
+        ↻ Atualizar
+      </button>
+      <a href="painel-diretoria.html" id="btnVoltarDiretoria" class="btn-header btn-header-back" title="Retornar ao Painel Executivo">
+        ⬅️ Voltar à Diretoria
+      </a>
+    </div>
+  </header>
+
+  <!-- BARRA DE FILTROS E STATUS OPERACIONAL -->
+  <section class="mapa-subbar">
+    <div class="filtro-setores-group">
+      <span style="font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-right: 4px;">Setor:</span>
+      <button type="button" class="btn-filtro-setor active" data-setor="TODOS">🔵 Todos</button>
+      <button type="button" class="btn-filtro-setor" data-setor="1">🔵 Tinguá</button>
+      <button type="button" class="btn-filtro-setor" data-setor="2">🟢 Guandu</button>
+      <button type="button" class="btn-filtro-setor" data-setor="3">🟠 Laranjal</button>
+      <button type="button" class="btn-filtro-setor" data-setor="4">🟣 Plantão</button>
+    </div>
+
+    <div class="status-resumo-group">
+      <span class="live-pulse-dot"></span>
+      <span id="countTotalViaturas" style="color: var(--cedae-navy);">4 Viaturas</span>
+      <span style="color: #cbd5e1;">&bull;</span>
+      <span id="countViaturasOnline" style="color: var(--status-green);">-- Online</span>
+      <span style="color: #cbd5e1;">&bull;</span>
+      <span id="syncStatusText" style="font-size: 0.75rem; color: #64748b; font-weight: normal;">Sincronizando...</span>
+    </div>
+  </section>
+
+  <!-- BOTÃO FLUTUANTE PARA SAIR DO MODO TELA GRANDE -->
+  <button type="button" id="btnExitFullscreen" class="btn-exit-fullscreen" title="Voltar ao modo normal">
+    ✕ SAIR DA TELA CHEIA
+  </button>
+
+  <!-- WORKSPACE DO MAPA E PAINEL LATERAL -->
+  <main class="mapa-workspace">
+    <!-- MAPA LEAFLET -->
+    <div id="mapaPrincipal"></div>
+
+    <!-- PAINEL LATERAL COM AS VIATURAS -->
+    <aside class="mapa-sidebar">
+      <div class="mapa-sidebar-header">
+        <span class="mapa-sidebar-title">
+          <span>🚗</span> VIATURAS &amp; FISCAIS
+        </span>
+        <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">Clique para focar</span>
+      </div>
+      <div class="mapa-sidebar-content" id="sidebarViaturasContainer">
+        <div style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.85rem;">
+          Carregando viaturas e fiscais...
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Script do Mapa da Diretoria -->
+  <script src="js/mapa-diretoria.js"></script>
+</body>
+</html>
