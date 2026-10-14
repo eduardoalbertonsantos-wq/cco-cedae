@@ -1162,6 +1162,15 @@
       }
 
       function encerrarSessao() {
+        const token = localStorage.getItem('cco_token');
+        if (token) {
+          try {
+            fetch(API_BASE + '/mapa/localizacao/offline', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => {});
+          } catch (_) {}
+        }
         localStorage.removeItem('cco_token');
         localStorage.removeItem('cco_user');
         currentUser = null;
@@ -1237,6 +1246,17 @@
         await carregarEstruturaSetor();
         await checarERecuperarRelatorioEmAndamento();
         await atualizarCotaDiariaDoFiscal();
+
+        // Transmissão imediata da localização ao logar e a cada 60s em segundo plano
+        tentarTransmitirGpsEmSegundoPlano(currentUser.setor_id || 4);
+        if (!window._gpsIntervalSet) {
+          window._gpsIntervalSet = true;
+          setInterval(() => {
+            if (currentUser) {
+              tentarTransmitirGpsEmSegundoPlano(currentUser.setor_id || 4);
+            }
+          }, 60000);
+        }
       }
 
       // 3. CARREGAR ESTRUTURA DO SETOR (SUPERVISORES, VIATURAS E POSTOS)
