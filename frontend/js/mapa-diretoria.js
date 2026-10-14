@@ -12,6 +12,7 @@ let selectedViaturaId = null;
 let currentSectorFilter = 'TODOS';
 let refreshTimer = null;
 let isFullscreen = false;
+let initialFitDone = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     initClock();
@@ -364,14 +365,15 @@ function renderizarMarcadoresViaturas() {
         }
     });
 
-    // Ajustar enquadramento inicial para incluir todas as viaturas no campo de visão
-    if (!selectedViaturaId && viaturasData.length > 0 && map) {
+    // Ajustar enquadramento inicial para incluir todas as viaturas apenas na primeira carga
+    if (!initialFitDone && viaturasData.length > 0 && map) {
         const coords = viaturasData
             .filter(v => typeof v.latitude === 'number' && typeof v.longitude === 'number')
             .map(v => [v.latitude, v.longitude]);
         if (coords.length > 0) {
             try {
                 map.fitBounds(coords, { padding: [40, 40], maxZoom: 12 });
+                initialFitDone = true;
             } catch (e) {}
         }
     }
@@ -400,13 +402,13 @@ function renderizarCardsSidebar() {
     }
 
     container.innerHTML = lista.map(v => {
-        const isSelected = selectedViaturaId === v.viatura_id;
+        const isSelected = String(selectedViaturaId) === String(v.viatura_id);
         const isOnline = v.is_online === 1;
 
         return `
             <div class="viatura-card ${isSelected ? 'selected' : ''}" 
-                 id="card_vtr_${v.viatura_id}" 
-                 onclick="selecionarViatura(${v.viatura_id}, true)">
+                 id="card_vtr_${v.viatura_id}"
+                 data-vtr-id="${v.viatura_id}">
                 <div class="viatura-card-header">
                     <div>
                         <div class="viatura-prefixo">
@@ -440,20 +442,35 @@ function renderizarCardsSidebar() {
                         </span>
                         <span style="color:#94a3b8; margin-left:4px;">${v.hora_formatada ? `(${v.hora_formatada})` : ''}</span>
                     </div>
-                    <button type="button" class="btn-localizar" onclick="event.stopPropagation(); selecionarViatura(${v.viatura_id}, true)">
+                    <button type="button" class="btn-localizar" data-vtr-id="${v.viatura_id}">
                         Localizar ➔
                     </button>
                 </div>
             </div>
         `;
     }).join('');
+
+    // Adicionar eventos com addEventListener para 100% de confiabilidade em qualquer navegador
+    container.querySelectorAll('.viatura-card').forEach(card => {
+        const vId = card.getAttribute('data-vtr-id');
+        card.addEventListener('click', () => selecionarViatura(vId, true));
+    });
+
+    container.querySelectorAll('.btn-localizar').forEach(btn => {
+        const vId = btn.getAttribute('data-vtr-id');
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selecionarViatura(vId, true);
+        });
+    });
 }
 
 // Selecionar e Focar na Viatura
 function selecionarViatura(vtrId, focarNoMapa = true) {
+    if (!vtrId) return;
     selectedViaturaId = vtrId;
 
-    // Atualizar destaque visual dos cards
+    // 1. Atualizar destaque visual dos cards na barra lateral
     document.querySelectorAll('.viatura-card').forEach(c => c.classList.remove('selected'));
     const activeCard = document.getElementById(`card_vtr_${vtrId}`);
     if (activeCard) {
@@ -461,16 +478,48 @@ function selecionarViatura(vtrId, focarNoMapa = true) {
         activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // Focar e abrir popup no mapa
-    const vtr = viaturasData.find(v => v.viatura_id === vtrId);
-    if (vtr && focarNoMapa && map && vtr.latitude && vtr.longitude) {
-        map.setView([vtr.latitude, vtr.longitude], 14, { animate: true, duration: 0.8 });
-        const marker = viaturaMarkers[`vtr_${vtrId}`];
-        if (marker) {
-            marker.openPopup();
+    // 2. Localizar o objeto da viatura com conversão flexível de ID
+    const vtr = viaturasData.find(v => String(v.viatura_id) === String(vtrId));
+    if (!vtr) {
+        console.warn('Viatura não encontrada nos dados:', vtrId);
+        return;
+    }
+
+    const lat = parseFloat(vtr.latitude);
+    const lng = parseFloat(vtr.longitude);
+
+    if (isNaN(lat) || isNaN(lng)) {
+        console.warn('Coordenadas indisponíveis para focar a viatura:', vtr);
+        return;
+    }
+
+    // 3. Focar no mapa com transição suave (flyTo) e abrir o popup
+    if (map && focarNoMapa) {
+        const markerKey = `vtr_${vtr.viatura_id}`;
+        const marker = viaturaMarkers[markerKey];
+
+        // Se o marcador estiver oculto por filtro de setor, recolocá-lo no mapa
+        if (marker && !map.hasLayer(marker)) {
+            map.addLayer(marker);
         }
+
+        // flyTo suave estilo Google Maps
+        map.flyTo([lat, lng], 16, {
+            animate: true,
+            duration: 1.0
+        });
+
+        // Abrir popup informativo com os dados da viatura
+        setTimeout(() => {
+            if (marker) {
+                marker.openPopup();
+            }
+        }, 500);
     }
 }
+
+// Expor globalmente para suporte a chamadas diretas
+window.selecionarViatura = selecionarViatura;
 
 // Aplicar Filtro de Setor
 function aplicarFiltroSetor() {
